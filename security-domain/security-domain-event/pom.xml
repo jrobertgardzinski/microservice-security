@@ -24,11 +24,5 @@
             <artifactId>hash-algorithm-domain</artifactId>
             <scope>provided</scope>
         </dependency>
-
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>unit-test-starter</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 </project>
