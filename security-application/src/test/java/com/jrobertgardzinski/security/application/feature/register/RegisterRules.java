@@ -1,6 +1,5 @@
 package com.jrobertgardzinski.security.application.feature.register;
 
-import com.jrobertgardzinski.password.policy.domain.StrongPasswordPolicyAdapter;
 import com.jrobertgardzinski.security.application.factory.RegisterFactory;
 import com.jrobertgardzinski.security.system.stub.StubHashAlgorithm;
 import com.jrobertgardzinski.security.system.stub.StubUserRepository;

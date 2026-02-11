@@ -1,7 +1,6 @@
 package com.jrobertgardzinski.security.application.feature.input.policy;
 
 import com.jrobertgardzinski.password.policy.domain.PasswordPolicyPort;
-import com.jrobertgardzinski.password.policy.domain.StrongPasswordPolicyAdapter;
 import com.jrobertgardzinski.security.domain.vo.PlaintextPassword;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;

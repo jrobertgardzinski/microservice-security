@@ -9,7 +9,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class StrongPasswordPolicyAdapterTest {
+class ConfigurablePasswordPolicyAdapter2Test {
 
     private static final String VALID_PASSWORD = "StrongPassword1#";
     private static final String ERR_LENGTH = "12 characters";
