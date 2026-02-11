@@ -90,4 +90,5 @@ class StrongPasswordPolicyAdapterTest {
         assertTrue(hasViolation(violations, ERR_DIGIT));
         assertTrue(hasViolation(violations, ERR_SPECIAL));
     }
+
 }

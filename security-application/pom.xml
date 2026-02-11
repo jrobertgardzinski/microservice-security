@@ -31,16 +31,6 @@
             <artifactId>security-system</artifactId>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>password-policy-domain</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>password-policy-strong</artifactId>
-            <scope>provided</scope>
-        </dependency>
 
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
