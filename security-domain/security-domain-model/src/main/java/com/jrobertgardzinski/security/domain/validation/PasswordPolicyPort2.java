@@ -5,7 +5,7 @@ import com.jrobertgardzinski.security.domain.vo.PlaintextPassword2;
 import java.util.List;
 import java.util.Optional;
 
-public interface PasswordPolicyPort2 {
+public sealed interface PasswordPolicyPort2 permits ConfigurablePasswordPolicyAdapter2 {
 
     List<PasswordSpecification2> specifications();
 
