@@ -1,19 +1,19 @@
 package com.jrobertgardzinski.security.config;
 
-import com.jrobertgardzinski.security.domain.validation.ConfigurablePasswordPolicyAdapter2;
-import com.jrobertgardzinski.security.domain.validation.PasswordPolicyConfig;
-import com.jrobertgardzinski.security.domain.validation.PasswordPolicyPort2;
-import com.jrobertgardzinski.security.domain.vo.PlaintextPassword2;
+import com.jrobertgardzinski.security.domain.validation.password.ConfigurablePasswordPolicyAdapter;
+import com.jrobertgardzinski.security.domain.validation.password.PasswordPolicyConfig;
+import com.jrobertgardzinski.security.domain.validation.password.PasswordPolicyPort;
+import com.jrobertgardzinski.security.domain.vo.PlaintextPassword;
 
 public class PlaintextPasswordFactoryPort {
 
-    private final PasswordPolicyPort2 policy;
+    private final PasswordPolicyPort policy;
 
     public PlaintextPasswordFactoryPort(PasswordPolicyConfig config) {
-        this.policy = new ConfigurablePasswordPolicyAdapter2(config);
+        this.policy = new ConfigurablePasswordPolicyAdapter(config);
     }
 
-    public PlaintextPassword2 create(String rawPassword) {
-        return PlaintextPassword2.of(rawPassword, policy);
+    public PlaintextPassword create(String rawPassword) {
+        return PlaintextPassword.of(rawPassword, policy);
     }
 }

@@ -1,6 +1,8 @@
 package com.jrobertgardzinski.security.application.feature.register;
 
 import com.jrobertgardzinski.security.application.factory.RegisterFactory;
+import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
+import com.jrobertgardzinski.security.domain.validation.password.ConfigurablePasswordPolicyAdapter;
 import com.jrobertgardzinski.security.system.stub.StubHashAlgorithm;
 import com.jrobertgardzinski.security.system.stub.StubUserRepository;
 import com.jrobertgardzinski.security.application.usecase.RegisterResult;
@@ -25,7 +27,9 @@ public class RegisterRules {
 
     public RegisterRules(StubUserRepository stubUserRepository, StubHashAlgorithm stubHashAlgorithm) {
         Register register = new Register(stubUserRepository, stubHashAlgorithm);
-        RegisterFactory registerFactory = new RegisterFactory(new StrongPasswordPolicyAdapter());
+        RegisterFactory registerFactory = new RegisterFactory(
+                new PlaintextPasswordFactory(
+                        new ConfigurablePasswordPolicyAdapter()));
         this.registerUseCase = new RegisterUseCase(register, registerFactory);
         this.userRepository = stubUserRepository;
     }

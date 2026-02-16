@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.system.feature.verifycredentials;
 
+import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
+import com.jrobertgardzinski.security.domain.validation.password.ConfigurablePasswordPolicyAdapter;
 import com.jrobertgardzinski.security.system.feature.VerifyCredentials;
 import com.jrobertgardzinski.security.system.stub.StubHashAlgorithm;
 import com.jrobertgardzinski.security.system.stub.StubUserRepository;
@@ -19,6 +21,7 @@ public class VerifyCredentialsRules {
     private final VerifyCredentials verifyCredentials;
     private final StubUserRepository userRepository;
     private final StubHashAlgorithm hashAlgorithm;
+    private final PlaintextPasswordFactory plaintextPasswordFactory = new PlaintextPasswordFactory(new ConfigurablePasswordPolicyAdapter());
 
     private AuthenticationEvent result;
 
@@ -33,7 +36,7 @@ public class VerifyCredentialsRules {
     @Given("the system has a registered account with email {string} and password {string}")
     public void givenRegisteredAccount(String email, String password) {
         Email e = new Email(email);
-        PlaintextPassword p = new PlaintextPassword(password);
+        PlaintextPassword p = plaintextPasswordFactory.create(password);
         Salt salt = Salt.generate();
         PasswordHash passwordHash = hashAlgorithm.hash(p, salt);
         try {
@@ -49,7 +52,7 @@ public class VerifyCredentialsRules {
     public void whenSystemReceivesCredentials(String email, String password) {
         Credentials credentials = new Credentials(
                 new Email(email),
-                new PlaintextPassword(password)
+                plaintextPasswordFactory.create(password)
         );
         result = verifyCredentials.apply(credentials);
     }
