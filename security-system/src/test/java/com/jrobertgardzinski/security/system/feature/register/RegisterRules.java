@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.system.feature.register;
 
+import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
+import com.jrobertgardzinski.security.domain.validation.password.ConfigurablePasswordPolicyAdapter;
 import com.jrobertgardzinski.security.system.feature.Register;
 import com.jrobertgardzinski.security.system.stub.StubHashAlgorithm;
 import com.jrobertgardzinski.security.system.stub.StubUserRepository;
@@ -7,7 +9,6 @@ import com.jrobertgardzinski.security.domain.event.registration.RegistrationEven
 import com.jrobertgardzinski.security.domain.event.registration.RegistrationPassedEvent;
 import com.jrobertgardzinski.security.domain.event.registration.UserAlreadyExistsEvent;
 import com.jrobertgardzinski.security.domain.vo.Email;
-import com.jrobertgardzinski.security.domain.vo.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.vo.UserRegistration;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -18,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class RegisterRules {
 
     private final Register register;
+    private final PlaintextPasswordFactory plaintextPasswordFactory = new PlaintextPasswordFactory(new ConfigurablePasswordPolicyAdapter());
     private RegistrationEvent result;
 
     public RegisterRules(StubUserRepository userRepository, StubHashAlgorithm hashAlgorithm) {
@@ -30,7 +32,7 @@ public class RegisterRules {
     public void givenAccountExists(String email) {
         UserRegistration registration = new UserRegistration(
                 new Email(email),
-                new PlaintextPassword("StrongPassword1#")
+                plaintextPasswordFactory.create("StrongPassword1#")
         );
         register.apply(registration);
     }
@@ -41,7 +43,7 @@ public class RegisterRules {
     public void whenSystemReceivesRegistration(String email, String password) {
         UserRegistration registration = new UserRegistration(
                 new Email(email),
-                new PlaintextPassword(password)
+                plaintextPasswordFactory.create(password)
         );
         result = register.apply(registration);
     }

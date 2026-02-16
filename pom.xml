@@ -8,12 +8,11 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
-<!--        domain-->
-        <module>security-domain</module>
-<!--        additional-->
-        <module>hash-algorithm</module>
-<!--        other layers-->
+        <module>security-domain-model</module>
+        <module>security-domain-persistence</module>
         <module>security-config</module>
+        <module>security-domain-event</module>
+        <module>hash-algorithm</module>
         <module>security-system</module>
         <module>security-application</module>
         <module>security-infrastructure</module>

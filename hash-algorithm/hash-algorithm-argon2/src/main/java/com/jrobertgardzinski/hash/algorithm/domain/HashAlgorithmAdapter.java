@@ -14,7 +14,7 @@ public class HashAlgorithmAdapter implements HashAlgorithmPort {
 
     @Override
     public PasswordHash hash(PlaintextPassword plaintextPassword, Salt salt) {
-        String hash = argon2.hash(ITERATIONS, MEM_LIMIT, PARALLELISM, plaintextPassword.value().getBytes());
+        String hash = argon2.hash(ITERATIONS, MEM_LIMIT, PARALLELISM, plaintextPassword.getValue().getBytes());
         return new PasswordHash(hash);
     }
 
@@ -22,7 +22,7 @@ public class HashAlgorithmAdapter implements HashAlgorithmPort {
     public boolean verify(PasswordHash passwordHash, PlaintextPassword plaintextPassword) {
         return argon2.verify(
                 passwordHash.value(),
-                plaintextPassword.value().getBytes()
+                plaintextPassword.getValue().getBytes()
         );
     }
 }

@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.application.feature.authenticate;
 
+import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
+import com.jrobertgardzinski.security.domain.validation.password.ConfigurablePasswordPolicyAdapter;
 import com.jrobertgardzinski.security.system.event.AuthenticationBlocked;
 import com.jrobertgardzinski.security.system.event.AuthenticationFailed;
 import com.jrobertgardzinski.security.system.event.AuthenticationPassed;
@@ -33,6 +35,7 @@ public class AuthenticateRules {
     private final StubHashAlgorithm hashAlgorithm;
     private final StubFailedAuthenticationRepository failedAuthenticationRepository;
     private final StubAuthenticationBlockRepository authenticationBlockRepository;
+    private final PlaintextPasswordFactory plaintextPasswordFactory;
 
     private IpAddress ipAddress;
     private AuthenticationResult result;
@@ -46,6 +49,7 @@ public class AuthenticateRules {
         this.hashAlgorithm = hashAlgorithm;
         this.failedAuthenticationRepository = failedAuthenticationRepository;
         this.authenticationBlockRepository = authenticationBlockRepository;
+        this.plaintextPasswordFactory = new PlaintextPasswordFactory(new ConfigurablePasswordPolicyAdapter());
         VerifyCredentials verifyCredentials = new VerifyCredentials(userRepository, hashAlgorithm);
         BruteForceGuard bruteForceGuard = new BruteForceGuard(failedAuthenticationRepository, authenticationBlockRepository);
         GenerateSession generateSession = new GenerateSession(authorizationDataRepository);
@@ -59,7 +63,7 @@ public class AuthenticateRules {
     @Given("a registered user with email {string} and password {string}")
     public void givenRegisteredUser(String email, String password) {
         Email e = new Email(email);
-        PlaintextPassword p = new PlaintextPassword(password);
+        PlaintextPassword p = plaintextPasswordFactory.create(password);
         Salt salt = Salt.generate();
         PasswordHash passwordHash = hashAlgorithm.hash(p, salt);
         try {
@@ -111,7 +115,7 @@ public class AuthenticateRules {
         AuthenticationRequest request = new AuthenticationRequest(
                 ipAddress,
                 new Email(email),
-                new PlaintextPassword(password)
+                plaintextPasswordFactory.create(password)
         );
         result = authenticateUseCase.apply(request);
     }

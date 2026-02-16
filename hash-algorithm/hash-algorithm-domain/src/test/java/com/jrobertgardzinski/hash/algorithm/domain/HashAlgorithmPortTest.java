@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.hash.algorithm.domain;
 
+import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
+import com.jrobertgardzinski.security.domain.validation.password.ConfigurablePasswordPolicyAdapter;
 import com.jrobertgardzinski.security.domain.vo.PasswordHash;
 import com.jrobertgardzinski.security.domain.vo.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.vo.Salt;
@@ -12,20 +14,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public abstract class HashAlgorithmPortTest {
 
     protected abstract HashAlgorithmPort hashAlgorithm();
+    PlaintextPasswordFactory plaintextPasswordFactory = new PlaintextPasswordFactory(new ConfigurablePasswordPolicyAdapter());
     PasswordHash hash;
 
     @BeforeEach
     void init() {
-        hash = hashAlgorithm().hash(new PlaintextPassword("StrongPassword1!"), new Salt("salt123456"));;
+        hash = hashAlgorithm().hash(plaintextPasswordFactory.create("StrongPassword1!"), new Salt("salt123456"));
     }
 
     @Test
     void negative() {
-        assertFalse(hashAlgorithm().verify(hash, new PlaintextPassword("StrongPassword2!")));
+        assertFalse(hashAlgorithm().verify(hash, plaintextPasswordFactory.create("StrongPassword2!")));
     }
 
     @Test
     void positive() {
-        assertTrue(hashAlgorithm().verify(hash, new PlaintextPassword("StrongPassword1!")));
+        assertTrue(hashAlgorithm().verify(hash, plaintextPasswordFactory.create("StrongPassword1!")));
     }
 }

@@ -9,12 +9,12 @@ public class StubHashAlgorithm implements HashAlgorithmPort {
     @Override
     public PasswordHash hash(PlaintextPassword plaintextPassword, Salt salt) {
         return new PasswordHash(
-                salt.value() + plaintextPassword.value()
+                salt.value() + plaintextPassword.getValue()
         );
     }
 
     @Override
     public boolean verify(PasswordHash passwordHash, PlaintextPassword plaintextPassword) {
-        return passwordHash.value().endsWith(plaintextPassword.value());
+        return passwordHash.value().endsWith(plaintextPassword.getValue());
     }
 }
