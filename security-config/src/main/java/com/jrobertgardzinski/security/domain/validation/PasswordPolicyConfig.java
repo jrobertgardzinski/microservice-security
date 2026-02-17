@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.domain.validation.password;
+package com.jrobertgardzinski.security.domain.validation;
 
 public record PasswordPolicyConfig(
         int minLength,

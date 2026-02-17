@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.config;
 
-import com.jrobertgardzinski.security.domain.validation.password.ConfigurablePasswordPolicyAdapter;
-import com.jrobertgardzinski.security.domain.validation.password.PasswordPolicyConfig;
+import com.jrobertgardzinski.security.domain.validation.ConfigurablePasswordPolicyAdapter;
+import com.jrobertgardzinski.security.domain.validation.PasswordPolicyConfig;
 import com.jrobertgardzinski.security.domain.validation.password.PasswordPolicyPort;
 import com.jrobertgardzinski.security.domain.vo.PlaintextPassword;
 

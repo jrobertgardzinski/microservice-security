@@ -1,4 +1,7 @@
-package com.jrobertgardzinski.security.domain.validation.password;
+package com.jrobertgardzinski.security.domain.validation;
+
+import com.jrobertgardzinski.security.domain.validation.password.PasswordPolicyPort;
+import com.jrobertgardzinski.security.domain.validation.password.PasswordSpecification;
 
 import java.util.ArrayList;
 import java.util.List;

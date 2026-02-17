@@ -31,6 +31,11 @@
             <artifactId>security-domain-model</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>security-config</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
