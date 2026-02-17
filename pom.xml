@@ -10,9 +10,9 @@
     <modules>
         <module>security-domain-model</module>
         <module>security-domain-persistence</module>
-        <module>security-config</module>
         <module>security-domain-event</module>
         <module>hash-algorithm</module>
+        <module>security-config</module>
         <module>security-system</module>
         <module>security-application</module>
         <module>security-infrastructure</module>
