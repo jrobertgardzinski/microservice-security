@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.application.feature.authenticate;
 
 import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
-import com.jrobertgardzinski.security.domain.validation.password.ConfigurablePasswordPolicyAdapter;
+import com.jrobertgardzinski.security.domain.validation.ConfigurablePasswordPolicyAdapter;
 import com.jrobertgardzinski.security.system.event.AuthenticationBlocked;
 import com.jrobertgardzinski.security.system.event.AuthenticationFailed;
 import com.jrobertgardzinski.security.system.event.AuthenticationPassed;

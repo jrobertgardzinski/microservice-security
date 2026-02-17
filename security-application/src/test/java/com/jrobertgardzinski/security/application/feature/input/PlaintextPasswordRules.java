@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.application.feature.input;
 
 import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
-import com.jrobertgardzinski.security.domain.validation.password.ConfigurablePasswordPolicyAdapter;
+import com.jrobertgardzinski.security.domain.validation.ConfigurablePasswordPolicyAdapter;
 import com.jrobertgardzinski.security.domain.vo.PlaintextPassword;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;

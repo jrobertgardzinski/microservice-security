@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.config.feature;
 
-import com.jrobertgardzinski.security.domain.validation.password.PasswordPolicyConfig;
+import com.jrobertgardzinski.security.domain.validation.PasswordPolicyConfig;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;

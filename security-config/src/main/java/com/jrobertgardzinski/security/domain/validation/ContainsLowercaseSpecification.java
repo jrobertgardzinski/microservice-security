@@ -1,5 +1,6 @@
-package com.jrobertgardzinski.security.domain.validation.password;
+package com.jrobertgardzinski.security.domain.validation;
 
+import com.jrobertgardzinski.security.domain.validation.password.PasswordSpecification;
 import com.jrobertgardzinski.security.domain.vo.PlaintextPassword;
 
 import java.util.Optional;

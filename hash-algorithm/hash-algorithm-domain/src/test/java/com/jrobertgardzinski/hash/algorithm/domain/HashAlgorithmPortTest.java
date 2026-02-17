@@ -1,9 +1,8 @@
 package com.jrobertgardzinski.hash.algorithm.domain;
 
 import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
-import com.jrobertgardzinski.security.domain.validation.password.ConfigurablePasswordPolicyAdapter;
+import com.jrobertgardzinski.security.domain.validation.ConfigurablePasswordPolicyAdapter;
 import com.jrobertgardzinski.security.domain.vo.PasswordHash;
-import com.jrobertgardzinski.security.domain.vo.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.vo.Salt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

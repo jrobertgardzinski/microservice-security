@@ -42,6 +42,11 @@
             <artifactId>bdd-test-starter</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>security-config</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

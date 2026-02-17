@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.feature.register;
 
 import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
-import com.jrobertgardzinski.security.domain.validation.password.ConfigurablePasswordPolicyAdapter;
+import com.jrobertgardzinski.security.domain.validation.ConfigurablePasswordPolicyAdapter;
 import com.jrobertgardzinski.security.system.feature.Register;
 import com.jrobertgardzinski.security.system.stub.StubHashAlgorithm;
 import com.jrobertgardzinski.security.system.stub.StubUserRepository;

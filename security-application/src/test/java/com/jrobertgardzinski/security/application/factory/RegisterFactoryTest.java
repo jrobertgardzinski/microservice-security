@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.application.factory;
 
 import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
-import com.jrobertgardzinski.security.domain.validation.password.ConfigurablePasswordPolicyAdapter;
+import com.jrobertgardzinski.security.domain.validation.ConfigurablePasswordPolicyAdapter;
 import com.jrobertgardzinski.security.domain.vo.UserRegistration;
 import org.junit.jupiter.api.Test;
 
