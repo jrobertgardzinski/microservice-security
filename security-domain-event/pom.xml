@@ -19,10 +19,5 @@
             <artifactId>security-domain-persistence</artifactId>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>hash-algorithm-domain</artifactId>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 </project>
