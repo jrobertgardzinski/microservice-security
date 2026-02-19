@@ -3,42 +3,38 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        Standalone parent — does NOT inherit from ddd-sample.
+        Listed in ddd-sample <modules> only for build aggregation.
+        Pattern: aggregator != parent (Maven multi-module best practice
+        when a library needs to be publishable independently).
+    -->
     <groupId>com.jrobertgardzinski</groupId>
-    <artifactId>ddd-sample</artifactId>
+    <artifactId>email</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+
     <modules>
-        <module>email</module>
-        <module>security-domain-model</module>
-        <module>security-domain-persistence</module>
-        <module>security-domain-event</module>
-        <module>hash-algorithm</module>
-        <module>security-config</module>
-        <module>security-system</module>
-        <module>security-application</module>
-        <module>security-infrastructure</module>
+        <module>email-domain</module>
+        <module>email-specifications</module>
+        <module>email-usecases</module>
     </modules>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <security-domain.version>1.0-SNAPSHOT</security-domain.version>
+        <email.version>1.0-SNAPSHOT</email.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Test frameworks -->
             <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
                 <version>5.14.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-bom</artifactId>
-                <version>5.14.2</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -48,20 +44,13 @@
                 <version>3.0</version>
             </dependency>
             <dependency>
-                <groupId>io.cucumber</groupId>
-                <artifactId>cucumber-bom</artifactId>
-                <version>7.33.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-bom</artifactId>
                 <version>3.27.7</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-<!--            internal modules-->
+
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
                 <artifactId>unit-test-starter</artifactId>
@@ -72,62 +61,57 @@
                 <artifactId>bdd-test-starter</artifactId>
                 <version>1.0.0</version>
             </dependency>
+
+            <!-- Internal email modules -->
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-domain-model</artifactId>
-                <version>${security-domain.version}</version>
+                <artifactId>email-domain</artifactId>
+                <version>${email.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-domain-persistence</artifactId>
-                <version>${security-domain.version}</version>
+                <artifactId>email-specification-rfc</artifactId>
+                <version>${email.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-domain-event</artifactId>
-                <version>${security-domain.version}</version>
+                <artifactId>email-specification-gmail</artifactId>
+                <version>${email.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>hash-algorithm-domain</artifactId>
-                <version>0.1-SNAPSHOT</version>
+                <artifactId>email-specification-blocked-domain</artifactId>
+                <version>${email.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>hash-algorithm-domain</artifactId>
-                <version>0.1-SNAPSHOT</version>
-                <type>test-jar</type>
+                <artifactId>email-specification-mx</artifactId>
+                <version>${email.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>hash-algorithm-argon2</artifactId>
-                <version>0.1-SNAPSHOT</version>
+                <artifactId>email-specification-disposable</artifactId>
+                <version>${email.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-system</artifactId>
-                <version>0.1-SNAPSHOT</version>
+                <artifactId>email-usecase-can-register</artifactId>
+                <version>${email.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-config</artifactId>
-                <version>0.1-SNAPSHOT</version>
+                <artifactId>email-usecase-can-reset-password</artifactId>
+                <version>${email.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-system</artifactId>
-                <version>0.1-SNAPSHOT</version>
-                <type>test-jar</type>
+                <artifactId>email-usecase-is-employee</artifactId>
+                <version>${email.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-application</artifactId>
-                <version>0.1-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-infrastructure</artifactId>
-                <version>0.1-SNAPSHOT</version>
+                <artifactId>email-usecase-is-trusted-user</artifactId>
+                <version>${email.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
