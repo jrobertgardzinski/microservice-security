@@ -20,7 +20,7 @@ public class IsTrustedUserRules {
 
     @When("checking if {string} is a trusted user")
     public void w(String email) {
-        result = isTrustedUser.test(Email.of(email));
+        result = isTrustedUser.isSatisfiedBy(Email.of(email));
     }
 
     @Then("it is trusted")
