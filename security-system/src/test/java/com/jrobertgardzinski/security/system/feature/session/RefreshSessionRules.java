@@ -7,8 +7,8 @@ import com.jrobertgardzinski.security.domain.event.refresh.NoRefreshTokenFoundEv
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenExpiredEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenPassedEvent;
+import com.jrobertgardzinski.security.domain.config.SessionConfig;
 import com.jrobertgardzinski.security.domain.vo.*;
-import com.jrobertgardzinski.system.SystemTime;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -23,6 +23,8 @@ public class RefreshSessionRules {
 
     private final RefreshSession refreshSession;
     private final StubAuthorizationDataRepository authorizationDataRepository;
+    private final Clock clock = Clock.systemDefaultZone();
+    private final SessionConfig sessionConfig = SessionConfig.builder().build();
 
     private Email email;
     private RefreshToken refreshToken;
@@ -30,7 +32,7 @@ public class RefreshSessionRules {
 
     public RefreshSessionRules(StubAuthorizationDataRepository authorizationDataRepository) {
         this.authorizationDataRepository = authorizationDataRepository;
-        this.refreshSession = new RefreshSession(authorizationDataRepository);
+        this.refreshSession = new RefreshSession(authorizationDataRepository, clock, sessionConfig);
     }
 
     // background
@@ -44,7 +46,8 @@ public class RefreshSessionRules {
 
     @Given("the session is active")
     public void givenActiveSession() {
-        SessionTokens sessionTokens = SessionTokens.createFor(email);
+        SessionTokens sessionTokens = SessionTokens.createFor(email,
+                sessionConfig.refreshTokenValidityHours(), sessionConfig.accessTokenValidityHours(), clock);
         authorizationDataRepository.create(sessionTokens);
         refreshToken = sessionTokens.refreshToken();
     }
@@ -54,9 +57,8 @@ public class RefreshSessionRules {
         Clock pastClock = Clock.fixed(
                 LocalDateTime.now().minusHours(49).atZone(ZoneId.systemDefault()).toInstant(),
                 ZoneId.systemDefault());
-        SystemTime.setFixedTime(pastClock);
-        SessionTokens session = SessionTokens.createFor(email);
-        SystemTime.reset();
+        SessionTokens session = SessionTokens.createFor(email,
+                sessionConfig.refreshTokenValidityHours(), sessionConfig.accessTokenValidityHours(), pastClock);
         authorizationDataRepository.create(session);
         refreshToken = session.refreshToken();
     }

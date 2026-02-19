@@ -26,7 +26,8 @@ public class RegisterRules {
     private RegisterResult result;
 
     public RegisterRules(StubUserRepository stubUserRepository, StubHashAlgorithm stubHashAlgorithm) {
-        Register register = new Register(stubUserRepository, stubHashAlgorithm);
+        Register register = new Register(stubUserRepository, stubHashAlgorithm,
+                com.jrobertgardzinski.security.domain.config.SaltConfig.builder().build());
         RegisterFactory registerFactory = new RegisterFactory(
                 new PlaintextPasswordFactory(
                         new ConfigurablePasswordPolicyAdapter()));

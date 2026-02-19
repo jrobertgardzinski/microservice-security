@@ -7,12 +7,14 @@ import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.event.brute.force.protection.Blocked;
 import com.jrobertgardzinski.security.domain.event.brute.force.protection.BruteForceProtectionEvent;
 import com.jrobertgardzinski.security.domain.event.brute.force.protection.Passed;
+import com.jrobertgardzinski.security.domain.config.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.vo.FailedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,7 +32,8 @@ public class BruteForceGuardRules {
                                 StubAuthenticationBlockRepository authenticationBlockRepository) {
         this.failedAuthenticationRepository = failedAuthenticationRepository;
         this.authenticationBlockRepository = authenticationBlockRepository;
-        this.bruteForceGuard = new BruteForceGuard(failedAuthenticationRepository, authenticationBlockRepository);
+        this.bruteForceGuard = new BruteForceGuard(failedAuthenticationRepository, authenticationBlockRepository,
+                Clock.systemDefaultZone(), BruteForceConfig.builder().build());
     }
 
     // background

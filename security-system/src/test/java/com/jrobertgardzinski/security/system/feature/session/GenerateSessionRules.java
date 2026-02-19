@@ -4,10 +4,13 @@ import com.jrobertgardzinski.security.system.feature.GenerateSession;
 import com.jrobertgardzinski.security.system.stub.StubAuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
+import com.jrobertgardzinski.security.domain.config.SessionConfig;
 import com.jrobertgardzinski.security.domain.vo.Email;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+
+import java.time.Clock;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,7 +24,8 @@ public class GenerateSessionRules {
 
     public GenerateSessionRules(StubAuthorizationDataRepository authorizationDataRepository) {
         this.authorizationDataRepository = authorizationDataRepository;
-        this.generateSession = new GenerateSession(authorizationDataRepository);
+        this.generateSession = new GenerateSession(authorizationDataRepository,
+                Clock.systemDefaultZone(), SessionConfig.builder().build());
     }
 
     // background

@@ -37,7 +37,7 @@ public class VerifyCredentialsRules {
     public void givenRegisteredAccount(String email, String password) {
         Email e = new Email(email);
         PlaintextPassword p = plaintextPasswordFactory.create(password);
-        Salt salt = Salt.generate();
+        Salt salt = Salt.generate(16);
         PasswordHash passwordHash = hashAlgorithm.hash(p, salt);
         try {
             userRepository.save(new User(e, passwordHash));

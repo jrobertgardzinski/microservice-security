@@ -1,12 +1,10 @@
 package com.jrobertgardzinski.security.domain.vo;
 
-import com.jrobertgardzinski.system.SystemTime;
-
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 public record RefreshTokenExpiration(TokenExpiration value) {
-    public boolean hasExpired() {
-        LocalDateTime now = LocalDateTime.now(SystemTime.currentClock());
-        return now.isAfter(value.value());
+    public boolean hasExpired(Clock clock) {
+        return LocalDateTime.now(clock).isAfter(value.value());
     }
 }

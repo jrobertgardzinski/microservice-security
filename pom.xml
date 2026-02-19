@@ -73,11 +73,6 @@
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>system-time</artifactId>
-                <version>1.0</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
                 <artifactId>security-domain-model</artifactId>
                 <version>${security-domain.version}</version>
             </dependency>
