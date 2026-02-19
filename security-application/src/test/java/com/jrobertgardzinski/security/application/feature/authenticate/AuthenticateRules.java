@@ -1,7 +1,9 @@
 package com.jrobertgardzinski.security.application.feature.authenticate;
 
 import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
+import com.jrobertgardzinski.security.domain.config.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.validation.ConfigurablePasswordPolicyAdapter;
+import com.jrobertgardzinski.security.domain.config.SessionConfig;
 import com.jrobertgardzinski.security.system.event.AuthenticationBlocked;
 import com.jrobertgardzinski.security.system.event.AuthenticationFailed;
 import com.jrobertgardzinski.security.system.event.AuthenticationPassed;
@@ -24,6 +26,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -50,11 +53,14 @@ public class AuthenticateRules {
         this.failedAuthenticationRepository = failedAuthenticationRepository;
         this.authenticationBlockRepository = authenticationBlockRepository;
         this.plaintextPasswordFactory = new PlaintextPasswordFactory(new ConfigurablePasswordPolicyAdapter());
+        Clock clock = Clock.systemDefaultZone();
         VerifyCredentials verifyCredentials = new VerifyCredentials(userRepository, hashAlgorithm);
-        BruteForceGuard bruteForceGuard = new BruteForceGuard(failedAuthenticationRepository, authenticationBlockRepository);
-        GenerateSession generateSession = new GenerateSession(authorizationDataRepository);
+        BruteForceGuard bruteForceGuard = new BruteForceGuard(failedAuthenticationRepository, authenticationBlockRepository,
+                clock, BruteForceConfig.builder().build());
+        GenerateSession generateSession = new GenerateSession(authorizationDataRepository,
+                clock, SessionConfig.builder().build());
         CleanBruteForceRecords cleanBruteForceRecords = new CleanBruteForceRecords(failedAuthenticationRepository, authenticationBlockRepository);
-        UpdateBruteForceRecords updateBruteForceRecords = new UpdateBruteForceRecords(failedAuthenticationRepository);
+        UpdateBruteForceRecords updateBruteForceRecords = new UpdateBruteForceRecords(failedAuthenticationRepository, clock);
         this.authenticateUseCase = new AuthenticateUseCase(verifyCredentials, bruteForceGuard, generateSession, cleanBruteForceRecords, updateBruteForceRecords);
     }
 
@@ -64,7 +70,7 @@ public class AuthenticateRules {
     public void givenRegisteredUser(String email, String password) {
         Email e = new Email(email);
         PlaintextPassword p = plaintextPasswordFactory.create(password);
-        Salt salt = Salt.generate();
+        Salt salt = Salt.generate(16);
         PasswordHash passwordHash = hashAlgorithm.hash(p, salt);
         try {
             userRepository.save(new User(e, passwordHash));

@@ -6,10 +6,11 @@ import com.jrobertgardzinski.security.domain.event.brute.force.protection.BruteF
 import com.jrobertgardzinski.security.domain.event.brute.force.protection.Passed;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.repository.FailedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.config.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.vo.FailuresCount;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
-import com.jrobertgardzinski.system.SystemTime;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
@@ -19,26 +20,32 @@ public class BruteForceGuard implements Function<IpAddress, BruteForceProtection
 
     private final FailedAuthenticationRepository failedAuthenticationRepository;
     private final AuthenticationBlockRepository authenticationBlockRepository;
+    private final Clock clock;
+    private final BruteForceConfig config;
 
-    public BruteForceGuard(FailedAuthenticationRepository failedAuthenticationRepository, AuthenticationBlockRepository authenticationBlockRepository) {
+    public BruteForceGuard(FailedAuthenticationRepository failedAuthenticationRepository,
+                           AuthenticationBlockRepository authenticationBlockRepository,
+                           Clock clock, BruteForceConfig config) {
         this.failedAuthenticationRepository = failedAuthenticationRepository;
         this.authenticationBlockRepository = authenticationBlockRepository;
+        this.clock = clock;
+        this.config = config;
     }
 
     @Override
     public BruteForceProtectionEvent apply(IpAddress ipAddress) {
         Optional<AuthenticationBlock> optionalAuthenticationBlock = authenticationBlockRepository.findBy(ipAddress)
-                .filter(AuthenticationBlock::isStillActive);
+                .filter(block -> block.isStillActive(clock));
         if (optionalAuthenticationBlock.isPresent()) {
             AuthenticationBlock authenticationBlock = optionalAuthenticationBlock.get();
             return new Blocked(authenticationBlock);
         }
-        LocalDateTime since = LocalDateTime.now(SystemTime.currentClock()).minusMinutes(15);
+        LocalDateTime since = LocalDateTime.now(clock).minusMinutes(config.failureWindowMinutes());
         FailuresCount failuresCount = failedAuthenticationRepository.countFailuresBy(ipAddress, since);
-        if (failuresCount.hasReachedTheLimit()) {
+        if (failuresCount.hasReachedTheLimit(config.maxFailures())) {
             failedAuthenticationRepository.removeAllFor(ipAddress);
-            int minutes = new Random().nextInt(8) + 3;
-            LocalDateTime until = LocalDateTime.now(SystemTime.currentClock()).plusMinutes(minutes);
+            int minutes = new Random().nextInt(config.maxBlockMinutes() - config.minBlockMinutes() + 1) + config.minBlockMinutes();
+            LocalDateTime until = LocalDateTime.now(clock).plusMinutes(minutes);
             AuthenticationBlock authenticationBlock = authenticationBlockRepository.create(
                     new AuthenticationBlock(
                             ipAddress,

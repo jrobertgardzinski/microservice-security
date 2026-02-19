@@ -13,11 +13,6 @@
     <dependencies>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>system-time</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
             <artifactId>security-domain-event</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -45,7 +40,7 @@
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>security-config</artifactId>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

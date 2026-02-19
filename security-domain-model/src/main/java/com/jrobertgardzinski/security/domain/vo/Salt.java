@@ -5,17 +5,15 @@ import java.util.Base64;
 
 public record Salt(String value) {
     public Salt {
-        int SIZE_LIMIT = 10;
-        if (value.length() < SIZE_LIMIT) {
-            throw new IllegalArgumentException("Min length is  " + SIZE_LIMIT);
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Salt cannot be null or blank");
         }
     }
 
-    public static Salt generate() {
+    public static Salt generate(int byteLength) {
         SecureRandom secureRandom = new SecureRandom();
-        byte[] bytes = new byte[16];
+        byte[] bytes = new byte[byteLength];
         secureRandom.nextBytes(bytes);
-
         return new Salt(Base64.getEncoder().encodeToString(bytes));
     }
 }

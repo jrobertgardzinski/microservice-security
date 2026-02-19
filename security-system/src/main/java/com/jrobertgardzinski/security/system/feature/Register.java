@@ -8,16 +8,19 @@ import com.jrobertgardzinski.security.domain.event.registration.RegistrationEven
 import com.jrobertgardzinski.security.domain.event.registration.RegistrationPassedEvent;
 import com.jrobertgardzinski.security.domain.event.registration.UserAlreadyExistsEvent;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
+import com.jrobertgardzinski.security.domain.config.SaltConfig;
 
 import java.util.function.Function;
 
 public class Register implements Function<UserRegistration, RegistrationEvent> {
     private final UserRepository userRepository;
     private final HashAlgorithmPort hashAlgorithmPort;
+    private final SaltConfig saltConfig;
 
-    public Register(UserRepository userRepository, HashAlgorithmPort hashAlgorithmPort) {
+    public Register(UserRepository userRepository, HashAlgorithmPort hashAlgorithmPort, SaltConfig saltConfig) {
         this.userRepository = userRepository;
         this.hashAlgorithmPort = hashAlgorithmPort;
+        this.saltConfig = saltConfig;
     }
 
     @Override
@@ -28,7 +31,7 @@ public class Register implements Function<UserRegistration, RegistrationEvent> {
         }
         try {
             PlaintextPassword plaintextPassword = userRegistration.plaintextPassword();
-            Salt salt = Salt.generate();
+            Salt salt = Salt.generate(saltConfig.byteLength());
             PasswordHash passwordHash = hashAlgorithmPort.hash(plaintextPassword, salt);
             User user = new User(
                     userRegistration.email(),

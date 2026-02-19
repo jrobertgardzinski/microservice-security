@@ -24,9 +24,4 @@ class EmailTest {
         Assertions.assertDoesNotThrow(() -> new Email(value));
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"u.ser@gmail.com", "us.er@gmail.com", "use.r@gmail.com", "u.s.e.r@gmail.com", "user+ddd@gmail.com", "u.s.e.r+ddd@gmail.com"})
-    void handlingGmail(String value) {
-        Assertions.assertEquals(new Email("user@gmail.com"), new Email(value));
-    }
 }

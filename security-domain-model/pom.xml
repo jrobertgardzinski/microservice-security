@@ -9,12 +9,6 @@
     <artifactId>security-domain-model</artifactId>
     <packaging>jar</packaging>
     <dependencies>
-<!--        todo should be removed. Pass Clock via constructor. Give up on records. -->
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>system-time</artifactId>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

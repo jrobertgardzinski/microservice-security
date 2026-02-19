@@ -6,18 +6,24 @@ import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenExpiredEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenPassedEvent;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.config.SessionConfig;
 import com.jrobertgardzinski.security.domain.vo.Email;
 import com.jrobertgardzinski.security.domain.vo.RefreshToken;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenExpiration;
 import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
 
+import java.time.Clock;
 import java.util.function.Function;
 
 public class RefreshSession implements Function<SessionRefreshRequest, RefreshTokenEvent> {
     private final AuthorizationDataRepository authorizationDataRepository;
+    private final Clock clock;
+    private final SessionConfig config;
 
-    public RefreshSession(AuthorizationDataRepository authorizationDataRepository) {
+    public RefreshSession(AuthorizationDataRepository authorizationDataRepository, Clock clock, SessionConfig config) {
         this.authorizationDataRepository = authorizationDataRepository;
+        this.clock = clock;
+        this.config = config;
     }
 
     @Override
@@ -29,10 +35,11 @@ public class RefreshSession implements Function<SessionRefreshRequest, RefreshTo
             return new NoRefreshTokenFoundEvent(email);
         }
         authorizationDataRepository.deleteBy(email);
-        if (refreshTokenExpiration.hasExpired()) {
+        if (refreshTokenExpiration.hasExpired(clock)) {
             return new RefreshTokenExpiredEvent(email);
         }
         return new RefreshTokenPassedEvent(
-                authorizationDataRepository.create(SessionTokens.createFor(email)));
+                authorizationDataRepository.create(
+                        SessionTokens.createFor(email, config.refreshTokenValidityHours(), config.accessTokenValidityHours(), clock)));
     }
 }
