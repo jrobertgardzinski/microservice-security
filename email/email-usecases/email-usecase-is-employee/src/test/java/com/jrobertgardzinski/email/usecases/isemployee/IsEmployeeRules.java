@@ -17,7 +17,7 @@ public class IsEmployeeRules {
 
     @When("checking if {string} is an employee")
     public void w(String email) {
-        result = isEmployee.test(Email.of(email));
+        result = isEmployee.isSatisfiedBy(Email.of(email));
     }
 
     @Then("it is confirmed")
