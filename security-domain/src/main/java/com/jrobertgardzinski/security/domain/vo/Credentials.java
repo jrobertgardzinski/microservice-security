@@ -1,0 +1,9 @@
+package com.jrobertgardzinski.security.domain.vo;
+
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
+
+public record Credentials(
+        Email email,
+        PlaintextPassword plaintextPassword
+) {
+}
