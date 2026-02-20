@@ -6,7 +6,8 @@ import com.jrobertgardzinski.security.application.usecase.RefreshSessionUseCase;
 import com.jrobertgardzinski.security.application.usecase.RegisterResult;
 import com.jrobertgardzinski.security.application.usecase.RegisterUseCase;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenEvent;
-import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
+import com.jrobertgardzinski.security.domain.vo.Credentials;
+import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
 
 public class SecurityService {
@@ -24,8 +25,8 @@ public class SecurityService {
         return registerUseCase.execute(email, password);
     }
 
-    public AuthenticationResult authenticate(AuthenticationRequest authenticationRequest) {
-        return authenticateUseCase.apply(authenticationRequest);
+    public AuthenticationResult authenticate(IpAddress ip, Credentials credentials) {
+        return authenticateUseCase.apply(ip, credentials);
     }
 
     public RefreshTokenEvent refreshSession(SessionRefreshRequest sessionRefreshRequest) {
