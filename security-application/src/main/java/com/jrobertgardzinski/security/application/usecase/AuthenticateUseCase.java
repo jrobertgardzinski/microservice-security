@@ -18,9 +18,9 @@ import com.jrobertgardzinski.security.domain.event.brute.force.protection.BruteF
 import com.jrobertgardzinski.security.domain.event.brute.force.protection.Passed;
 import com.jrobertgardzinski.security.domain.vo.*;
 
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
-public class AuthenticateUseCase implements Function<AuthenticationRequest, AuthenticationResult> {
+public class AuthenticateUseCase implements BiFunction<IpAddress, Credentials, AuthenticationResult> {
     private final VerifyCredentials verifyCredentials;
     private final BruteForceGuard bruteForceGuard;
     private final GenerateSession generateSession;
@@ -36,15 +36,10 @@ public class AuthenticateUseCase implements Function<AuthenticationRequest, Auth
     }
 
     @Override
-    public AuthenticationResult apply(AuthenticationRequest authenticationRequest) {
-        IpAddress ip = authenticationRequest.ipAddress();
+    public AuthenticationResult apply(IpAddress ip, Credentials credentials) {
         BruteForceProtectionEvent bruteForceProtectionEvent = bruteForceGuard.apply(ip);
         switch (bruteForceProtectionEvent) {
             case Passed passed -> {
-                Credentials credentials = new Credentials(
-                        authenticationRequest.email(),
-                        authenticationRequest.plaintextPassword()
-                );
                 AuthenticationEvent authenticationEvent = verifyCredentials.apply(credentials);
                 switch (authenticationEvent) {
                     case AuthenticationPassedEvent authenticationPassedEvent -> {

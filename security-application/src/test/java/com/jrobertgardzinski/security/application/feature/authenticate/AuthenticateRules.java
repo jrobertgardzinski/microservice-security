@@ -118,12 +118,8 @@ public class AuthenticateRules {
 
     @When("the user authenticates with email {string} and password {string}")
     public void whenUserAuthenticates(String email, String password) {
-        AuthenticationRequest request = new AuthenticationRequest(
-                ipAddress,
-                new Email(email),
-                plaintextPasswordFactory.create(password)
-        );
-        result = authenticateUseCase.apply(request);
+        Credentials credentials = new Credentials(new Email(email), plaintextPasswordFactory.create(password));
+        result = authenticateUseCase.apply(ipAddress, credentials);
     }
 
     // then
