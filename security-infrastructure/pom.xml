@@ -13,11 +13,7 @@
     <dependencies>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-model</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-persistence</artifactId>
+            <artifactId>security-domain</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
@@ -29,7 +25,7 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>hash-algorithm-argon2</artifactId>
+            <artifactId>hash-algorithm</artifactId>
         </dependency>
 <!--        todo a place for micronaut starter-->
 

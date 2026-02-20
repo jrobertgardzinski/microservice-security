@@ -2,13 +2,16 @@ package com.jrobertgardzinski.security.system.feature;
 
 import com.jrobertgardzinski.security.domain.vo.*;
 import com.jrobertgardzinski.hash.algorithm.domain.HashAlgorithmPort;
+import com.jrobertgardzinski.password.domain.PasswordHash;
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
+import com.jrobertgardzinski.salt.config.SaltConfig;
+import com.jrobertgardzinski.salt.domain.Salt;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.event.registration.PossibleRaceCondition;
 import com.jrobertgardzinski.security.domain.event.registration.RegistrationEvent;
 import com.jrobertgardzinski.security.domain.event.registration.RegistrationPassedEvent;
 import com.jrobertgardzinski.security.domain.event.registration.UserAlreadyExistsEvent;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.config.SaltConfig;
 
 import java.util.function.Function;
 

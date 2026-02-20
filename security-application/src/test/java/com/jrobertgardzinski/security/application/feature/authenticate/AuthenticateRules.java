@@ -1,9 +1,12 @@
 package com.jrobertgardzinski.security.application.feature.authenticate;
 
-import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
+import com.jrobertgardzinski.password.domain.PasswordHash;
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
+import com.jrobertgardzinski.password.factory.PasswordFactory;
+import com.jrobertgardzinski.password.policy.PasswordPolicyAdapter;
+import com.jrobertgardzinski.salt.domain.Salt;
 import com.jrobertgardzinski.security.domain.config.BruteForceConfig;
-import com.jrobertgardzinski.security.domain.validation.ConfigurablePasswordPolicyAdapter;
-import com.jrobertgardzinski.security.domain.config.SessionConfig;
+import com.jrobertgardzinski.token.config.SessionConfig;
 import com.jrobertgardzinski.security.system.event.AuthenticationBlocked;
 import com.jrobertgardzinski.security.system.event.AuthenticationFailed;
 import com.jrobertgardzinski.security.system.event.AuthenticationPassed;
@@ -21,7 +24,10 @@ import com.jrobertgardzinski.security.system.stub.StubAuthorizationDataRepositor
 import com.jrobertgardzinski.security.application.usecase.AuthenticateUseCase;
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.vo.*;
+import com.jrobertgardzinski.security.domain.vo.Credentials;
+import com.jrobertgardzinski.security.domain.vo.Email;
+import com.jrobertgardzinski.security.domain.vo.FailedAuthenticationDetails;
+import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -38,7 +44,7 @@ public class AuthenticateRules {
     private final StubHashAlgorithm hashAlgorithm;
     private final StubFailedAuthenticationRepository failedAuthenticationRepository;
     private final StubAuthenticationBlockRepository authenticationBlockRepository;
-    private final PlaintextPasswordFactory plaintextPasswordFactory;
+    private final PasswordFactory passwordFactory;
 
     private IpAddress ipAddress;
     private AuthenticationResult result;
@@ -52,7 +58,7 @@ public class AuthenticateRules {
         this.hashAlgorithm = hashAlgorithm;
         this.failedAuthenticationRepository = failedAuthenticationRepository;
         this.authenticationBlockRepository = authenticationBlockRepository;
-        this.plaintextPasswordFactory = new PlaintextPasswordFactory(new ConfigurablePasswordPolicyAdapter());
+        this.passwordFactory = new PasswordFactory(new PasswordPolicyAdapter());
         Clock clock = Clock.systemDefaultZone();
         VerifyCredentials verifyCredentials = new VerifyCredentials(userRepository, hashAlgorithm);
         BruteForceGuard bruteForceGuard = new BruteForceGuard(failedAuthenticationRepository, authenticationBlockRepository,
@@ -69,7 +75,7 @@ public class AuthenticateRules {
     @Given("a registered user with email {string} and password {string}")
     public void givenRegisteredUser(String email, String password) {
         Email e = new Email(email);
-        PlaintextPassword p = plaintextPasswordFactory.create(password);
+        PlaintextPassword p = passwordFactory.create(password);
         Salt salt = Salt.generate(16);
         PasswordHash passwordHash = hashAlgorithm.hash(p, salt);
         try {
@@ -118,12 +124,8 @@ public class AuthenticateRules {
 
     @When("the user authenticates with email {string} and password {string}")
     public void whenUserAuthenticates(String email, String password) {
-        AuthenticationRequest request = new AuthenticationRequest(
-                ipAddress,
-                new Email(email),
-                plaintextPasswordFactory.create(password)
-        );
-        result = authenticateUseCase.apply(request);
+        Credentials credentials = new Credentials(new Email(email), passwordFactory.create(password));
+        result = authenticateUseCase.apply(ipAddress, credentials);
     }
 
     // then

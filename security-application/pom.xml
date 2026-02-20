@@ -13,23 +13,27 @@
     <dependencies>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-event</artifactId>
+            <artifactId>security-domain</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-model</artifactId>
+            <artifactId>password</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>salt</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>token</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>security-system</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-persistence</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -40,23 +44,13 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>hash-algorithm-domain</artifactId>
+            <artifactId>hash-algorithm</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>io.vavr</groupId>
-            <artifactId>vavr</artifactId>
-            <version>0.10.4</version>
-        </dependency>
-
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>bdd-test-starter</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-config</artifactId>
         </dependency>
     </dependencies>
 
@@ -69,6 +63,7 @@
                 <configuration>
                     <includes>
                         <include>**/RunCucumberTest.java</include>
+                        <include>**/*Test.java</include>
                     </includes>
                 </configuration>
             </plugin>

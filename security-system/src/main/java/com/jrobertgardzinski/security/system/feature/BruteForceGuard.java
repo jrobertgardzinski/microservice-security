@@ -13,7 +13,7 @@ import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
 public class BruteForceGuard implements Function<IpAddress, BruteForceProtectionEvent> {
@@ -44,7 +44,7 @@ public class BruteForceGuard implements Function<IpAddress, BruteForceProtection
         FailuresCount failuresCount = failedAuthenticationRepository.countFailuresBy(ipAddress, since);
         if (failuresCount.hasReachedTheLimit(config.maxFailures())) {
             failedAuthenticationRepository.removeAllFor(ipAddress);
-            int minutes = new Random().nextInt(config.maxBlockMinutes() - config.minBlockMinutes() + 1) + config.minBlockMinutes();
+            int minutes = ThreadLocalRandom.current().nextInt(config.minBlockMinutes(), config.maxBlockMinutes() + 1);
             LocalDateTime until = LocalDateTime.now(clock).plusMinutes(minutes);
             AuthenticationBlock authenticationBlock = authenticationBlockRepository.create(
                     new AuthenticationBlock(

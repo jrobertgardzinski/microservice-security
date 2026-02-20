@@ -13,7 +13,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "Setting security-domain version to $NEW_VERSION"
 
-# 1. Set version of security-domain and its child modules
+# 1. Set version in security-domain/pom.xml
 mvn -f "$SCRIPT_DIR/security-domain/pom.xml" versions:set \
   -DnewVersion="$NEW_VERSION" \
   -DgenerateBackupPoms=false

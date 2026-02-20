@@ -3,8 +3,8 @@ package com.jrobertgardzinski.security.system.stub;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.vo.Email;
-import com.jrobertgardzinski.security.domain.vo.RefreshToken;
-import com.jrobertgardzinski.security.domain.vo.RefreshTokenExpiration;
+import com.jrobertgardzinski.token.domain.RefreshToken;
+import com.jrobertgardzinski.token.domain.RefreshTokenExpiration;
 
 import java.util.HashMap;
 import java.util.Map;
