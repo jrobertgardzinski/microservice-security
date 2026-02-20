@@ -4,7 +4,7 @@ import com.jrobertgardzinski.security.system.feature.GenerateSession;
 import com.jrobertgardzinski.security.system.stub.StubAuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
-import com.jrobertgardzinski.security.domain.config.SessionConfig;
+import com.jrobertgardzinski.token.config.SessionConfig;
 import com.jrobertgardzinski.security.domain.vo.Email;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;

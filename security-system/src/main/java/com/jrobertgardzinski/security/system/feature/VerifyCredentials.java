@@ -8,8 +8,8 @@ import com.jrobertgardzinski.security.domain.event.authentication.Authentication
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
 import com.jrobertgardzinski.security.domain.vo.Email;
-import com.jrobertgardzinski.security.domain.vo.PasswordHash;
-import com.jrobertgardzinski.security.domain.vo.PlaintextPassword;
+import com.jrobertgardzinski.password.domain.PasswordHash;
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
 
 import java.util.Optional;
 import java.util.function.Function;
