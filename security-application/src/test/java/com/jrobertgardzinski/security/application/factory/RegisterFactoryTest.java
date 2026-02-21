@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.application.factory;
 
-import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
-import com.jrobertgardzinski.security.domain.validation.ConfigurablePasswordPolicyAdapter;
+import com.jrobertgardzinski.password.factory.PasswordFactory;
+import com.jrobertgardzinski.password.policy.PasswordPolicyAdapter;
 import com.jrobertgardzinski.security.domain.vo.UserRegistration;
 import org.junit.jupiter.api.Test;
 
@@ -11,8 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class RegisterFactoryTest {
 
     private final RegisterFactory factory = new RegisterFactory(
-            new PlaintextPasswordFactory(
-                    new ConfigurablePasswordPolicyAdapter()));
+            new PasswordFactory(new PasswordPolicyAdapter()));
 
     @Test
     void shouldThrowWhenEmailAndPasswordInvalid() {

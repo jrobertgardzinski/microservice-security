@@ -1,8 +1,8 @@
 package com.jrobertgardzinski.security.system.feature.register;
 
-import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
-import com.jrobertgardzinski.security.domain.validation.ConfigurablePasswordPolicyAdapter;
-import com.jrobertgardzinski.security.domain.config.SaltConfig;
+import com.jrobertgardzinski.password.factory.PasswordFactory;
+import com.jrobertgardzinski.password.policy.PasswordPolicyAdapter;
+import com.jrobertgardzinski.salt.config.SaltConfig;
 import com.jrobertgardzinski.security.system.feature.Register;
 import com.jrobertgardzinski.security.system.stub.StubHashAlgorithm;
 import com.jrobertgardzinski.security.system.stub.StubUserRepository;
@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class RegisterRules {
 
     private final Register register;
-    private final PlaintextPasswordFactory plaintextPasswordFactory = new PlaintextPasswordFactory(new ConfigurablePasswordPolicyAdapter());
+    private final PasswordFactory passwordFactory = new PasswordFactory(new PasswordPolicyAdapter());
     private RegistrationEvent result;
 
     public RegisterRules(StubUserRepository userRepository, StubHashAlgorithm hashAlgorithm) {
@@ -33,7 +33,7 @@ public class RegisterRules {
     public void givenAccountExists(String email) {
         UserRegistration registration = new UserRegistration(
                 new Email(email),
-                plaintextPasswordFactory.create("StrongPassword1#")
+                passwordFactory.create("StrongPassword1#")
         );
         register.apply(registration);
     }
@@ -44,7 +44,7 @@ public class RegisterRules {
     public void whenSystemReceivesRegistration(String email, String password) {
         UserRegistration registration = new UserRegistration(
                 new Email(email),
-                plaintextPasswordFactory.create(password)
+                passwordFactory.create(password)
         );
         result = register.apply(registration);
     }
