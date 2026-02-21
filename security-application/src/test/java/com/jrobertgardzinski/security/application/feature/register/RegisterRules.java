@@ -2,7 +2,6 @@ package com.jrobertgardzinski.security.application.feature.register;
 
 import com.jrobertgardzinski.password.factory.PasswordFactory;
 import com.jrobertgardzinski.password.policy.PasswordPolicyAdapter;
-import com.jrobertgardzinski.salt.config.SaltConfig;
 import com.jrobertgardzinski.security.application.factory.RegisterFactory;
 import com.jrobertgardzinski.security.system.stub.StubHashAlgorithm;
 import com.jrobertgardzinski.security.system.stub.StubUserRepository;
@@ -27,8 +26,7 @@ public class RegisterRules {
     private RegisterResult result;
 
     public RegisterRules(StubUserRepository stubUserRepository, StubHashAlgorithm stubHashAlgorithm) {
-        Register register = new Register(stubUserRepository, stubHashAlgorithm,
-                SaltConfig.builder().build());
+        Register register = new Register(stubUserRepository, stubHashAlgorithm);
         RegisterFactory registerFactory = new RegisterFactory(
                 new PasswordFactory(new PasswordPolicyAdapter()));
         this.registerUseCase = new RegisterUseCase(register, registerFactory);
