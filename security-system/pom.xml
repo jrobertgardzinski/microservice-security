@@ -33,7 +33,7 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>hash-algorithm</artifactId>
+            <artifactId>argon2</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -49,7 +49,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
                 <configuration>
                     <includes>
                         <include>**/RunCucumberTest.java</include>
@@ -59,7 +58,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.4.2</version>
                 <executions>
                     <execution>
                         <goals>

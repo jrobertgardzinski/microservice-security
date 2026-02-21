@@ -8,32 +8,22 @@
         <artifactId>ddd-sample</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
-    <groupId>com.jrobertgardzinski</groupId>
     <artifactId>security-domain</artifactId>
     <packaging>jar</packaging>
-
-    <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>password</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>token</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>unit-test-starter</artifactId>
-            <version>1.0.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -43,12 +33,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
             </plugin>
         </plugins>
     </build>

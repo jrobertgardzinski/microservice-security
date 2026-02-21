@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.system.stub;
 
-import com.jrobertgardzinski.hash.algorithm.domain.HashAlgorithmPort;
+import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.PasswordHash;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.salt.domain.Salt;

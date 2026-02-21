@@ -1,7 +1,5 @@
-package com.jrobertgardzinski.hash.algorithm.domain;
+package com.jrobertgardzinski.password.domain;
 
-import com.jrobertgardzinski.password.domain.PasswordHash;
-import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.salt.domain.Salt;
 
 public interface HashAlgorithmPort {
