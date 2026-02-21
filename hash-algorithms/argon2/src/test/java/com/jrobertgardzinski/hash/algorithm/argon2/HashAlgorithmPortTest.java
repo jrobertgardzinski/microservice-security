@@ -1,5 +1,6 @@
-package com.jrobertgardzinski.hash.algorithm.domain;
+package com.jrobertgardzinski.hash.algorithm.argon2;
 
+import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.PasswordHash;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.factory.PasswordFactory;

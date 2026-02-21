@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.feature;
 
 import com.jrobertgardzinski.security.domain.vo.*;
-import com.jrobertgardzinski.hash.algorithm.domain.HashAlgorithmPort;
+import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.PasswordHash;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.salt.config.SaltConfig;

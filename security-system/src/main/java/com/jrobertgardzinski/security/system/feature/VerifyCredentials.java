@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.system.feature;
 
-import com.jrobertgardzinski.hash.algorithm.domain.HashAlgorithmPort;
+import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationEvent;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationFailedEvent;
