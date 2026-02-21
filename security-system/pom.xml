@@ -13,22 +13,27 @@
     <dependencies>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-event</artifactId>
+            <artifactId>security-domain</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-model</artifactId>
+            <artifactId>password</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-persistence</artifactId>
+            <artifactId>salt</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>hash-algorithm-domain</artifactId>
+            <artifactId>token</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>hash-algorithm</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -36,11 +41,6 @@
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>bdd-test-starter</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-config</artifactId>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 

@@ -7,8 +7,10 @@ import com.jrobertgardzinski.security.domain.event.refresh.NoRefreshTokenFoundEv
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenExpiredEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenPassedEvent;
-import com.jrobertgardzinski.security.domain.config.SessionConfig;
 import com.jrobertgardzinski.security.domain.vo.*;
+import com.jrobertgardzinski.token.config.SessionConfig;
+import com.jrobertgardzinski.token.domain.RefreshToken;
+import com.jrobertgardzinski.token.domain.Token;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;

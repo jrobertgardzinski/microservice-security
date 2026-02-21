@@ -6,10 +6,10 @@ import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenExpiredEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenPassedEvent;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
-import com.jrobertgardzinski.security.domain.config.SessionConfig;
+import com.jrobertgardzinski.token.config.SessionConfig;
+import com.jrobertgardzinski.token.domain.RefreshToken;
+import com.jrobertgardzinski.token.domain.RefreshTokenExpiration;
 import com.jrobertgardzinski.security.domain.vo.Email;
-import com.jrobertgardzinski.security.domain.vo.RefreshToken;
-import com.jrobertgardzinski.security.domain.vo.RefreshTokenExpiration;
 import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
 
 import java.time.Clock;

@@ -1,7 +1,10 @@
 package com.jrobertgardzinski.security.system.feature.verifycredentials;
 
-import com.jrobertgardzinski.security.domain.factory.PlaintextPasswordFactory;
-import com.jrobertgardzinski.security.domain.validation.ConfigurablePasswordPolicyAdapter;
+import com.jrobertgardzinski.password.domain.PasswordHash;
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
+import com.jrobertgardzinski.password.factory.PasswordFactory;
+import com.jrobertgardzinski.password.policy.PasswordPolicyAdapter;
+import com.jrobertgardzinski.salt.domain.Salt;
 import com.jrobertgardzinski.security.system.feature.VerifyCredentials;
 import com.jrobertgardzinski.security.system.stub.StubHashAlgorithm;
 import com.jrobertgardzinski.security.system.stub.StubUserRepository;
@@ -9,7 +12,8 @@ import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationEvent;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationFailedEvent;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
-import com.jrobertgardzinski.security.domain.vo.*;
+import com.jrobertgardzinski.security.domain.vo.Credentials;
+import com.jrobertgardzinski.security.domain.vo.Email;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -21,7 +25,7 @@ public class VerifyCredentialsRules {
     private final VerifyCredentials verifyCredentials;
     private final StubUserRepository userRepository;
     private final StubHashAlgorithm hashAlgorithm;
-    private final PlaintextPasswordFactory plaintextPasswordFactory = new PlaintextPasswordFactory(new ConfigurablePasswordPolicyAdapter());
+    private final PasswordFactory passwordFactory = new PasswordFactory(new PasswordPolicyAdapter());
 
     private AuthenticationEvent result;
 
@@ -36,7 +40,7 @@ public class VerifyCredentialsRules {
     @Given("the system has a registered account with email {string} and password {string}")
     public void givenRegisteredAccount(String email, String password) {
         Email e = new Email(email);
-        PlaintextPassword p = plaintextPasswordFactory.create(password);
+        PlaintextPassword p = passwordFactory.create(password);
         Salt salt = Salt.generate(16);
         PasswordHash passwordHash = hashAlgorithm.hash(p, salt);
         try {
@@ -52,7 +56,7 @@ public class VerifyCredentialsRules {
     public void whenSystemReceivesCredentials(String email, String password) {
         Credentials credentials = new Credentials(
                 new Email(email),
-                plaintextPasswordFactory.create(password)
+                passwordFactory.create(password)
         );
         result = verifyCredentials.apply(credentials);
     }

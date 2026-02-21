@@ -3,8 +3,7 @@ package com.jrobertgardzinski.security.system.feature;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
-import com.jrobertgardzinski.security.domain.config.SessionConfig;
-import com.jrobertgardzinski.security.domain.vo.*;
+import com.jrobertgardzinski.token.config.SessionConfig;
 
 import java.time.Clock;
 import java.util.function.Function;
@@ -23,12 +22,11 @@ public class GenerateSession implements Function<AuthenticationPassedEvent, Sess
     @Override
     public SessionTokens apply(AuthenticationPassedEvent authenticationPassedEvent) {
         return authorizationDataRepository.create(
-                new SessionTokens(
+                SessionTokens.createFor(
                         authenticationPassedEvent.email(),
-                        new RefreshToken(Token.random()),
-                        new AccessToken(Token.random()),
-                        new RefreshTokenExpiration(TokenExpiration.validInHours(config.refreshTokenValidityHours(), clock)),
-                        new AuthorizationTokenExpiration(TokenExpiration.validInHours(config.accessTokenValidityHours(), clock))
+                        config.refreshTokenValidityHours(),
+                        config.accessTokenValidityHours(),
+                        clock
                 )
         );
     }
