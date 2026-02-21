@@ -4,7 +4,6 @@ import com.jrobertgardzinski.password.domain.PasswordHash;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.factory.PasswordFactory;
 import com.jrobertgardzinski.password.policy.PasswordPolicyAdapter;
-import com.jrobertgardzinski.salt.domain.Salt;
 import com.jrobertgardzinski.security.domain.config.BruteForceConfig;
 import com.jrobertgardzinski.token.config.SessionConfig;
 import com.jrobertgardzinski.security.system.event.AuthenticationBlocked;
@@ -76,8 +75,7 @@ public class AuthenticateRules {
     public void givenRegisteredUser(String email, String password) {
         Email e = new Email(email);
         PlaintextPassword p = passwordFactory.create(password);
-        Salt salt = Salt.generate(16);
-        PasswordHash passwordHash = hashAlgorithm.hash(p, salt);
+        PasswordHash passwordHash = hashAlgorithm.hash(p);
         try {
             userRepository.save(new User(e, passwordHash));
         } catch (Exception ex) {

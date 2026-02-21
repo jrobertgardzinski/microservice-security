@@ -8,13 +8,7 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
-        <module>email</module>
-        <module>password</module>
-        <module>salt</module>
-        <module>token</module>
         <module>security-domain</module>
-        <module>hash-algorithms</module>
-        <module>security-system</module>
         <module>security-application</module>
         <module>security-infrastructure</module>
     </modules>
@@ -61,21 +55,12 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-<!--            internal modules-->
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>password</artifactId>
+                <artifactId>libs-bom</artifactId>
                 <version>1.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>salt</artifactId>
-                <version>1.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>token</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
@@ -91,22 +76,6 @@
                 <groupId>com.jrobertgardzinski</groupId>
                 <artifactId>security-domain</artifactId>
                 <version>${security-domain.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>argon2</artifactId>
-                <version>1.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-system</artifactId>
-                <version>0.1-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-system</artifactId>
-                <version>0.1-SNAPSHOT</version>
-                <type>test-jar</type>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
