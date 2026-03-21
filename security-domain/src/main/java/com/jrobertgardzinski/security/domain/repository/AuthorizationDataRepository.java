@@ -2,8 +2,8 @@ package com.jrobertgardzinski.security.domain.repository;
 
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.vo.Email;
-import com.jrobertgardzinski.token.domain.RefreshToken;
-import com.jrobertgardzinski.token.domain.RefreshTokenExpiration;
+import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
+import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
 
 import java.util.Optional;
 

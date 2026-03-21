@@ -1,11 +1,8 @@
 package com.jrobertgardzinski.security.application.feature.authenticate;
 
-import com.jrobertgardzinski.password.domain.PasswordHash;
+import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.password.factory.PasswordFactory;
-import com.jrobertgardzinski.password.policy.PasswordPolicyAdapter;
 import com.jrobertgardzinski.security.domain.config.BruteForceConfig;
-import com.jrobertgardzinski.token.config.SessionConfig;
 import com.jrobertgardzinski.security.system.event.AuthenticationBlocked;
 import com.jrobertgardzinski.security.system.event.AuthenticationFailed;
 import com.jrobertgardzinski.security.system.event.AuthenticationPassed;
@@ -35,6 +32,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyInt;
 
 public class AuthenticateRules {
 
@@ -43,7 +41,6 @@ public class AuthenticateRules {
     private final StubHashAlgorithm hashAlgorithm;
     private final StubFailedAuthenticationRepository failedAuthenticationRepository;
     private final StubAuthenticationBlockRepository authenticationBlockRepository;
-    private final PasswordFactory passwordFactory;
 
     private IpAddress ipAddress;
     private AuthenticationResult result;
@@ -57,13 +54,12 @@ public class AuthenticateRules {
         this.hashAlgorithm = hashAlgorithm;
         this.failedAuthenticationRepository = failedAuthenticationRepository;
         this.authenticationBlockRepository = authenticationBlockRepository;
-        this.passwordFactory = new PasswordFactory(new PasswordPolicyAdapter());
         Clock clock = Clock.systemDefaultZone();
         VerifyCredentials verifyCredentials = new VerifyCredentials(userRepository, hashAlgorithm);
         BruteForceGuard bruteForceGuard = new BruteForceGuard(failedAuthenticationRepository, authenticationBlockRepository,
                 clock, BruteForceConfig.builder().build());
         GenerateSession generateSession = new GenerateSession(authorizationDataRepository,
-                clock, SessionConfig.builder().build());
+                clock, anyInt(), anyInt());
         CleanBruteForceRecords cleanBruteForceRecords = new CleanBruteForceRecords(failedAuthenticationRepository, authenticationBlockRepository);
         UpdateBruteForceRecords updateBruteForceRecords = new UpdateBruteForceRecords(failedAuthenticationRepository, clock);
         this.authenticateUseCase = new AuthenticateUseCase(verifyCredentials, bruteForceGuard, generateSession, cleanBruteForceRecords, updateBruteForceRecords);
@@ -74,10 +70,10 @@ public class AuthenticateRules {
     @Given("a registered user with email {string} and password {string}")
     public void givenRegisteredUser(String email, String password) {
         Email e = new Email(email);
-        PlaintextPassword p = passwordFactory.create(password);
-        PasswordHash passwordHash = hashAlgorithm.hash(p);
+        PlaintextPassword p = PlaintextPassword.of(password);
+        HashedPassword hashedPassword = hashAlgorithm.hash(p);
         try {
-            userRepository.save(new User(e, passwordHash));
+            userRepository.save(new User(e, hashedPassword));
         } catch (Exception ex) {
             fail("Failed to save user in background setup");
         }
@@ -125,7 +121,7 @@ public class AuthenticateRules {
         AuthenticationRequest request = new AuthenticationRequest(
                 ipAddress,
                 new Email(email),
-                passwordFactory.create(password)
+                PlaintextPassword.of(password)
         );
         result = authenticateUseCase.apply(request);
     }
@@ -146,4 +142,5 @@ public class AuthenticateRules {
     public void thenAuthenticationBlocked() {
         assertInstanceOf(AuthenticationBlocked.class, result);
     }
+
 }
