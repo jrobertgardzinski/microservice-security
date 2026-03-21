@@ -1,17 +1,23 @@
 package com.jrobertgardzinski.security.application.factory;
 
-import com.jrobertgardzinski.password.factory.PasswordFactory;
-import com.jrobertgardzinski.password.policy.PasswordPolicyAdapter;
+import com.jrobertgardzinski.password.policy.*;
 import com.jrobertgardzinski.security.domain.vo.UserRegistration;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static com.jrobertgardzinski.security.application.TestData.VALID_PASSWORD;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RegisterFactoryTest {
 
-    private final RegisterFactory factory = new RegisterFactory(
-            new PasswordFactory(new PasswordPolicyAdapter()));
+    private final RegisterFactory factory = new RegisterFactory(List.of(
+            new _MinLengthConstraint(12),
+            new _ContainsLowercaseConstraint(),
+            new _ContainsUppercaseConstraint(),
+            new _ContainsDigitConstraint(),
+            new _ContainsSpecialCharConstraint("#?!")
+    ));
 
     @Test
     void shouldThrowWhenEmailAndPasswordInvalid() {
@@ -23,7 +29,7 @@ class RegisterFactoryTest {
         assertTrue(exception.hasEmailErrors());
         assertTrue(exception.hasPasswordErrors());
         assertTrue(exception.emailErrors().stream().anyMatch(e -> e.contains("does not meet regex")));
-        assertTrue(exception.passwordErrors().stream().anyMatch(e -> e.contains("at least 12 characters")));
+        assertTrue(exception.passwordErrors().stream().anyMatch(e -> e.contains("MIN_LENGTH_NOT_MET")));
     }
 
     @Test

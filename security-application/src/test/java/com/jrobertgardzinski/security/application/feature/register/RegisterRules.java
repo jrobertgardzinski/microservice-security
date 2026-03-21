@@ -1,7 +1,6 @@
 package com.jrobertgardzinski.security.application.feature.register;
 
-import com.jrobertgardzinski.password.factory.PasswordFactory;
-import com.jrobertgardzinski.password.policy.PasswordPolicyAdapter;
+import com.jrobertgardzinski.password.policy.*;
 import com.jrobertgardzinski.security.application.factory.RegisterFactory;
 import com.jrobertgardzinski.security.system.stub.StubHashAlgorithm;
 import com.jrobertgardzinski.security.system.stub.StubUserRepository;
@@ -15,6 +14,8 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
+import java.util.List;
+
 import static com.jrobertgardzinski.security.application.TestData.VALID_PASSWORD;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,8 +28,12 @@ public class RegisterRules {
 
     public RegisterRules(StubUserRepository stubUserRepository, StubHashAlgorithm stubHashAlgorithm) {
         Register register = new Register(stubUserRepository, stubHashAlgorithm);
-        RegisterFactory registerFactory = new RegisterFactory(
-                new PasswordFactory(new PasswordPolicyAdapter()));
+        RegisterFactory registerFactory = new RegisterFactory(List.of(
+                new _MinLengthConstraint(12),
+                new _ContainsLowercaseConstraint(),
+                new _ContainsUppercaseConstraint(),
+                new _ContainsDigitConstraint(),
+                new _ContainsSpecialCharConstraint("#?!")));
         this.registerUseCase = new RegisterUseCase(register, registerFactory);
         this.userRepository = stubUserRepository;
     }

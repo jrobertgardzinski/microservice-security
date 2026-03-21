@@ -1,12 +1,13 @@
 package com.jrobertgardzinski.security.domain.entity;
 
 import com.jrobertgardzinski.security.domain.vo.Email;
-import com.jrobertgardzinski.token.domain.AccessToken;
-import com.jrobertgardzinski.token.domain.AuthorizationTokenExpiration;
-import com.jrobertgardzinski.token.domain.RefreshToken;
-import com.jrobertgardzinski.token.domain.RefreshTokenExpiration;
-import com.jrobertgardzinski.token.domain.Token;
-import com.jrobertgardzinski.token.domain.TokenExpiration;
+import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
+import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
+import com.jrobertgardzinski.security.domain.vo.token.Token;
+import com.jrobertgardzinski.security.domain.vo.token.expiration.AuthorizationTokenExpiration;
+import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
+import com.jrobertgardzinski.security.domain.vo.token.expiration.TokenExpiration;
+
 
 import java.time.Clock;
 import java.time.LocalDateTime;

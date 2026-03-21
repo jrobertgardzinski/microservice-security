@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.jrobertgardzinski</groupId>
-        <artifactId>ddd-sample</artifactId>
+        <artifactId>microservice-security</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
     <artifactId>security-domain</artifactId>
@@ -14,11 +14,8 @@
     <dependencies>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>password</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>token</artifactId>
+            <artifactId>password-domain</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>

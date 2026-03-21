@@ -1,8 +1,8 @@
 package com.jrobertgardzinski.security.application.feature.input.policy;
 
-import com.jrobertgardzinski.password.domain.PasswordPolicy;
-import com.jrobertgardzinski.password.factory.PasswordFactory;
-import com.jrobertgardzinski.password.policy.PasswordPolicyAdapter;
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
+import com.jrobertgardzinski.password.policy.*;
+import com.jrobertgardzinski.util.constraint.ErrorConstraint;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -12,14 +12,23 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class StrongPasswordPolicyRules {
 
-    private final PasswordPolicy strictPolicy = new PasswordPolicyAdapter();
-    // lenient factory — no requirements, creates PlaintextPassword from any string
-    private final PasswordFactory lenientFactory = new PasswordFactory(() -> List.of());
+    private final List<ErrorConstraint<PlaintextPassword>> policy = List.of(
+            new _MinLengthConstraint(12),
+            new _ContainsLowercaseConstraint(),
+            new _ContainsUppercaseConstraint(),
+            new _ContainsDigitConstraint(),
+            new _ContainsSpecialCharConstraint("#?!")
+    );
+
     private List<String> violations;
 
     @When("I validate {string} against strong password policy")
     public void w(String password) {
-        violations = strictPolicy.validate(lenientFactory.create(password));
+        PlaintextPassword p = PlaintextPassword.of(password);
+        violations = policy.stream()
+                .filter(c -> !c.isSatisfied(p))
+                .map(ErrorConstraint::code)
+                .toList();
     }
 
     @Then("the policy reports {string}")
