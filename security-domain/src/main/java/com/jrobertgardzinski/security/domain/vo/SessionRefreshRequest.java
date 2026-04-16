@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.security.domain.vo;
 
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 
 /**

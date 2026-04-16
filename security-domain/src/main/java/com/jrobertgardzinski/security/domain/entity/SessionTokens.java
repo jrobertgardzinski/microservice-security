@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.domain.entity;
 
-import com.jrobertgardzinski.security.domain.vo.Email;
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 import com.jrobertgardzinski.security.domain.vo.token.Token;

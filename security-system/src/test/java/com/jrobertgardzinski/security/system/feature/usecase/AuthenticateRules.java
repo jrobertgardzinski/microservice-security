@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.security.system.feature.usecase;
 
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.config.BruteForceConfig;
@@ -9,7 +10,6 @@ import com.jrobertgardzinski.security.config.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
-import com.jrobertgardzinski.security.domain.vo.Email;
 import com.jrobertgardzinski.security.domain.vo.FailedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.system.event.AuthenticationBlocked;
@@ -33,6 +33,7 @@ import io.cucumber.java.en.When;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -71,11 +72,11 @@ public class AuthenticateRules {
 
     @Given("a registered user with email {string} and password {string}")
     public void givenRegisteredUser(String email, String password) {
-        Email e = new Email(email);
+        Email e = Email.of(email);
         PlaintextPassword p = PlaintextPassword.of(password);
         HashedPassword hashedPassword = hashAlgorithm.hash(p);
         try {
-            userRepository.save(new User(e, hashedPassword));
+            userRepository.save(new User(UUID.randomUUID(), e, hashedPassword));
         } catch (Exception ex) {
             fail("Failed to save user in background setup");
         }
@@ -122,7 +123,7 @@ public class AuthenticateRules {
     public void whenUserAuthenticates(String email, String password) {
         AuthenticationRequest request = new AuthenticationRequest(
                 ipAddress,
-                new Email(email),
+                Email.of(email),
                 PlaintextPassword.of(password)
         );
         result = authenticateUseCase.apply(request);

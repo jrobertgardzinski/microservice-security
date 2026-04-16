@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.security.system.feature.session;
 
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.config.AccessTokenValidityHours;
 import com.jrobertgardzinski.security.config.RefreshTokenValidityHours;
 import com.jrobertgardzinski.security.config.SessionTokensConfig;
@@ -44,7 +45,7 @@ public class RefreshSessionRules {
 
     @Given("the system holds a session for email {string}")
     public void givenSystemHoldsSession(String emailValue) {
-        email = new Email(emailValue);
+        email = Email.of(emailValue);
     }
 
     // given

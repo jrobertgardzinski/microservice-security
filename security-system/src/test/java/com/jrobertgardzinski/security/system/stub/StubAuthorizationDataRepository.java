@@ -1,8 +1,8 @@
 package com.jrobertgardzinski.security.system.stub;
 
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
-import com.jrobertgardzinski.security.domain.vo.Email;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
 

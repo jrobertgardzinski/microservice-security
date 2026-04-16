@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.domain.repository;
 
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.vo.Email;
 
 import java.util.Optional;
 

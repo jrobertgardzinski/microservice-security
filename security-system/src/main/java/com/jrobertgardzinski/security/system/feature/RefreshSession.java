@@ -6,8 +6,8 @@ import com.jrobertgardzinski.security.domain.event.refresh.NoRefreshTokenFoundEv
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenExpiredEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenPassedEvent;
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
-import com.jrobertgardzinski.security.domain.vo.Email;
 import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;

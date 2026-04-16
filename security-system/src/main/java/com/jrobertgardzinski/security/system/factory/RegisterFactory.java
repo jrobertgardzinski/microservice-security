@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.factory;
 
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.security.domain.vo.Email;
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.vo.UserRegistration;
 import com.jrobertgardzinski.util.constraint.ErrorConstraint;
 
@@ -17,7 +17,7 @@ public class RegisterFactory {
     }
 
     public UserRegistration create(String email, String plaintextPassword) throws UserRegistrationValidationException {
-        Validate<Email> emailValidate = new Validate<>(() -> new Email(email));
+        Validate<Email> emailValidate = new Validate<>(() -> Email.of(email));
 
         List<String> passwordErrors;
         PlaintextPassword password = null;

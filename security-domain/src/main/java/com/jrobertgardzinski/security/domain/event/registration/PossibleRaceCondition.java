@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.domain.event.registration;
 
-import com.jrobertgardzinski.security.domain.vo.Email;
+import com.jrobertgardzinski.email.domain.Email;
 
 public record PossibleRaceCondition() implements RegistrationFailedEvent {
     @Override
