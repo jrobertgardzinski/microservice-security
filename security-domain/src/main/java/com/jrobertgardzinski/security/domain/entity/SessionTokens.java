@@ -12,6 +12,9 @@ import com.jrobertgardzinski.security.domain.vo.token.expiration.TokenExpiration
 import java.time.Clock;
 import java.time.LocalDateTime;
 
+/**
+ * An active session represented by a pair of tokens.
+ */
 public record SessionTokens(
         Email email,
         RefreshToken refreshToken,
