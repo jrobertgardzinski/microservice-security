@@ -2,6 +2,9 @@ package com.jrobertgardzinski.security.domain.vo;
 
 import java.util.Objects;
 
+/**
+ * Network address from which a request originates.
+ */
 public record IpAddress (String value) {
 
     public IpAddress {

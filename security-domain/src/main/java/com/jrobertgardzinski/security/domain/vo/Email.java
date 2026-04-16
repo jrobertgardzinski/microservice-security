@@ -2,6 +2,9 @@ package com.jrobertgardzinski.security.domain.vo;
 
 import java.util.Objects;
 
+/**
+ * Unique identifier of a user within the system.
+ */
 public record Email(
         String value
 ) {
