@@ -1,8 +1,8 @@
 package com.jrobertgardzinski.security.system.stub;
 
 import com.jrobertgardzinski.security.domain.entity.User;
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.Email;
 
 import java.util.HashSet;
 import java.util.Optional;

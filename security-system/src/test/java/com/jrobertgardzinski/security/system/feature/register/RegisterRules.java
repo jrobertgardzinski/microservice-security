@@ -4,7 +4,7 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.event.registration.RegistrationEvent;
 import com.jrobertgardzinski.security.domain.event.registration.RegistrationPassedEvent;
 import com.jrobertgardzinski.security.domain.event.registration.UserAlreadyExistsEvent;
-import com.jrobertgardzinski.security.domain.vo.Email;
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.vo.UserRegistration;
 import com.jrobertgardzinski.security.system.feature.Register;
 import com.jrobertgardzinski.security.system.stub.StubHashAlgorithm;
@@ -29,7 +29,7 @@ public class RegisterRules {
     @Given("the system already has an account with email {string}")
     public void givenAccountExists(String email) {
         UserRegistration registration = new UserRegistration(
-                new Email(email),
+                Email.of(email),
                 PlaintextPassword.of("StrongPassword1#")
         );
         register.apply(registration);
@@ -40,7 +40,7 @@ public class RegisterRules {
     @When("the system receives a registration with email {string} and password {string}")
     public void whenSystemReceivesRegistration(String email, String password) {
         UserRegistration registration = new UserRegistration(
-                new Email(email),
+                Email.of(email),
                 PlaintextPassword.of(password)
         );
         result = register.apply(registration);

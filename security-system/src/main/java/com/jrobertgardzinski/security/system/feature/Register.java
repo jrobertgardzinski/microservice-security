@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.security.system.feature;
 
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
@@ -9,8 +10,9 @@ import com.jrobertgardzinski.security.domain.event.registration.RegistrationEven
 import com.jrobertgardzinski.security.domain.event.registration.RegistrationPassedEvent;
 import com.jrobertgardzinski.security.domain.event.registration.UserAlreadyExistsEvent;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.*;
+import com.jrobertgardzinski.security.domain.vo.UserRegistration;
 
+import java.util.UUID;
 import java.util.function.Function;
 
 public class Register implements Function<UserRegistration, RegistrationEvent> {
@@ -32,6 +34,7 @@ public class Register implements Function<UserRegistration, RegistrationEvent> {
             PlaintextPassword plaintextPassword = userRegistration.plaintextPassword();
             HashedPassword passwordHash = hashAlgorithmPort.hash(plaintextPassword);
             User user = new User(
+                    UUID.randomUUID(),
                     userRegistration.email(),
                     passwordHash
             );
