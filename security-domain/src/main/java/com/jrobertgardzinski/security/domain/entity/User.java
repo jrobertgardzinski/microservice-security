@@ -14,9 +14,9 @@ public record User(
         UUID id,
         Email email,
         HashedPassword passwordHash,
-        Optional<NormalizedEmail> normalizedEmail
+        NormalizedEmail normalizedEmail
         ) {
     public User(Email email, HashedPassword passwordHash) {
-        this(UUID.randomUUID(), email, passwordHash, NormalizedEmail.optionalOf(email));
+        this(UUID.randomUUID(), email, passwordHash, NormalizedEmail.of(email));
     }
 }
