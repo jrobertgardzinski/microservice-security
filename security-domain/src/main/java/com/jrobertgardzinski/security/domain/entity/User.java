@@ -16,9 +16,7 @@ public record User(
         HashedPassword passwordHash,
         Optional<NormalizedEmail> normalizedEmail
         ) {
-    public User(UUID id, Email email, HashedPassword passwordHash) {
-        NormalizedEmail normalizedEmail = NormalizedEmail.of(email);
-        Optional<NormalizedEmail> optionalNormalizedEmail = email.equals(normalizedEmail) ? Optional.empty() : Optional.of(normalizedEmail);
-        this(id, email, passwordHash, optionalNormalizedEmail);
+    public User(Email email, HashedPassword passwordHash) {
+        this(UUID.randomUUID(), email, passwordHash, NormalizedEmail.optionalOf(email));
     }
 }

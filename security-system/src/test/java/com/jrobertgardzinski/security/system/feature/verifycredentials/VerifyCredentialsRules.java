@@ -41,7 +41,7 @@ public class VerifyCredentialsRules {
         PlaintextPassword p = PlaintextPassword.of(password);
         HashedPassword hashedPassword = hashAlgorithm.hash(p);
         try {
-            userRepository.save(new User(UUID.randomUUID(), e, hashedPassword));
+            userRepository.save(new User(e, hashedPassword));
         } catch (Exception ex) {
             fail("Failed to save user in background setup");
         }
