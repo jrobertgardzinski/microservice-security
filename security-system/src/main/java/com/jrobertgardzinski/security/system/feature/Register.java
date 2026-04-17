@@ -34,7 +34,6 @@ public class Register implements Function<UserRegistration, RegistrationEvent> {
             PlaintextPassword plaintextPassword = userRegistration.plaintextPassword();
             HashedPassword passwordHash = hashAlgorithmPort.hash(plaintextPassword);
             User user = new User(
-                    UUID.randomUUID(),
                     userRegistration.email(),
                     passwordHash
             );
