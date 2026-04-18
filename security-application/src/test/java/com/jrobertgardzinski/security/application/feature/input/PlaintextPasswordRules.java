@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.application.feature.input;
 
-import com.jrobertgardzinski.security.domain.vo.PlaintextPassword;
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -16,7 +16,7 @@ public class PlaintextPasswordRules {
     @When("I provide no password")
     public void w0() {
         try {
-            password = new PlaintextPassword(null);
+            password = PlaintextPassword.of(null);
         } catch (Exception e) {
             exception = e;
         }
@@ -27,7 +27,7 @@ public class PlaintextPasswordRules {
     @When("I create a password from {string}")
     public void w1(String value) {
         try {
-            password = new PlaintextPassword(value);
+            password = PlaintextPassword.of(value);
         } catch (Exception e) {
             exception = e;
         }

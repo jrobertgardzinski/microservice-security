@@ -1,14 +1,19 @@
 package com.jrobertgardzinski.security.system.feature.session;
 
-import com.jrobertgardzinski.security.system.feature.RefreshSession;
-import com.jrobertgardzinski.security.system.stub.StubAuthorizationDataRepository;
+import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.security.config.AccessTokenValidityHours;
+import com.jrobertgardzinski.security.config.RefreshTokenValidityHours;
+import com.jrobertgardzinski.security.config.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.event.refresh.NoRefreshTokenFoundEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenExpiredEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenPassedEvent;
 import com.jrobertgardzinski.security.domain.vo.*;
-import com.jrobertgardzinski.system.SystemTime;
+import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
+import com.jrobertgardzinski.security.domain.vo.token.Token;
+import com.jrobertgardzinski.security.system.feature.RefreshSession;
+import com.jrobertgardzinski.security.system.stub.StubAuthorizationDataRepository;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -21,8 +26,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class RefreshSessionRules {
 
+    private static final SessionTokensConfig SESSION_TOKENS_CONFIG = new SessionTokensConfig(new RefreshTokenValidityHours(1), new AccessTokenValidityHours(1));
+
     private final RefreshSession refreshSession;
     private final StubAuthorizationDataRepository authorizationDataRepository;
+    private final Clock clock = Clock.systemDefaultZone();
 
     private Email email;
     private RefreshToken refreshToken;
@@ -30,21 +38,24 @@ public class RefreshSessionRules {
 
     public RefreshSessionRules(StubAuthorizationDataRepository authorizationDataRepository) {
         this.authorizationDataRepository = authorizationDataRepository;
-        this.refreshSession = new RefreshSession(authorizationDataRepository);
+        this.refreshSession = new RefreshSession(authorizationDataRepository, clock, SESSION_TOKENS_CONFIG);
     }
 
     // background
 
     @Given("the system holds a session for email {string}")
     public void givenSystemHoldsSession(String emailValue) {
-        email = new Email(emailValue);
+        email = Email.of(emailValue);
     }
 
     // given
 
     @Given("the session is active")
     public void givenActiveSession() {
-        SessionTokens sessionTokens = SessionTokens.createFor(email);
+        SessionTokens sessionTokens = SessionTokens.createFor(email,
+                SESSION_TOKENS_CONFIG.refreshTokenValidityHours().value(),
+                SESSION_TOKENS_CONFIG.accessTokenValidityHours().value(),
+                clock);
         authorizationDataRepository.create(sessionTokens);
         refreshToken = sessionTokens.refreshToken();
     }
@@ -52,11 +63,13 @@ public class RefreshSessionRules {
     @Given("the session is expired")
     public void givenExpiredSession() {
         Clock pastClock = Clock.fixed(
-                LocalDateTime.now().minusHours(49).atZone(ZoneId.systemDefault()).toInstant(),
+                LocalDateTime.now().minusHours(SESSION_TOKENS_CONFIG.refreshTokenValidityHours().value() + 1)
+                        .atZone(ZoneId.systemDefault()).toInstant(),
                 ZoneId.systemDefault());
-        SystemTime.setFixedTime(pastClock);
-        SessionTokens session = SessionTokens.createFor(email);
-        SystemTime.reset();
+        SessionTokens session = SessionTokens.createFor(email,
+                SESSION_TOKENS_CONFIG.refreshTokenValidityHours().value(),
+                SESSION_TOKENS_CONFIG.accessTokenValidityHours().value(),
+                pastClock);
         authorizationDataRepository.create(session);
         refreshToken = session.refreshToken();
     }

@@ -1,15 +1,15 @@
 package com.jrobertgardzinski.security.system.feature;
 
-import com.jrobertgardzinski.hash.algorithm.domain.HashAlgorithmPort;
+import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
+import com.jrobertgardzinski.password.domain.HashedPassword;
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationEvent;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationFailedEvent;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
-import com.jrobertgardzinski.security.domain.vo.Email;
-import com.jrobertgardzinski.security.domain.vo.PasswordHash;
-import com.jrobertgardzinski.security.domain.vo.PlaintextPassword;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -24,7 +24,7 @@ public class VerifyCredentials implements Function<Credentials, AuthenticationEv
     }
 
     @Override
-    public AuthenticationEvent apply(Credentials credentials) {// authentication logic
+    public AuthenticationEvent apply(Credentials credentials) {
         Email email = credentials.email();
 
         Optional<User> optionalUser = userRepository.findBy(email);
@@ -32,7 +32,7 @@ public class VerifyCredentials implements Function<Credentials, AuthenticationEv
             return new AuthenticationFailedEvent(email);
         }
 
-        PasswordHash passwordHash = optionalUser.get().passwordHash();
+        HashedPassword passwordHash = optionalUser.get().passwordHash();
         PlaintextPassword enteredPassword = credentials.plaintextPassword();
         if (!hashAlgorithmPort.verify(passwordHash, enteredPassword)) {
             return new AuthenticationFailedEvent(email);

@@ -1,53 +1,50 @@
 Feature: authenticate
 
     Background:
-    Given a registered user with email "user@gmail.com" and password "StrongPassword1!"
+    Given a registered user with email "user@example.com" and password "StrongPassword1!"
     And the authentication attempt comes from IP "192.168.1.1"
 
-    Rule: 1. Successful authentication returns session tokens
+    Rule: 1. Valid credentials with no active block return session tokens
 
-        Scenario: Valid credentials and no brute force block
-        Given the IP has no blockade
-        And the IP has 0 recorded failures
-        When the user authenticates with email "user@gmail.com" and password "StrongPassword1!"
+        Example:
+        Given the IP has no active block and no recent failures
+        When the user authenticates with email "user@example.com" and password "StrongPassword1!"
         Then the authentication result is passed
+        And session tokens are returned
 
-    Rule: 2. Authentication fails when credentials are wrong
+    Rule: 2. Wrong credentials cause authentication failure
 
-        Scenario Outline: Wrong credentials
-        Given the IP has no blockade
-        And the IP has 0 recorded failures
+        Scenario Outline: <case>
+        Given the IP has no active block and no recent failures
         When the user authenticates with email "<email>" and password "<password>"
         Then the authentication result is failed
 
         Examples:
-        | email                  | password                 |
-        | another-user@gmail.com | WrongButStrongPassword1! |
-        | another-user@gmail.com | StrongPassword1!         |
-        | user@gmail.com         | WrongButStrongPassword1! |
+            | case                        | email                   | password                  |
+            | wrong password              | user@example.com        | WrongButStrongPassword1!  |
+            | unknown email               | other@example.com       | StrongPassword1!          |
+            | wrong email and password    | other@example.com       | WrongButStrongPassword1!  |
 
     Rule: 3. Authentication is blocked when brute force protection is active
 
-        Scenario: Active blockade exists for the IP
-        Given the IP has an active blockade
-        When the user authenticates with email "user@gmail.com" and password "StrongPassword1!"
+        Example: IP is actively blocked
+        Given the IP has an active block
+        When the user authenticates with email "user@example.com" and password "StrongPassword1!"
         Then the authentication result is blocked
 
-        Scenario: Failure limit reached
-        Given the IP has no blockade
-        And the IP has 3 recorded failures
-        When the user authenticates with email "user@gmail.com" and password "StrongPassword1!"
+        Example: Too many recent failures
+        Given the IP has no active block but has reached the failure limit
+        When the user authenticates with email "user@example.com" and password "StrongPassword1!"
         Then the authentication result is blocked
 
-    Rule: 4. Only failures from the last 15 minutes count
+    Rule: 4. Only failures within the recent time window count toward the limit
 
         Scenario Outline:
-        Given the IP has no blockade
-        And the IP has 3 failures recorded <minutes_ago> minutes ago
-        When the user authenticates with email "user@gmail.com" and password "StrongPassword1!"
+        Given the IP has no active block and <failures> failures recorded <minutes> minutes ago
+        When the user authenticates with email "user@example.com" and password "StrongPassword1!"
         Then the authentication result is <result>
 
         Examples:
-        | minutes_ago | result  |
-        | 15          | passed  |
-        | 14          | blocked |
+            | failures | minutes | result  |
+            | 3        | 14      | blocked |
+            | 3        | 15      | passed  |

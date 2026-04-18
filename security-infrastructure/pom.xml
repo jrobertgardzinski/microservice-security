@@ -3,8 +3,8 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.jrobertgardzinski</groupId>
-        <artifactId>ddd-sample</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <artifactId>microservice-security</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>security-infrastructure</artifactId>
     <!--todo should I keep version in each module or should I leave it to parent? Like removing version tag from here and it will use the "security" version maybe? Ok. Then I will get the version from the line 7. -->
@@ -13,15 +13,7 @@
     <dependencies>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-model</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-persistence</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-system</artifactId>
+            <artifactId>security-domain</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
@@ -29,7 +21,7 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>hash-algorithm-argon2</artifactId>
+            <artifactId>argon2</artifactId>
         </dependency>
 <!--        todo a place for micronaut starter-->
 
