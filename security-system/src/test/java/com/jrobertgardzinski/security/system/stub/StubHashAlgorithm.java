@@ -1,20 +1,17 @@
 package com.jrobertgardzinski.security.system.stub;
 
-import com.jrobertgardzinski.hash.algorithm.domain.HashAlgorithmPort;
-import com.jrobertgardzinski.security.domain.vo.PasswordHash;
-import com.jrobertgardzinski.security.domain.vo.PlaintextPassword;
-import com.jrobertgardzinski.security.domain.vo.Salt;
+import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
+import com.jrobertgardzinski.password.domain.HashedPassword;
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
 
 public class StubHashAlgorithm implements HashAlgorithmPort {
     @Override
-    public PasswordHash hash(PlaintextPassword plaintextPassword, Salt salt) {
-        return new PasswordHash(
-                salt.value() + plaintextPassword.value()
-        );
+    public HashedPassword hash(PlaintextPassword plaintextPassword) {
+        return new HashedPassword(plaintextPassword.value());
     }
 
     @Override
-    public boolean verify(PasswordHash passwordHash, PlaintextPassword plaintextPassword) {
+    public boolean verify(HashedPassword passwordHash, PlaintextPassword plaintextPassword) {
         return passwordHash.value().endsWith(plaintextPassword.value());
     }
 }

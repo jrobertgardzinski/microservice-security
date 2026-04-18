@@ -1,16 +1,21 @@
 package com.jrobertgardzinski.security.system.feature.verifycredentials;
 
-import com.jrobertgardzinski.security.system.feature.VerifyCredentials;
-import com.jrobertgardzinski.security.system.stub.StubHashAlgorithm;
-import com.jrobertgardzinski.security.system.stub.StubUserRepository;
+import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.password.domain.HashedPassword;
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationEvent;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationFailedEvent;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
-import com.jrobertgardzinski.security.domain.vo.*;
+import com.jrobertgardzinski.security.domain.vo.Credentials;
+import com.jrobertgardzinski.security.system.feature.VerifyCredentials;
+import com.jrobertgardzinski.security.system.stub.StubHashAlgorithm;
+import com.jrobertgardzinski.security.system.stub.StubUserRepository;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,12 +37,11 @@ public class VerifyCredentialsRules {
 
     @Given("the system has a registered account with email {string} and password {string}")
     public void givenRegisteredAccount(String email, String password) {
-        Email e = new Email(email);
-        PlaintextPassword p = new PlaintextPassword(password);
-        Salt salt = Salt.generate();
-        PasswordHash passwordHash = hashAlgorithm.hash(p, salt);
+        Email e = Email.of(email);
+        PlaintextPassword p = PlaintextPassword.of(password);
+        HashedPassword hashedPassword = hashAlgorithm.hash(p);
         try {
-            userRepository.save(new User(e, passwordHash));
+            userRepository.save(new User(e, hashedPassword));
         } catch (Exception ex) {
             fail("Failed to save user in background setup");
         }
@@ -48,8 +52,8 @@ public class VerifyCredentialsRules {
     @When("the system receives credentials with email {string} and password {string}")
     public void whenSystemReceivesCredentials(String email, String password) {
         Credentials credentials = new Credentials(
-                new Email(email),
-                new PlaintextPassword(password)
+                Email.of(email),
+                PlaintextPassword.of(password)
         );
         result = verifyCredentials.apply(credentials);
     }

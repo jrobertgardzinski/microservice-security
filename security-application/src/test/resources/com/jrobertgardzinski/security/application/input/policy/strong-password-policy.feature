@@ -7,12 +7,12 @@ Feature: strong password policy
         Then the policy reports "<violation>"
 
         Examples:
-            | requirement        | password         | violation                                     |
-            | minimum length     | Short1#          | must be at least 12 characters long            |
-            | a lowercase letter | STRONGPASSWORD1# | must contain a lowercase letter                |
-            | an uppercase letter| strongpassword1# | must contain an uppercase letter               |
-            | a digit            | StrongPassword## | must contain a digit                           |
-            | a special character| StrongPassword12 | must contain one of special characters: [#?!]  |
+            | requirement         | password         | violation              |
+            | minimum length      | Short1#          | MIN_LENGTH_NOT_MET     |
+            | a lowercase letter  | STRONGPASSWORD1# | LOWERCASE_REQUIRED     |
+            | an uppercase letter | strongpassword1# | UPPERCASE_REQUIRED     |
+            | a digit             | StrongPassword## | DIGIT_REQUIRED         |
+            | a special character | StrongPassword12 | SPECIAL_CHAR_REQUIRED  |
 
     Rule: 1. Fixing violations one by one
 

@@ -4,16 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.jrobertgardzinski</groupId>
-    <artifactId>ddd-sample</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <artifactId>microservice-security</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
-<!--        domain-->
         <module>security-domain</module>
-<!--        additional-->
-        <module>hash-algorithm</module>
-        <module>password-policy</module>
-<!--        other layers-->
+        <module>security-config</module>
         <module>security-system</module>
         <module>security-application</module>
         <module>security-infrastructure</module>
@@ -23,7 +19,7 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <security-domain.version>1.0-SNAPSHOT</security-domain.version>
+        <security-domain.version>1.0.0-SNAPSHOT</security-domain.version>
     </properties>
 
     <dependencyManagement>
@@ -61,73 +57,40 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-<!--            internal modules-->
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
                 <artifactId>unit-test-starter</artifactId>
-                <version>1.0.0</version>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
                 <artifactId>bdd-test-starter</artifactId>
-                <version>1.0.0</version>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>system-time</artifactId>
-                <version>1.0</version>
+                <artifactId>password-application-security</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-domain-model</artifactId>
+                <artifactId>argon2</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-domain</artifactId>
                 <version>${security-domain.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-domain-persistence</artifactId>
-                <version>${security-domain.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-domain-event</artifactId>
-                <version>${security-domain.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>hash-algorithm-domain</artifactId>
-                <version>0.1-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>hash-algorithm-domain</artifactId>
-                <version>0.1-SNAPSHOT</version>
-                <type>test-jar</type>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>hash-algorithm-argon2</artifactId>
-                <version>0.1-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>password-policy-domain</artifactId>
-                <version>0.1-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>password-policy-strong</artifactId>
-                <version>0.1-SNAPSHOT</version>
+                <artifactId>security-config</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
                 <artifactId>security-system</artifactId>
-                <version>0.1-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-system</artifactId>
-                <version>0.1-SNAPSHOT</version>
-                <type>test-jar</type>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
@@ -146,8 +109,30 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.36</version>
+            <version>1.18.42</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.5.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.4.2</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>

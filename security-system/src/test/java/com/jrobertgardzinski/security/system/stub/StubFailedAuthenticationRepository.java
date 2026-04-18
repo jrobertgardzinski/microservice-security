@@ -3,7 +3,7 @@ package com.jrobertgardzinski.security.system.stub;
 import com.jrobertgardzinski.security.domain.entity.FailedAuthentication;
 import com.jrobertgardzinski.security.domain.repository.FailedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.FailedAuthenticationDetails;
-import com.jrobertgardzinski.security.domain.vo.FailedAuthetincationId;
+import com.jrobertgardzinski.security.domain.vo.FailedAuthenticationId;
 import com.jrobertgardzinski.security.domain.vo.FailuresCount;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 
@@ -19,7 +19,7 @@ public class StubFailedAuthenticationRepository implements FailedAuthenticationR
     @Override
     public FailedAuthentication create(FailedAuthenticationDetails value) {
         records.add(value);
-        return new FailedAuthentication(value, new FailedAuthetincationId(idSequence++));
+        return new FailedAuthentication(value, new FailedAuthenticationId(idSequence++));
     }
 
     @Override

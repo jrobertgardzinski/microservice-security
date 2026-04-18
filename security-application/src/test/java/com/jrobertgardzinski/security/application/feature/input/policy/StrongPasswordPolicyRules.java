@@ -1,8 +1,8 @@
 package com.jrobertgardzinski.security.application.feature.input.policy;
 
-import com.jrobertgardzinski.password.policy.domain.PasswordPolicyPort;
-import com.jrobertgardzinski.password.policy.domain.StrongPasswordPolicyAdapter;
-import com.jrobertgardzinski.security.domain.vo.PlaintextPassword;
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
+import com.jrobertgardzinski.password.policy.*;
+import com.jrobertgardzinski.util.constraint.ErrorConstraint;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -12,12 +12,23 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class StrongPasswordPolicyRules {
 
-    private final PasswordPolicyPort policy = new StrongPasswordPolicyAdapter();
+    private final List<ErrorConstraint<PlaintextPassword>> policy = List.of(
+            new _MinLengthConstraint(12),
+            new _ContainsLowercaseConstraint(),
+            new _ContainsUppercaseConstraint(),
+            new _ContainsDigitConstraint(),
+            new _ContainsSpecialCharConstraint("#?!")
+    );
+
     private List<String> violations;
 
     @When("I validate {string} against strong password policy")
     public void w(String password) {
-        violations = policy.validate(new PlaintextPassword(password));
+        PlaintextPassword p = PlaintextPassword.of(password);
+        violations = policy.stream()
+                .filter(c -> !c.isSatisfied(p))
+                .map(ErrorConstraint::code)
+                .toList();
     }
 
     @Then("the policy reports {string}")

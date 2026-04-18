@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.application.feature.input;
 
-import com.jrobertgardzinski.security.domain.vo.Email;
+import com.jrobertgardzinski.email.domain.Email;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
