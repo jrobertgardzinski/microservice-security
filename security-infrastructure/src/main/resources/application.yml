@@ -1,0 +1,7 @@
+micronaut:
+  application:
+    name: security-service
+endpoints:
+  health:
+    enabled: true
+    sensitive: false
