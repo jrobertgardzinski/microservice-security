@@ -1,4 +1,15 @@
 services:
+  security-service:
+    build:
+      context: ..
+      dockerfile: security-infrastructure/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - MICRONAUT_ENVIRONMENTS=dev
+    depends_on:
+      - postgres
+
   postgres:
     image: postgres
     restart: always
