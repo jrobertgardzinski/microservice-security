@@ -16,7 +16,7 @@ public class EmailRules {
     @When("I provide no email")
     public void w0() {
         try {
-            email = new Email(null);
+            email = Email.of(null);
         } catch (Exception e) {
             exception = e;
         }
@@ -27,7 +27,7 @@ public class EmailRules {
     @When("I create an email from {string}")
     public void w1(String value) {
         try {
-            email = new Email(value);
+            email = Email.of(value);
         } catch (Exception e) {
             exception = e;
         }

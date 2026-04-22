@@ -1,4 +1,5 @@
 /.claude/
+.allure/
 
 # Compiled class file
 *.class
