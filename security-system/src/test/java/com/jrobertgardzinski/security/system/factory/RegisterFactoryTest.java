@@ -28,7 +28,7 @@ class RegisterFactoryTest {
 
         assertTrue(exception.hasEmailErrors());
         assertTrue(exception.hasPasswordErrors());
-        assertTrue(exception.emailErrors().stream().anyMatch(e -> e.contains("does not meet regex")));
+        assertTrue(exception.emailErrors().stream().anyMatch(e -> e.contains("Invalid email format")));
         assertTrue(exception.passwordErrors().stream().anyMatch(e -> e.contains("MIN_LENGTH_NOT_MET")));
     }
 
