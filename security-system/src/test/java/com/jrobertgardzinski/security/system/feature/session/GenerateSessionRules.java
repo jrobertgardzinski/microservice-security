@@ -1,11 +1,12 @@
 package com.jrobertgardzinski.security.system.feature.session;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.config.AccessTokenValidityHours;
-import com.jrobertgardzinski.security.config.RefreshTokenValidityHours;
-import com.jrobertgardzinski.security.config.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
+import com.jrobertgardzinski.security.domain.vo.token.TokenValidityInHours;
 import com.jrobertgardzinski.security.system.feature.GenerateSession;
 import com.jrobertgardzinski.security.system.stub.StubAuthorizationDataRepository;
 import io.cucumber.java.en.Given;
@@ -27,7 +28,7 @@ public class GenerateSessionRules {
     public GenerateSessionRules(StubAuthorizationDataRepository authorizationDataRepository) {
         this.authorizationDataRepository = authorizationDataRepository;
         this.generateSession = new GenerateSession(authorizationDataRepository,
-                Clock.systemDefaultZone(), new SessionTokensConfig(new RefreshTokenValidityHours(24), new AccessTokenValidityHours(1)));
+                Clock.systemDefaultZone(), new SessionTokensConfig(new RefreshTokenValidityInHours(new TokenValidityInHours(24)), new AccessTokenValidityInHours(new TokenValidityInHours(1))));
     }
 
     // background
