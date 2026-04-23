@@ -1,5 +1,6 @@
-package com.jrobertgardzinski.security.config;
+package com.jrobertgardzinski.security.config.bruteforce;
 
+import com.jrobertgardzinski.security.config.bruteforce.vo.FailureWindowMinutes;
 import io.qameta.allure.Allure;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -26,7 +27,7 @@ class BruteForceConfigRulesTest {
         Allure.parameter("maxFailures", config.maxFailures());
         Allure.parameter("minBlockMinutes", config.minBlockMinutes());
         Allure.parameter("maxBlockMinutes", config.maxBlockMinutes());
-        assertThat(config.failureWindowMinutes()).isEqualTo(15);
+        assertThat(config.failureWindowMinutes()).isEqualTo(new FailureWindowMinutes(15));
         assertThat(config.maxFailures()).isEqualTo(3);
         assertThat(config.minBlockMinutes()).isEqualTo(3);
         assertThat(config.maxBlockMinutes()).isEqualTo(10);
