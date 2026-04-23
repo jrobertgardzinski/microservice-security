@@ -1,9 +1,10 @@
-package com.jrobertgardzinski.security.config;
+package com.jrobertgardzinski.security.config.bruteforce;
 
-public record BruteForceConfig(int failureWindowMinutes, int maxFailures, int minBlockMinutes, int maxBlockMinutes) {
+import com.jrobertgardzinski.security.config.bruteforce.vo.FailureWindowMinutes;
+
+public record BruteForceConfig(FailureWindowMinutes failureWindowMinutes, int maxFailures, int minBlockMinutes, int maxBlockMinutes) {
 
     public BruteForceConfig {
-        if (failureWindowMinutes < 1) throw new IllegalArgumentException("failureWindowMinutes must be at least 1");
         if (maxFailures < 1) throw new IllegalArgumentException("maxFailures must be at least 1");
         if (minBlockMinutes < 1) throw new IllegalArgumentException("minBlockMinutes must be at least 1");
         if (maxBlockMinutes < minBlockMinutes) throw new IllegalArgumentException("maxBlockMinutes must be >= minBlockMinutes");
@@ -40,7 +41,7 @@ public record BruteForceConfig(int failureWindowMinutes, int maxFailures, int mi
         }
 
         public BruteForceConfig build() {
-            return new BruteForceConfig(failureWindowMinutes, maxFailures, minBlockMinutes, maxBlockMinutes);
+            return new BruteForceConfig(new FailureWindowMinutes(failureWindowMinutes), maxFailures, minBlockMinutes, maxBlockMinutes);
         }
     }
 }
