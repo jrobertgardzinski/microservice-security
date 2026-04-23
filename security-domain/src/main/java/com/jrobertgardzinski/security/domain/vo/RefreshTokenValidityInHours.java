@@ -1,10 +1,10 @@
 package com.jrobertgardzinski.security.domain.vo;
 
-import com.jrobertgardzinski.security.domain.vo.token.TokenValidityInHours;
+import com.jrobertgardzinski.security.domain.vo.token.AbstractTokenValidityInHours;
 
-public record RefreshTokenValidityInHours(TokenValidityInHours tokenValidityInHours) {
+public final class RefreshTokenValidityInHours extends AbstractTokenValidityInHours {
 
-    public RefreshTokenValidityInHours {
-        if (tokenValidityInHours.value() < 1) throw new IllegalArgumentException("refreshTokenValidityHours must be at least 1");
+    public RefreshTokenValidityInHours(int value) {
+        super(value);
     }
 }

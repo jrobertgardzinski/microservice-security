@@ -1,7 +1,6 @@
 package com.jrobertgardzinski.security.config;
 
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.token.TokenValidityInHours;
 import io.qameta.allure.Allure;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -19,7 +18,7 @@ class AccessTokenValidityInHoursRulesTest {
     void acceptsValidValues(@ForAll("validValues") Tuple.Tuple2<String, Integer> boundary) {
         Allure.parameter(boundary.get1(), boundary.get2());
         int value = boundary.get2();
-        assertThat(new AccessTokenValidityInHours(new TokenValidityInHours(value)).tokenValidityInHours().value()).isEqualTo(value);
+        assertThat(new AccessTokenValidityInHours(value).value()).isEqualTo(value);
     }
 
     @Property
@@ -27,7 +26,7 @@ class AccessTokenValidityInHoursRulesTest {
     void rejectsInvalidValues(@ForAll("invalidValues") Tuple.Tuple2<String, Integer> boundary) {
         Allure.parameter(boundary.get1(), boundary.get2());
         int value = boundary.get2();
-        assertThrows(IllegalArgumentException.class, () -> new AccessTokenValidityInHours(new TokenValidityInHours(value)));
+        assertThrows(IllegalArgumentException.class, () -> new AccessTokenValidityInHours(value));
     }
 
     @Provide

@@ -25,9 +25,9 @@ public record SessionTokens(
 
     public static SessionTokens createFor(Email email, SessionTokensConfig config, Clock clock) {
         RefreshTokenExpiration refreshTokenExpiration = new RefreshTokenExpiration(
-                TokenExpiration.validInHours(config.refreshTokenValidityInHours().tokenValidityInHours(), clock));
+                TokenExpiration.validInHours(config.refreshTokenValidityInHours(), clock));
         AuthorizationTokenExpiration authorizationTokenExpiration = new AuthorizationTokenExpiration(
-                TokenExpiration.validInHours(config.accessTokenValidityInHours().tokenValidityInHours(), clock));
+                TokenExpiration.validInHours(config.accessTokenValidityInHours(), clock));
 
         return new SessionTokens(
                 email,

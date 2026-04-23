@@ -1,7 +1,6 @@
 package com.jrobertgardzinski.security.config;
 
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.token.TokenValidityInHours;
 import io.qameta.allure.Allure;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -19,7 +18,7 @@ class RefreshTokenValidityInHoursRulesTest {
     void acceptsValidValues(@ForAll("validValues") Tuple.Tuple2<String, Integer> boundary) {
         Allure.parameter(boundary.get1(), boundary.get2());
         int value = boundary.get2();
-        assertThat(new RefreshTokenValidityInHours(new TokenValidityInHours(value)).tokenValidityInHours().value()).isEqualTo(value);
+        assertThat(new RefreshTokenValidityInHours(value).value()).isEqualTo(value);
     }
 
     @Property
@@ -27,7 +26,7 @@ class RefreshTokenValidityInHoursRulesTest {
     void rejectsInvalidValues(@ForAll("invalidValues") Tuple.Tuple2<String, Integer> boundary) {
         Allure.parameter(boundary.get1(), boundary.get2());
         int value = boundary.get2();
-        assertThrows(IllegalArgumentException.class, () -> new RefreshTokenValidityInHours(new TokenValidityInHours(value)));
+        assertThrows(IllegalArgumentException.class, () -> new RefreshTokenValidityInHours(value));
     }
 
     @Provide

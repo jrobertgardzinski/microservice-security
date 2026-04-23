@@ -12,7 +12,6 @@ import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenPassedEve
 import com.jrobertgardzinski.security.domain.vo.*;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 import com.jrobertgardzinski.security.domain.vo.token.Token;
-import com.jrobertgardzinski.security.domain.vo.token.TokenValidityInHours;
 import com.jrobertgardzinski.security.system.feature.RefreshSession;
 import com.jrobertgardzinski.security.system.stub.StubAuthorizationDataRepository;
 import io.cucumber.java.en.Given;
@@ -29,12 +28,8 @@ public class RefreshSessionRules {
 
     private static final SessionTokensConfig SESSION_TOKENS_CONFIG =
             new SessionTokensConfig(
-                    new RefreshTokenValidityInHours(
-                            new TokenValidityInHours(1)
-                    ),
-                    new AccessTokenValidityInHours(
-                            new TokenValidityInHours(1)
-                    ));
+                    new RefreshTokenValidityInHours(1),
+                    new AccessTokenValidityInHours(1));
 
     private final RefreshSession refreshSession;
     private final StubAuthorizationDataRepository authorizationDataRepository;
@@ -70,7 +65,7 @@ public class RefreshSessionRules {
     @Given("the session is expired")
     public void givenExpiredSession() {
         Clock pastClock = Clock.fixed(
-                LocalDateTime.now().minusHours(SESSION_TOKENS_CONFIG.refreshTokenValidityInHours().tokenValidityInHours().value() + 1)
+                LocalDateTime.now().minusHours(SESSION_TOKENS_CONFIG.refreshTokenValidityInHours().value() + 1)
                         .atZone(ZoneId.systemDefault()).toInstant(),
                 ZoneId.systemDefault());
         SessionTokens session = SessionTokens.createFor(email,
