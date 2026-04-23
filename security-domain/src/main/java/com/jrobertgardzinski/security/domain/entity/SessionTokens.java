@@ -1,6 +1,7 @@
 package com.jrobertgardzinski.security.domain.entity;
 
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 import com.jrobertgardzinski.security.domain.vo.token.Token;
@@ -22,13 +23,18 @@ public record SessionTokens(
         RefreshTokenExpiration refreshTokenExpiration,
         AuthorizationTokenExpiration authorizationTokenExpiration) {
 
-    public static SessionTokens createFor(Email email, int refreshTokenHours, int accessTokenHours, Clock clock) {
+    public static SessionTokens createFor(Email email, SessionTokensConfig config, Clock clock) {
+        RefreshTokenExpiration refreshTokenExpiration = new RefreshTokenExpiration(
+                TokenExpiration.validInHours(config.refreshTokenValidityInHours().tokenValidityInHours(), clock));
+        AuthorizationTokenExpiration authorizationTokenExpiration = new AuthorizationTokenExpiration(
+                TokenExpiration.validInHours(config.accessTokenValidityInHours().tokenValidityInHours(), clock));
+
         return new SessionTokens(
                 email,
                 new RefreshToken(Token.random()),
                 new AccessToken(Token.random()),
-                new RefreshTokenExpiration(TokenExpiration.validInHours(refreshTokenHours, clock)),
-                new AuthorizationTokenExpiration(TokenExpiration.validInHours(accessTokenHours, clock))
+                refreshTokenExpiration,
+                authorizationTokenExpiration
         );
     }
 

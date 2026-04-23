@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.system.feature;
 
-import com.jrobertgardzinski.security.config.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.event.refresh.NoRefreshTokenFoundEvent;
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenEvent;
@@ -40,6 +40,6 @@ public class RefreshSession implements Function<SessionRefreshRequest, RefreshTo
         }
         return new RefreshTokenPassedEvent(
                 authorizationDataRepository.create(
-                        SessionTokens.createFor(email, config.refreshTokenValidityHours().value(), config.accessTokenValidityHours().value(), clock)));
+                        SessionTokens.createFor(email, config, clock)));
     }
 }

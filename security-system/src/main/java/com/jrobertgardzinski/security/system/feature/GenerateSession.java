@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.system.feature;
 
-import com.jrobertgardzinski.security.config.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
@@ -24,8 +24,7 @@ public class GenerateSession implements Function<AuthenticationPassedEvent, Sess
         return authorizationDataRepository.create(
                 SessionTokens.createFor(
                         authenticationPassedEvent.email(),
-                        config.refreshTokenValidityHours().value(),
-                        config.accessTokenValidityHours().value(),
+                        config,
                         clock
                 )
         );

@@ -3,15 +3,16 @@ package com.jrobertgardzinski.security.system.feature.usecase;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.security.config.BruteForceConfig;
-import com.jrobertgardzinski.security.config.AccessTokenValidityHours;
-import com.jrobertgardzinski.security.config.RefreshTokenValidityHours;
-import com.jrobertgardzinski.security.config.SessionTokensConfig;
+import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
+import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.FailedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.token.TokenValidityInHours;
 import com.jrobertgardzinski.security.system.event.AuthenticationBlocked;
 import com.jrobertgardzinski.security.system.event.AuthenticationFailed;
 import com.jrobertgardzinski.security.system.event.AuthenticationPassed;
@@ -62,7 +63,7 @@ public class AuthenticateRules {
         BruteForceGuard bruteForceGuard = new BruteForceGuard(failedAuthenticationRepository, authenticationBlockRepository,
                 clock, BruteForceConfig.builder().build());
         GenerateSession generateSession = new GenerateSession(authorizationDataRepository,
-                clock, new SessionTokensConfig(new RefreshTokenValidityHours(24), new AccessTokenValidityHours(1)));
+                clock, new SessionTokensConfig(new RefreshTokenValidityInHours(new TokenValidityInHours(24)), new AccessTokenValidityInHours(new TokenValidityInHours(1))));
         CleanBruteForceRecords cleanBruteForceRecords = new CleanBruteForceRecords(failedAuthenticationRepository, authenticationBlockRepository);
         UpdateBruteForceRecords updateBruteForceRecords = new UpdateBruteForceRecords(failedAuthenticationRepository, clock);
         this.authenticateUseCase = new AuthenticateUseCase(verifyCredentials, bruteForceGuard, generateSession, cleanBruteForceRecords, updateBruteForceRecords);
