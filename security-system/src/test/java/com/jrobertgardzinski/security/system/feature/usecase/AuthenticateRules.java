@@ -12,7 +12,6 @@ import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.FailedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
-import com.jrobertgardzinski.security.domain.vo.token.TokenValidityInHours;
 import com.jrobertgardzinski.security.system.event.AuthenticationBlocked;
 import com.jrobertgardzinski.security.system.event.AuthenticationFailed;
 import com.jrobertgardzinski.security.system.event.AuthenticationPassed;
@@ -62,7 +61,7 @@ public class AuthenticateRules {
         BruteForceGuard bruteForceGuard = new BruteForceGuard(failedAuthenticationRepository, authenticationBlockRepository,
                 clock, BruteForceConfig.builder().build());
         GenerateSession generateSession = new GenerateSession(authorizationDataRepository,
-                clock, new SessionTokensConfig(new RefreshTokenValidityInHours(new TokenValidityInHours(24)), new AccessTokenValidityInHours(new TokenValidityInHours(1))));
+                clock, new SessionTokensConfig(new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1)));
         CleanBruteForceRecords cleanBruteForceRecords = new CleanBruteForceRecords(failedAuthenticationRepository, authenticationBlockRepository);
         UpdateBruteForceRecords updateBruteForceRecords = new UpdateBruteForceRecords(failedAuthenticationRepository, clock);
         this.authenticateUseCase = new AuthenticateUseCase(verifyCredentials, bruteForceGuard, generateSession, cleanBruteForceRecords, updateBruteForceRecords);

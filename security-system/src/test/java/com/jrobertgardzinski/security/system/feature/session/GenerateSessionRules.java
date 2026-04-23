@@ -6,7 +6,6 @@ import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
-import com.jrobertgardzinski.security.domain.vo.token.TokenValidityInHours;
 import com.jrobertgardzinski.security.system.feature.GenerateSession;
 import com.jrobertgardzinski.security.system.stub.StubAuthorizationDataRepository;
 import io.cucumber.java.en.Given;
@@ -28,7 +27,7 @@ public class GenerateSessionRules {
     public GenerateSessionRules(StubAuthorizationDataRepository authorizationDataRepository) {
         this.authorizationDataRepository = authorizationDataRepository;
         this.generateSession = new GenerateSession(authorizationDataRepository,
-                Clock.systemDefaultZone(), new SessionTokensConfig(new RefreshTokenValidityInHours(new TokenValidityInHours(24)), new AccessTokenValidityInHours(new TokenValidityInHours(1))));
+                Clock.systemDefaultZone(), new SessionTokensConfig(new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1)));
     }
 
     // background
