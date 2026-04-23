@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.system.feature;
 
-import com.jrobertgardzinski.security.config.BruteForceConfig;
+import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.event.brute.force.protection.Blocked;
 import com.jrobertgardzinski.security.domain.event.brute.force.protection.BruteForceProtectionEvent;
@@ -40,11 +40,11 @@ public class BruteForceGuard implements Function<IpAddress, BruteForceProtection
             AuthenticationBlock authenticationBlock = optionalAuthenticationBlock.get();
             return new Blocked(authenticationBlock);
         }
-        LocalDateTime since = LocalDateTime.now(clock).minusMinutes(config.failureWindowMinutes());
+        LocalDateTime since = LocalDateTime.now(clock).minusMinutes(config.failureWindowMinutes().value());
         FailuresCount failuresCount = failedAuthenticationRepository.countFailuresBy(ipAddress, since);
-        if (failuresCount.hasReachedTheLimit(config.maxFailures())) {
+        if (failuresCount.hasReachedTheLimit(config.maxFailures().value())) {
             failedAuthenticationRepository.removeAllFor(ipAddress);
-            int minutes = ThreadLocalRandom.current().nextInt(config.minBlockMinutes(), config.maxBlockMinutes() + 1);
+            int minutes = ThreadLocalRandom.current().nextInt(config.minBlockMinutes().value(), config.maxBlockMinutes().value() + 1);
             LocalDateTime until = LocalDateTime.now(clock).plusMinutes(minutes);
             AuthenticationBlock authenticationBlock = authenticationBlockRepository.create(
                     new AuthenticationBlock(
