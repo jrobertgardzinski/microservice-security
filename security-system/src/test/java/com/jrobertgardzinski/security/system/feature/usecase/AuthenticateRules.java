@@ -34,7 +34,6 @@ import io.cucumber.java.en.When;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 

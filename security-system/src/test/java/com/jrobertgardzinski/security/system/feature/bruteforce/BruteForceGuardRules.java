@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.system.feature.bruteforce;
 
-import com.jrobertgardzinski.security.config.BruteForceConfig;
+import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.event.brute.force.protection.Blocked;
 import com.jrobertgardzinski.security.domain.event.brute.force.protection.BruteForceProtectionEvent;
