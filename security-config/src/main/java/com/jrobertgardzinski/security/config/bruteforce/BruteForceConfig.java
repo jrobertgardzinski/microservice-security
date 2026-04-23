@@ -1,13 +1,18 @@
 package com.jrobertgardzinski.security.config.bruteforce;
 
 import com.jrobertgardzinski.security.config.bruteforce.vo.FailureWindowMinutes;
+import com.jrobertgardzinski.security.config.bruteforce.vo.MaxBlockMinutes;
+import com.jrobertgardzinski.security.config.bruteforce.vo.MaxFailures;
+import com.jrobertgardzinski.security.config.bruteforce.vo.MinBlockMinutes;
 
-public record BruteForceConfig(FailureWindowMinutes failureWindowMinutes, int maxFailures, int minBlockMinutes, int maxBlockMinutes) {
+public record BruteForceConfig(FailureWindowMinutes failureWindowMinutes,
+                               MaxFailures maxFailures,
+                               MinBlockMinutes minBlockMinutes,
+                               MaxBlockMinutes maxBlockMinutes) {
 
     public BruteForceConfig {
-        if (maxFailures < 1) throw new IllegalArgumentException("maxFailures must be at least 1");
-        if (minBlockMinutes < 1) throw new IllegalArgumentException("minBlockMinutes must be at least 1");
-        if (maxBlockMinutes < minBlockMinutes) throw new IllegalArgumentException("maxBlockMinutes must be >= minBlockMinutes");
+        if (maxBlockMinutes.value() < minBlockMinutes.value())
+            throw new IllegalArgumentException("maxBlockMinutes must be >= minBlockMinutes");
     }
 
     public static Builder builder() {
@@ -15,33 +20,33 @@ public record BruteForceConfig(FailureWindowMinutes failureWindowMinutes, int ma
     }
 
     public static class Builder {
-        private int failureWindowMinutes = 15;
-        private int maxFailures = 3;
-        private int minBlockMinutes = 3;
-        private int maxBlockMinutes = 10;
+        private FailureWindowMinutes failureWindowMinutes = FailureWindowMinutes.DEFAULT;
+        private MaxFailures maxFailures = MaxFailures.DEFAULT;
+        private MinBlockMinutes minBlockMinutes = MinBlockMinutes.DEFAULT;
+        private MaxBlockMinutes maxBlockMinutes = MaxBlockMinutes.DEFAULT;
 
         public Builder failureWindowMinutes(int failureWindowMinutes) {
-            this.failureWindowMinutes = failureWindowMinutes;
+            this.failureWindowMinutes = new FailureWindowMinutes(failureWindowMinutes);
             return this;
         }
 
         public Builder maxFailures(int maxFailures) {
-            this.maxFailures = maxFailures;
+            this.maxFailures = new MaxFailures(maxFailures);
             return this;
         }
 
         public Builder minBlockMinutes(int minBlockMinutes) {
-            this.minBlockMinutes = minBlockMinutes;
+            this.minBlockMinutes = new MinBlockMinutes(minBlockMinutes);
             return this;
         }
 
         public Builder maxBlockMinutes(int maxBlockMinutes) {
-            this.maxBlockMinutes = maxBlockMinutes;
+            this.maxBlockMinutes = new MaxBlockMinutes(maxBlockMinutes);
             return this;
         }
 
         public BruteForceConfig build() {
-            return new BruteForceConfig(new FailureWindowMinutes(failureWindowMinutes), maxFailures, minBlockMinutes, maxBlockMinutes);
+            return new BruteForceConfig(failureWindowMinutes, maxFailures, minBlockMinutes, maxBlockMinutes);
         }
     }
 }
