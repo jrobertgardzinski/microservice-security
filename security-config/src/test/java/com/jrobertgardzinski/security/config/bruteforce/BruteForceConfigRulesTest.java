@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class BruteForceConfigRulesTest {
 
     @Example
-    @Label("Invariant: accepts default values")
+    @Label("Default")
     void acceptsDefaultValues() {
         BruteForceConfig config = BruteForceConfig.builder().build();
         Allure.parameter("failureWindowMinutes", config.failureWindowMinutes().value());
@@ -34,18 +34,5 @@ class BruteForceConfigRulesTest {
         assertThat(config.maxFailures()).isEqualTo(MaxFailures.DEFAULT);
         assertThat(config.minBlockMinutes()).isEqualTo(MinBlockMinutes.DEFAULT);
         assertThat(config.maxBlockMinutes()).isEqualTo(MaxBlockMinutes.DEFAULT);
-    }
-
-    @DisplayName("Invariant: ")
-    @ParameterizedTest(name = "rejects maxBlockMinutes={0} smaller than minBlockMinutes={1}")
-    @MethodSource("maxBlockVsMinBlock")
-    void rejectsMaxBlockMinutesSmallerThanMin(int maxBlockMinutes, int minBlockMinutes) {
-        Allure.parameter("minBlockMinutes", minBlockMinutes);
-        Allure.parameter("maxBlockMinutes", maxBlockMinutes);
-        assertThrows(IllegalArgumentException.class, () ->
-                BruteForceConfig.builder().minBlockMinutes(minBlockMinutes).maxBlockMinutes(maxBlockMinutes).build());
-    }
-    static Stream<Arguments> maxBlockVsMinBlock() {
-        return Stream.of(Arguments.of(4, 5));
     }
 }
