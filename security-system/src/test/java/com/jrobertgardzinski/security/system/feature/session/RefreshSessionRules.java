@@ -11,7 +11,6 @@ import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenExpiredEv
 import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenPassedEvent;
 import com.jrobertgardzinski.security.domain.vo.*;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
-import com.jrobertgardzinski.security.domain.vo.token.Token;
 import com.jrobertgardzinski.security.system.feature.RefreshSession;
 import com.jrobertgardzinski.security.system.stub.StubAuthorizationDataRepository;
 import io.cucumber.java.en.Given;
@@ -77,7 +76,7 @@ public class RefreshSessionRules {
 
     @Given("the session does not exist")
     public void givenNoSession() {
-        refreshToken = new RefreshToken(Token.random());
+        refreshToken = RefreshToken.random();
     }
 
     // when

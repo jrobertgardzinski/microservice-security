@@ -4,11 +4,8 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
-import com.jrobertgardzinski.security.domain.vo.token.Token;
 import com.jrobertgardzinski.security.domain.vo.token.expiration.AuthorizationTokenExpiration;
 import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.TokenExpiration;
-
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -24,17 +21,12 @@ public record SessionTokens(
         AuthorizationTokenExpiration authorizationTokenExpiration) {
 
     public static SessionTokens createFor(Email email, SessionTokensConfig config, Clock clock) {
-        RefreshTokenExpiration refreshTokenExpiration = new RefreshTokenExpiration(
-                TokenExpiration.validInHours(config.refreshTokenValidityInHours(), clock));
-        AuthorizationTokenExpiration authorizationTokenExpiration = new AuthorizationTokenExpiration(
-                TokenExpiration.validInHours(config.accessTokenValidityInHours(), clock));
-
         return new SessionTokens(
                 email,
-                new RefreshToken(Token.random()),
-                new AccessToken(Token.random()),
-                refreshTokenExpiration,
-                authorizationTokenExpiration
+                RefreshToken.random(),
+                AccessToken.random(),
+                RefreshTokenExpiration.validInHours(config.refreshTokenValidityInHours(), clock),
+                AuthorizationTokenExpiration.validInHours(config.accessTokenValidityInHours(), clock)
         );
     }
 
@@ -43,18 +35,18 @@ public record SessionTokens(
     }
 
     public String plainRefreshToken() {
-        return refreshToken.value().value();
+        return refreshToken.value();
     }
 
     public String plainAccessToken() {
-        return accessToken.value().value();
+        return accessToken.value();
     }
 
     public LocalDateTime plainRefreshTokenExpiration() {
-        return refreshTokenExpiration.value().value();
+        return refreshTokenExpiration.value();
     }
 
     public LocalDateTime plainAuthorizationTokenExpiration() {
-        return authorizationTokenExpiration.value().value();
+        return authorizationTokenExpiration.value();
     }
 }
