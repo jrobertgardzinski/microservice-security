@@ -21,15 +21,18 @@
             <artifactId>password-application-security</artifactId>
             <scope>provided</scope>
         </dependency>
-
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>argon2</artifactId>
-            <scope>test</scope>
+            <artifactId>constraint</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>bdd-test-starter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>argon2</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

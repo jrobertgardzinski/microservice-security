@@ -48,12 +48,6 @@
             <version>1.5.16</version>
             <scope>runtime</scope>
         </dependency>
-
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>unit-test-starter</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -61,7 +55,7 @@
             <plugin>
                 <groupId>io.micronaut.maven</groupId>
                 <artifactId>micronaut-maven-plugin</artifactId>
-                <version>4.7.3</version>
+                <version>${micronaut.version}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
