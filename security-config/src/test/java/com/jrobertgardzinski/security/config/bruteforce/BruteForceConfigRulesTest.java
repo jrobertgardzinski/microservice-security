@@ -26,10 +26,7 @@ class BruteForceConfigRulesTest {
     @Label("Default")
     void acceptsDefaultValues() {
         BruteForceConfig config = BruteForceConfig.builder().build();
-        Allure.parameter("failureWindowMinutes", config.failureWindowMinutes().value());
-        Allure.parameter("maxFailures", config.maxFailures().value());
-        Allure.parameter("minBlockMinutes", config.minBlockMinutes().value());
-        Allure.parameter("maxBlockMinutes", config.maxBlockMinutes().value());
+        Allure.parameter("default config", config);
         assertThat(config.failureWindowMinutes()).isEqualTo(FailureWindowMinutes.DEFAULT);
         assertThat(config.maxFailures()).isEqualTo(MaxFailures.DEFAULT);
         assertThat(config.minBlockMinutes()).isEqualTo(MinBlockMinutes.DEFAULT);

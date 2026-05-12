@@ -13,10 +13,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Epic("Security")
 @Feature("Security Configuration - BruteForceConfig")
+@Story("Failure Window Minutes Configuration")
 class FailureWindowMinutesTest {
-    @Story("Failure Window Minutes Configuration")
     @Property
-    @Label("Invariant - rejects")
+    @Label("rejects")
     void invariantsRejects(@ForAll("invalidValues") Tuple.Tuple2<String, Integer> boundary) {
         Allure.parameter(boundary.get1(), boundary.get2());
         int value = boundary.get2();
@@ -33,9 +33,8 @@ class FailureWindowMinutesTest {
         );
     }
 
-    @Story("Failure Window Minutes Configuration")
     @Property
-    @Label("Invariant - accepts")
+    @Label("accepts")
     void invariantsAccept(@ForAll("validValues") Tuple.Tuple2<String, Integer> boundary) {
         Allure.parameter(boundary.get1(), boundary.get2());
         int value = boundary.get2();
