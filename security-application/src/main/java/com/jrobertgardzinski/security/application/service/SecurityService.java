@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.application.service;
 
+import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.system.event.AuthenticationResult;
 import com.jrobertgardzinski.security.system.feature.RefreshSession;
 import com.jrobertgardzinski.security.system.usecase.AuthenticateUseCase;
@@ -21,7 +23,7 @@ public class SecurityService {
     }
 
     public RegisterResult register(String email, String password) {
-        return registerUseCase.execute(email, password);
+        return registerUseCase.execute(Email.of(email), PlaintextPassword.of(password));
     }
 
     public AuthenticationResult authenticate(AuthenticationRequest authenticationRequest) {
