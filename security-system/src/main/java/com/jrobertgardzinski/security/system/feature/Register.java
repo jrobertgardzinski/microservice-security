@@ -1,46 +1,28 @@
 package com.jrobertgardzinski.security.system.feature;
 
-import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
-import com.jrobertgardzinski.password.domain.HashedPassword;
-import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.event.registration.PossibleRaceCondition;
 import com.jrobertgardzinski.security.domain.event.registration.RegistrationEvent;
 import com.jrobertgardzinski.security.domain.event.registration.RegistrationPassedEvent;
 import com.jrobertgardzinski.security.domain.event.registration.UserAlreadyExistsEvent;
+import com.jrobertgardzinski.security.domain.repository.SaveResult;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.UserRegistration;
 
-import java.util.UUID;
 import java.util.function.Function;
 
 public class Register implements Function<UserRegistration, RegistrationEvent> {
     private final UserRepository userRepository;
-    private final HashAlgorithmPort hashAlgorithmPort;
 
-    public Register(UserRepository userRepository, HashAlgorithmPort hashAlgorithmPort) {
+    public Register(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.hashAlgorithmPort = hashAlgorithmPort;
     }
 
     @Override
     public RegistrationEvent apply(UserRegistration userRegistration) {
-        Email email = userRegistration.email();
-        if (userRepository.existsBy(email)) {
-            return new UserAlreadyExistsEvent();
-        }
-        try {
-            PlaintextPassword plaintextPassword = userRegistration.plaintextPassword();
-            HashedPassword passwordHash = hashAlgorithmPort.hash(plaintextPassword);
-            User user = new User(
-                    userRegistration.email(),
-                    passwordHash
-            );
-            userRepository.save(user);
-            return new RegistrationPassedEvent(email);
-        } catch (Exception e) {
-            return new PossibleRaceCondition();
-        }
+        User user = new User(userRegistration.email(), userRegistration.passwordHash());
+        return switch (userRepository.save(user)) {
+            case SaveResult.Saved s         -> new RegistrationPassedEvent(s.user().email());
+            case SaveResult.AlreadyExists _ -> new UserAlreadyExistsEvent();
+        };
     }
 }

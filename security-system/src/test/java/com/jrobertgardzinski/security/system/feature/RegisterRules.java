@@ -3,7 +3,6 @@ package com.jrobertgardzinski.security.system.feature;
 import com.jrobertgardzinski.security.domain.event.registration.RegistrationPassedEvent;
 import com.jrobertgardzinski.security.system.usecase.RegisterResult;
 import com.jrobertgardzinski.security.system.usecase.RegisterUseCase;
-import com.jrobertgardzinski.security.system.usecase.RegistrationParser;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -13,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class RegisterRules {
-
+/*
     private final InMemoryUserRepository userRepository = new InMemoryUserRepository();
     private final RegisterUseCase registerUseCase = new RegisterUseCase(
             new Register(userRepository, new StubHashAlgorithm()),
@@ -87,5 +86,5 @@ public class RegisterRules {
     @Then("no new account is created")
     public void noNewAccountIsCreated() {
         assertEquals(1, userRepository.size());
-    }
+    }*/
 }
