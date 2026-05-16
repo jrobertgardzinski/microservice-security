@@ -1,11 +1,14 @@
 package com.jrobertgardzinski.security.system.usecase;
 
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashedPassword;
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.event.registration.RegistrationEvent;
 import com.jrobertgardzinski.util.constraint.Decision;
 import com.jrobertgardzinski.util.constraint.Outcome;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 public sealed interface RegisterResult {
@@ -15,7 +18,7 @@ public sealed interface RegisterResult {
     record Invalid(List<String> emailErrors, List<String> passwordErrors) implements RegisterResult {}
 
     static RegisterResult from(
-            Decision emailDecision,
+            Decision<Email> emailDecision,
             Outcome<HashedPassword> passwordOutcome,
             Function<HashedPassword, RegistrationEvent> onValid) {
 
