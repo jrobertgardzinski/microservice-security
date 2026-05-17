@@ -1,8 +1,11 @@
 package com.jrobertgardzinski.security.application.feature.input.policy;
 
+import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.password.policy.*;
-import com.jrobertgardzinski.util.constraint.ErrorConstraint;
+import com.jrobertgardzinski.password.policy.CreatePasswordHash;
+import com.jrobertgardzinski.password.policy.PasswordPolicy;
+import com.jrobertgardzinski.password.security.config.MinLength;
+import com.jrobertgardzinski.password.security.config.SpecialChars;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -12,23 +15,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class StrongPasswordPolicyRules {
 
-    private final List<ErrorConstraint<PlaintextPassword>> policy = List.of(
-            new _MinLengthConstraint(12),
-            new _ContainsLowercaseConstraint(),
-            new _ContainsUppercaseConstraint(),
-            new _ContainsDigitConstraint(),
-            new _ContainsSpecialCharConstraint("#?!")
-    );
+    private final CreatePasswordHash createPasswordHash = new CreatePasswordHash(
+            new Argon2HashAlgorithm(),
+            new PasswordPolicy(new MinLength(12), new SpecialChars("#?!")));
 
     private List<String> violations;
 
     @When("I validate {string} against strong password policy")
     public void w(String password) {
         PlaintextPassword p = PlaintextPassword.of(password);
-        violations = policy.stream()
-                .filter(c -> !c.isSatisfied(p))
-                .map(ErrorConstraint::code)
-                .toList();
+        violations = createPasswordHash.create(p).errorCodes();
     }
 
     @Then("the policy reports {string}")
