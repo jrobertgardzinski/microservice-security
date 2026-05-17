@@ -1,14 +1,13 @@
 package com.jrobertgardzinski.security.system.feature;
 
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 
 import java.time.Clock;
-import java.util.function.Function;
 
-public class GenerateSession implements Function<AuthenticationPassedEvent, SessionTokens> {
+public class GenerateSession {
     private final AuthorizationDataRepository authorizationDataRepository;
     private final Clock clock;
     private final SessionTokensConfig config;
@@ -19,14 +18,7 @@ public class GenerateSession implements Function<AuthenticationPassedEvent, Sess
         this.config = config;
     }
 
-    @Override
-    public SessionTokens apply(AuthenticationPassedEvent authenticationPassedEvent) {
-        return authorizationDataRepository.create(
-                SessionTokens.createFor(
-                        authenticationPassedEvent.email(),
-                        config,
-                        clock
-                )
-        );
+    public SessionTokens create(Email email) {
+        return authorizationDataRepository.create(SessionTokens.createFor(email, config, clock));
     }
 }

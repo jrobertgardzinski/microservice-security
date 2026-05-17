@@ -6,9 +6,8 @@ import com.jrobertgardzinski.security.domain.vo.IpAddress;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.function.Consumer;
 
-public class UpdateBruteForceRecords implements Consumer<IpAddress> {
+public class UpdateBruteForceRecords {
     private final FailedAuthenticationRepository failedAuthenticationRepository;
     private final Clock clock;
 
@@ -17,8 +16,7 @@ public class UpdateBruteForceRecords implements Consumer<IpAddress> {
         this.clock = clock;
     }
 
-    @Override
-    public void accept(IpAddress ipAddress) {
+    public void execute(IpAddress ipAddress) {
         failedAuthenticationRepository.create(
                 new FailedAuthenticationDetails(ipAddress, LocalDateTime.now(clock)));
     }

@@ -1,21 +1,17 @@
 package com.jrobertgardzinski.security.system.feature;
 
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.event.refresh.NoRefreshTokenFoundEvent;
-import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenEvent;
-import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenExpiredEvent;
-import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenPassedEvent;
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.security.domain.entity.SessionTokens;
+import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenEvent;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
-import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
+import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
 
 import java.time.Clock;
-import java.util.function.Function;
+import java.util.Optional;
 
-public class RefreshSession implements Function<SessionRefreshRequest, RefreshTokenEvent> {
+public class RefreshSession {
     private final AuthorizationDataRepository authorizationDataRepository;
     private final Clock clock;
     private final SessionTokensConfig config;
@@ -26,20 +22,16 @@ public class RefreshSession implements Function<SessionRefreshRequest, RefreshTo
         this.config = config;
     }
 
-    @Override
-    public RefreshTokenEvent apply(SessionRefreshRequest sessionRefreshRequest) {
-        Email email = sessionRefreshRequest.email();
-        RefreshToken refreshToken = sessionRefreshRequest.refreshToken();
-        RefreshTokenExpiration refreshTokenExpiration = authorizationDataRepository.findRefreshTokenExpirationBy(email, refreshToken);
-        if (refreshTokenExpiration == null) {
-            return new NoRefreshTokenFoundEvent(email);
-        }
-        authorizationDataRepository.deleteBy(email);
-        if (refreshTokenExpiration.hasExpired(clock)) {
-            return new RefreshTokenExpiredEvent(email);
-        }
-        return new RefreshTokenPassedEvent(
-                authorizationDataRepository.create(
-                        SessionTokens.createFor(email, config, clock)));
+    public RefreshTokenEvent execute(SessionRefreshRequest request) {
+        Email email = request.email();
+        Optional<RefreshTokenExpiration> maybeExpiration = Optional.ofNullable(
+                authorizationDataRepository.findRefreshTokenExpirationBy(email, request.refreshToken()));
+
+        return RefreshTokenEvent.from(
+                email,
+                maybeExpiration,
+                () -> authorizationDataRepository.deleteBy(email),
+                expiration -> expiration.hasExpired(clock),
+                () -> authorizationDataRepository.create(SessionTokens.createFor(email, config, clock)));
     }
 }

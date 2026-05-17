@@ -8,20 +8,17 @@ import com.jrobertgardzinski.security.domain.repository.SaveResult;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.UserRegistration;
 
-import java.util.function.Function;
-
-public class Register implements Function<UserRegistration, RegistrationEvent> {
+public class Register {
     private final UserRepository userRepository;
 
     public Register(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-    @Override
-    public RegistrationEvent apply(UserRegistration userRegistration) {
+    public RegistrationEvent execute(UserRegistration userRegistration) {
         User user = new User(userRegistration.email(), userRegistration.passwordHash());
         return switch (userRepository.save(user)) {
-            case SaveResult.Saved s         -> new RegistrationPassedEvent(s.user().email());
+            case SaveResult.Saved saved     -> new RegistrationPassedEvent(saved.user().email());
             case SaveResult.AlreadyExists _ -> new UserAlreadyExistsEvent();
         };
     }

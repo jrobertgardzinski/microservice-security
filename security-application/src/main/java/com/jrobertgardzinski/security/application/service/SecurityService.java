@@ -27,10 +27,10 @@ public class SecurityService {
     }
 
     public AuthenticationResult authenticate(AuthenticationRequest authenticationRequest) {
-        return authenticateUseCase.apply(authenticationRequest);
+        return authenticateUseCase.execute(authenticationRequest);
     }
 
     public RefreshTokenEvent refreshSession(SessionRefreshRequest sessionRefreshRequest) {
-        return refreshSession.apply(sessionRefreshRequest);
+        return refreshSession.execute(sessionRefreshRequest);
     }
 }

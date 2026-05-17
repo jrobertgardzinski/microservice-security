@@ -4,9 +4,7 @@ import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepos
 import com.jrobertgardzinski.security.domain.repository.FailedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 
-import java.util.function.Consumer;
-
-public class CleanBruteForceRecords implements Consumer<IpAddress> {
+public class CleanBruteForceRecords {
 
     private final FailedAuthenticationRepository failedAuthenticationRepository;
     private final AuthenticationBlockRepository authenticationBlockRepository;
@@ -16,8 +14,7 @@ public class CleanBruteForceRecords implements Consumer<IpAddress> {
         this.authenticationBlockRepository = authenticationBlockRepository;
     }
 
-    @Override
-    public void accept(IpAddress ipAddress) {
+    public void execute(IpAddress ipAddress) {
         failedAuthenticationRepository.removeAllFor(ipAddress);
         authenticationBlockRepository.removeAllFor(ipAddress);
     }
