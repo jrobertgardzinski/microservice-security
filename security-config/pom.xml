@@ -15,6 +15,7 @@
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>security-domain</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>

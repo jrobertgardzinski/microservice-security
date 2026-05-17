@@ -18,7 +18,8 @@
         <module>security-config</module>
         <module>security-system</module>
         <module>security-application</module>
-        <module>security-infrastructure</module>
+<!-- security-infrastructure: excluded — WIP, SecurityController doesn't compile -->
+<!--        <module>security-infrastructure</module>-->
     </modules>
 
     <!--Intentional DRY breakage-->
@@ -50,6 +51,64 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+<!-- fail build on hidden coupling: any class used from a transitive dep must be declared explicitly -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.8.1</version>
+<!-- override bundled ASM to one that understands Java 25 bytecode (major 69) -->
+                <dependencies>
+                    <dependency>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm</artifactId>
+                        <version>9.8</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <phase>verify</phase>
+                        <goals><goal>analyze-only</goal></goals>
+                        <configuration>
+                            <failOnWarning>true</failOnWarning>
+                            <ignoreUnusedRuntime>true</ignoreUnusedRuntime>
+<!-- test framework classes are pulled transitively from *-test-starter modules; that's the starter's job -->
+                            <ignoredUsedUndeclaredDependencies>
+                                <ignoredUsedUndeclaredDependency>org.assertj:*</ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>org.junit.*:*</ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>org.hamcrest:*</ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>org.mockito:*</ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>net.jqwik:*</ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>io.qameta.allure:*</ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>io.cucumber:*</ignoredUsedUndeclaredDependency>
+                            </ignoredUsedUndeclaredDependencies>
+                            <ignoredUnusedDeclaredDependencies>
+                                <ignoredUnusedDeclaredDependency>com.jrobertgardzinski:unit-test-starter</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>com.jrobertgardzinski:bdd-test-starter</ignoredUnusedDeclaredDependency>
+                            </ignoredUnusedDeclaredDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+<!-- fail build on version conflicts between transitive dependencies -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>enforce</id>
+                        <goals><goal>enforce</goal></goals>
+                        <configuration>
+                            <rules>
+                                <requireUpperBoundDeps/>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
 <!--        <plugins>
             <plugin>
                 <groupId>io.qameta.allure</groupId>
@@ -120,12 +179,7 @@
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>password-domain</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>argon2</artifactId>
+                <artifactId>email-security-config</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
@@ -136,6 +190,11 @@
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
                 <artifactId>password-security-system</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>password-security-config</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
