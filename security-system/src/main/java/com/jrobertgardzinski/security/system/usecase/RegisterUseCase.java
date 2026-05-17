@@ -38,6 +38,6 @@ public class RegisterUseCase {
         return RegisterResult.from(
                 canRegister.evaluate(email),
                 createPasswordHash.create(password),
-                hash -> register.apply(new UserRegistration(email, hash)));
+                hash -> register.execute(new UserRegistration(email, hash)));
     }
 }

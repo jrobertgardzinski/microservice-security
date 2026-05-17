@@ -1,9 +1,6 @@
 package com.jrobertgardzinski.security.system.feature;
 
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
-import com.jrobertgardzinski.password.domain.HashedPassword;
-import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationEvent;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationFailedEvent;
 import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
@@ -11,10 +8,7 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
 
-import java.util.Optional;
-import java.util.function.Function;
-
-public class VerifyCredentials implements Function<Credentials, AuthenticationEvent> {
+public class VerifyCredentials {
     private final UserRepository userRepository;
     private final HashAlgorithmPort hashAlgorithmPort;
 
@@ -23,21 +17,11 @@ public class VerifyCredentials implements Function<Credentials, AuthenticationEv
         this.hashAlgorithmPort = hashAlgorithmPort;
     }
 
-    @Override
-    public AuthenticationEvent apply(Credentials credentials) {
+    public AuthenticationEvent execute(Credentials credentials) {
         Email email = credentials.email();
-
-        Optional<User> optionalUser = userRepository.findBy(email);
-        if (optionalUser.isEmpty()) {
-            return new AuthenticationFailedEvent(email);
-        }
-
-        HashedPassword passwordHash = optionalUser.get().passwordHash();
-        PlaintextPassword enteredPassword = credentials.plaintextPassword();
-        if (!hashAlgorithmPort.verify(passwordHash, enteredPassword)) {
-            return new AuthenticationFailedEvent(email);
-        }
-
-        return new AuthenticationPassedEvent(email);
+        return userRepository.findBy(email)
+                .filter(user -> hashAlgorithmPort.verify(user.passwordHash(), credentials.plaintextPassword()))
+                .<AuthenticationEvent>map(_ -> new AuthenticationPassedEvent(email))
+                .orElseGet(() -> new AuthenticationFailedEvent(email));
     }
 }

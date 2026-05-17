@@ -7,16 +7,14 @@ import com.jrobertgardzinski.security.domain.event.brute.force.protection.BruteF
 import com.jrobertgardzinski.security.domain.event.brute.force.protection.Passed;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.repository.FailedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.vo.FailuresCount;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
 
-public class BruteForceGuard implements Function<IpAddress, BruteForceProtectionEvent> {
+public class BruteForceGuard {
 
     private final FailedAuthenticationRepository failedAuthenticationRepository;
     private final AuthenticationBlockRepository authenticationBlockRepository;
@@ -32,26 +30,31 @@ public class BruteForceGuard implements Function<IpAddress, BruteForceProtection
         this.config = config;
     }
 
-    @Override
-    public BruteForceProtectionEvent apply(IpAddress ipAddress) {
-        Optional<AuthenticationBlock> optionalAuthenticationBlock = authenticationBlockRepository.findBy(ipAddress)
+    public BruteForceProtectionEvent execute(IpAddress ipAddress) {
+        return existingActiveBlockFor(ipAddress)
+                .<BruteForceProtectionEvent>map(Blocked::new)
+                .orElseGet(() -> failureLimitReachedFor(ipAddress)
+                        ? new Blocked(createNewBlockFor(ipAddress))
+                        : new Passed());
+    }
+
+    private Optional<AuthenticationBlock> existingActiveBlockFor(IpAddress ipAddress) {
+        return authenticationBlockRepository.findBy(ipAddress)
                 .filter(block -> block.isStillActive(clock));
-        if (optionalAuthenticationBlock.isPresent()) {
-            AuthenticationBlock authenticationBlock = optionalAuthenticationBlock.get();
-            return new Blocked(authenticationBlock);
-        }
+    }
+
+    private boolean failureLimitReachedFor(IpAddress ipAddress) {
         LocalDateTime since = LocalDateTime.now(clock).minusMinutes(config.failureWindowMinutes().value());
-        FailuresCount failuresCount = failedAuthenticationRepository.countFailuresBy(ipAddress, since);
-        if (failuresCount.hasReachedTheLimit(config.maxFailures().value())) {
-            failedAuthenticationRepository.removeAllFor(ipAddress);
-            int minutes = ThreadLocalRandom.current().nextInt(config.minBlockMinutes().value(), config.maxBlockMinutes().value() + 1);
-            LocalDateTime until = LocalDateTime.now(clock).plusMinutes(minutes);
-            AuthenticationBlock authenticationBlock = authenticationBlockRepository.create(
-                    new AuthenticationBlock(
-                            ipAddress,
-                            until));
-            return new Blocked(authenticationBlock);
-        }
-        return new Passed();
+        return failedAuthenticationRepository.countFailuresBy(ipAddress, since)
+                .hasReachedTheLimit(config.maxFailures().value());
+    }
+
+    private AuthenticationBlock createNewBlockFor(IpAddress ipAddress) {
+        failedAuthenticationRepository.removeAllFor(ipAddress);
+        int minutes = ThreadLocalRandom.current().nextInt(
+                config.minBlockMinutes().value(),
+                config.maxBlockMinutes().value() + 1);
+        LocalDateTime until = LocalDateTime.now(clock).plusMinutes(minutes);
+        return authenticationBlockRepository.create(new AuthenticationBlock(ipAddress, until));
     }
 }

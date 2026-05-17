@@ -1,16 +1,8 @@
 package com.jrobertgardzinski.security.system.usecase;
 
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationEvent;
-import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationFailedEvent;
-import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
-import com.jrobertgardzinski.security.domain.event.brute.force.protection.Blocked;
-import com.jrobertgardzinski.security.domain.event.brute.force.protection.BruteForceProtectionEvent;
-import com.jrobertgardzinski.security.domain.event.brute.force.protection.Passed;
-import com.jrobertgardzinski.security.domain.vo.*;
-import com.jrobertgardzinski.security.system.event.AuthenticationBlocked;
-import com.jrobertgardzinski.security.system.event.AuthenticationFailed;
-import com.jrobertgardzinski.security.system.event.AuthenticationPassed;
+import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
+import com.jrobertgardzinski.security.domain.vo.Credentials;
+import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.system.event.AuthenticationResult;
 import com.jrobertgardzinski.security.system.feature.BruteForceGuard;
 import com.jrobertgardzinski.security.system.feature.CleanBruteForceRecords;
@@ -18,49 +10,36 @@ import com.jrobertgardzinski.security.system.feature.GenerateSession;
 import com.jrobertgardzinski.security.system.feature.UpdateBruteForceRecords;
 import com.jrobertgardzinski.security.system.feature.VerifyCredentials;
 
-import java.util.function.Function;
-
-public class AuthenticateUseCase implements Function<AuthenticationRequest, AuthenticationResult> {
-    private final VerifyCredentials verifyCredentials;
+public class AuthenticateUseCase {
     private final BruteForceGuard bruteForceGuard;
+    private final VerifyCredentials verifyCredentials;
     private final GenerateSession generateSession;
     private final CleanBruteForceRecords cleanBruteForceRecords;
     private final UpdateBruteForceRecords updateBruteForceRecords;
 
-    public AuthenticateUseCase(VerifyCredentials verifyCredentials, BruteForceGuard bruteForceGuard, GenerateSession generateSession, CleanBruteForceRecords cleanBruteForceRecords, UpdateBruteForceRecords updateBruteForceRecords) {
-        this.verifyCredentials = verifyCredentials;
+    public AuthenticateUseCase(BruteForceGuard bruteForceGuard,
+                               VerifyCredentials verifyCredentials,
+                               GenerateSession generateSession,
+                               CleanBruteForceRecords cleanBruteForceRecords,
+                               UpdateBruteForceRecords updateBruteForceRecords) {
         this.bruteForceGuard = bruteForceGuard;
+        this.verifyCredentials = verifyCredentials;
         this.generateSession = generateSession;
         this.cleanBruteForceRecords = cleanBruteForceRecords;
         this.updateBruteForceRecords = updateBruteForceRecords;
     }
 
-    @Override
-    public AuthenticationResult apply(AuthenticationRequest authenticationRequest) {
-        IpAddress ip = authenticationRequest.ipAddress();
-        BruteForceProtectionEvent bruteForceProtectionEvent = bruteForceGuard.apply(ip);
-        switch (bruteForceProtectionEvent) {
-            case Passed passed -> {
-                Credentials credentials = new Credentials(
-                        authenticationRequest.email(),
-                        authenticationRequest.plaintextPassword()
-                );
-                AuthenticationEvent authenticationEvent = verifyCredentials.apply(credentials);
-                switch (authenticationEvent) {
-                    case AuthenticationPassedEvent authenticationPassedEvent -> {
-                        cleanBruteForceRecords.accept(ip);
-                        SessionTokens sessionTokens = generateSession.apply(authenticationPassedEvent);
-                        return new AuthenticationPassed(sessionTokens);
-                    }
-                    case AuthenticationFailedEvent authenticationFailedEvent -> {
-                        updateBruteForceRecords.accept(ip);
-                        return new AuthenticationFailed();
-                    }
-                }
-            }
-            case Blocked blocked -> {
-                return new AuthenticationBlocked(blocked.authenticationBlock());
-            }
-        }
+    public AuthenticationResult execute(AuthenticationRequest request) {
+        IpAddress ip = request.ipAddress();
+        Credentials credentials = new Credentials(request.email(), request.plaintextPassword());
+
+        return AuthenticationResult.from(
+                bruteForceGuard.execute(ip),
+                () -> verifyCredentials.execute(credentials),
+                passed -> {
+                    cleanBruteForceRecords.execute(ip);
+                    return generateSession.create(passed.email());
+                },
+                () -> updateBruteForceRecords.execute(ip));
     }
 }
