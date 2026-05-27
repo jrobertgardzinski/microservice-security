@@ -26,7 +26,7 @@ public class RegisterUseCase {
         this.passwordPolicy = passwordPolicy;
     }
 
-    public RegisterResult execute(Email email, PlaintextPassword password) {
+public RegisterResult execute(Email email, PlaintextPassword password) {
         CanRegister canRegister = CanRegister.builder()
                 .blockingDisposable(emailConfigPort.disposableDomains())
                 .blockingDomains(emailConfigPort.blockedDomains())

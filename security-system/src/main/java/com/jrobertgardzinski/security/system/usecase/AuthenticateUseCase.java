@@ -1,14 +1,15 @@
 package com.jrobertgardzinski.security.system.usecase;
 
+import com.jrobertgardzinski.security.domain.entity.SessionTokens;
+import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationFailedEvent;
+import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
+import com.jrobertgardzinski.security.domain.event.brute.force.protection.Blocked;
+import com.jrobertgardzinski.security.domain.event.brute.force.protection.Passed;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.system.event.AuthenticationResult;
-import com.jrobertgardzinski.security.system.feature.BruteForceGuard;
-import com.jrobertgardzinski.security.system.feature.CleanBruteForceRecords;
-import com.jrobertgardzinski.security.system.feature.GenerateSession;
-import com.jrobertgardzinski.security.system.feature.UpdateBruteForceRecords;
-import com.jrobertgardzinski.security.system.feature.VerifyCredentials;
+import com.jrobertgardzinski.security.system.feature.*;
 
 public class AuthenticateUseCase {
     private final BruteForceGuard bruteForceGuard;
@@ -33,13 +34,19 @@ public class AuthenticateUseCase {
         IpAddress ip = request.ipAddress();
         Credentials credentials = new Credentials(request.email(), request.plaintextPassword());
 
-        return AuthenticationResult.from(
-                bruteForceGuard.execute(ip),
-                () -> verifyCredentials.execute(credentials),
-                passed -> {
+        return switch (bruteForceGuard.execute(ip)) {
+            case Blocked blocked -> new AuthenticationResult.Blocked(blocked.authenticationBlock());
+            case Passed _ -> switch (verifyCredentials.execute(credentials)) {
+                case AuthenticationPassedEvent passed -> {
                     cleanBruteForceRecords.execute(ip);
-                    return generateSession.create(passed.email());
-                },
-                () -> updateBruteForceRecords.execute(ip));
+                    SessionTokens sessionTokens = generateSession.create(passed.email());
+                    yield new AuthenticationResult.Passed(sessionTokens);
+                }
+                case AuthenticationFailedEvent _ -> {
+                    updateBruteForceRecords.execute(ip);
+                    yield new AuthenticationResult.Failed();
+                }
+            };
+        };
     }
 }

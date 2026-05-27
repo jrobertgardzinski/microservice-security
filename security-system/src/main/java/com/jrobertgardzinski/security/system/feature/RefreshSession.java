@@ -24,14 +24,18 @@ public class RefreshSession {
 
     public RefreshTokenEvent execute(SessionRefreshRequest request) {
         Email email = request.email();
-        Optional<RefreshTokenExpiration> maybeExpiration = Optional.ofNullable(
+        Optional<RefreshTokenExpiration> optionalRefreshTokenExpiration = Optional.ofNullable(
                 authorizationDataRepository.findRefreshTokenExpirationBy(email, request.refreshToken()));
 
-        return RefreshTokenEvent.from(
-                email,
-                maybeExpiration,
-                () -> authorizationDataRepository.deleteBy(email),
-                expiration -> expiration.hasExpired(clock),
-                () -> authorizationDataRepository.create(SessionTokens.createFor(email, config, clock)));
+        return optionalRefreshTokenExpiration
+                .<RefreshTokenEvent>map(expiration -> {
+                    authorizationDataRepository.deleteBy(email);
+                    return expiration.hasExpired(clock)
+                            ? new RefreshTokenEvent.Expired(email)
+                            : new RefreshTokenEvent.Passed(
+                                    authorizationDataRepository.create(
+                                            SessionTokens.createFor(email, config, clock)));
+                })
+                .orElseGet(() -> new RefreshTokenEvent.NotFound(email));
     }
 }
