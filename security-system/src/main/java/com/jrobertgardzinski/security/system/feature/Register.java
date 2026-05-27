@@ -1,9 +1,7 @@
 package com.jrobertgardzinski.security.system.feature;
 
 import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.event.registration.RegistrationEvent;
-import com.jrobertgardzinski.security.domain.event.registration.RegistrationPassedEvent;
-import com.jrobertgardzinski.security.domain.event.registration.UserAlreadyExistsEvent;
+import com.jrobertgardzinski.security.domain.event.RegistrationEvent;
 import com.jrobertgardzinski.security.domain.repository.SaveResult;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.UserRegistration;
@@ -18,8 +16,8 @@ public class Register {
     public RegistrationEvent execute(UserRegistration userRegistration) {
         User user = new User(userRegistration.email(), userRegistration.passwordHash());
         return switch (userRepository.save(user)) {
-            case SaveResult.Saved saved     -> new RegistrationPassedEvent(saved.user().email());
-            case SaveResult.AlreadyExists _ -> new UserAlreadyExistsEvent();
+            case SaveResult.Saved saved     -> new RegistrationEvent.RegistrationPassedEvent(saved.user().email());
+            case SaveResult.AlreadyExists _ -> new RegistrationEvent.UserAlreadyExistsEvent();
         };
     }
 }

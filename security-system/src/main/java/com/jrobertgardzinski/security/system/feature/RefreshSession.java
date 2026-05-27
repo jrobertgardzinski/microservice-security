@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.system.feature;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenEvent;
+import com.jrobertgardzinski.security.domain.event.RefreshTokenEvent;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;

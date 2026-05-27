@@ -1,16 +1,5 @@
 package com.jrobertgardzinski.security.system.feature;
 
-import com.jrobertgardzinski.security.domain.event.registration.RegistrationPassedEvent;
-import com.jrobertgardzinski.security.system.usecase.RegisterResult;
-import com.jrobertgardzinski.security.system.usecase.RegisterUseCase;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
-import io.cucumber.java.en.When;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 public class RegisterRules {
 /*
     private final InMemoryUserRepository userRepository = new InMemoryUserRepository();

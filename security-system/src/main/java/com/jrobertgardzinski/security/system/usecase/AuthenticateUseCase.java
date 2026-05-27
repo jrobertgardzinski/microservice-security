@@ -1,10 +1,8 @@
 package com.jrobertgardzinski.security.system.usecase;
 
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationFailedEvent;
-import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
-import com.jrobertgardzinski.security.domain.event.brute.force.protection.Blocked;
-import com.jrobertgardzinski.security.domain.event.brute.force.protection.Passed;
+import com.jrobertgardzinski.security.domain.event.AuthenticationEvent;
+import com.jrobertgardzinski.security.domain.event.BruteForceProtectionEvent;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
@@ -35,14 +33,14 @@ public class AuthenticateUseCase {
         Credentials credentials = new Credentials(request.email(), request.plaintextPassword());
 
         return switch (bruteForceGuard.execute(ip)) {
-            case Blocked blocked -> new AuthenticationResult.Blocked(blocked.authenticationBlock());
-            case Passed _ -> switch (verifyCredentials.execute(credentials)) {
-                case AuthenticationPassedEvent passed -> {
+            case BruteForceProtectionEvent.Blocked blocked -> new AuthenticationResult.Blocked(blocked.authenticationBlock());
+            case BruteForceProtectionEvent.Passed _ -> switch (verifyCredentials.execute(credentials)) {
+                case AuthenticationEvent.Passed passed -> {
                     cleanBruteForceRecords.execute(ip);
                     SessionTokens sessionTokens = generateSession.create(passed.email());
                     yield new AuthenticationResult.Passed(sessionTokens);
                 }
-                case AuthenticationFailedEvent _ -> {
+                case AuthenticationEvent.Failed _ -> {
                     updateBruteForceRecords.execute(ip);
                     yield new AuthenticationResult.Failed();
                 }
