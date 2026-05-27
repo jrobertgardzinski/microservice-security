@@ -1,10 +1,8 @@
 package com.jrobertgardzinski.security.system.feature;
 
-import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
-import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationEvent;
-import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationFailedEvent;
-import com.jrobertgardzinski.security.domain.event.authentication.AuthenticationPassedEvent;
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
+import com.jrobertgardzinski.security.domain.event.AuthenticationEvent;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
 
@@ -21,7 +19,7 @@ public class VerifyCredentials {
         Email email = credentials.email();
         return userRepository.findBy(email)
                 .filter(user -> hashAlgorithmPort.verify(user.passwordHash(), credentials.plaintextPassword()))
-                .<AuthenticationEvent>map(_ -> new AuthenticationPassedEvent(email))
-                .orElseGet(() -> new AuthenticationFailedEvent(email));
+                .<AuthenticationEvent>map(_ -> new AuthenticationEvent.Passed(email))
+                .orElseGet(() -> new AuthenticationEvent.Failed(email));
     }
 }

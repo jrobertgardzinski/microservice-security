@@ -7,7 +7,7 @@ import com.jrobertgardzinski.security.system.feature.RefreshSession;
 import com.jrobertgardzinski.security.system.usecase.AuthenticateUseCase;
 import com.jrobertgardzinski.security.system.usecase.RegisterResult;
 import com.jrobertgardzinski.security.system.usecase.RegisterUseCase;
-import com.jrobertgardzinski.security.domain.event.refresh.RefreshTokenEvent;
+import com.jrobertgardzinski.security.domain.event.RefreshTokenEvent;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
 

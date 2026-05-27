@@ -2,9 +2,7 @@ package com.jrobertgardzinski.security.system.feature;
 
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
-import com.jrobertgardzinski.security.domain.event.brute.force.protection.Blocked;
-import com.jrobertgardzinski.security.domain.event.brute.force.protection.BruteForceProtectionEvent;
-import com.jrobertgardzinski.security.domain.event.brute.force.protection.Passed;
+import com.jrobertgardzinski.security.domain.event.BruteForceProtectionEvent;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.repository.FailedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
@@ -32,10 +30,10 @@ public class BruteForceGuard {
 
     public BruteForceProtectionEvent execute(IpAddress ipAddress) {
         return existingActiveBlockFor(ipAddress)
-                .<BruteForceProtectionEvent>map(Blocked::new)
+                .<BruteForceProtectionEvent>map(BruteForceProtectionEvent.Blocked::new)
                 .orElseGet(() -> failureLimitReachedFor(ipAddress)
-                        ? new Blocked(createNewBlockFor(ipAddress))
-                        : new Passed());
+                        ? new BruteForceProtectionEvent.Blocked(createNewBlockFor(ipAddress))
+                        : new BruteForceProtectionEvent.Passed());
     }
 
     private Optional<AuthenticationBlock> existingActiveBlockFor(IpAddress ipAddress) {

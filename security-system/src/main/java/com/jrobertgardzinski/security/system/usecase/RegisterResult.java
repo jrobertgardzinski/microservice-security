@@ -2,13 +2,11 @@ package com.jrobertgardzinski.security.system.usecase;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashedPassword;
-import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.security.domain.event.registration.RegistrationEvent;
+import com.jrobertgardzinski.security.domain.event.RegistrationEvent;
 import com.jrobertgardzinski.util.constraint.Decision;
 import com.jrobertgardzinski.util.constraint.Outcome;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 
 public sealed interface RegisterResult {

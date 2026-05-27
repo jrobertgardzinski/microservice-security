@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.domain.event.refresh;
+package com.jrobertgardzinski.security.domain.event;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
