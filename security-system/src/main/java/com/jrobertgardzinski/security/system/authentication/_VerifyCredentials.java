@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.usecase;
+package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
@@ -6,11 +6,11 @@ import com.jrobertgardzinski.security.domain.event.AuthenticationEvent;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
 
-public class VerifyCredentials {
+class _VerifyCredentials {
     private final UserRepository userRepository;
     private final HashAlgorithmPort hashAlgorithmPort;
 
-    public VerifyCredentials(UserRepository userRepository, HashAlgorithmPort hashAlgorithmPort) {
+    public _VerifyCredentials(UserRepository userRepository, HashAlgorithmPort hashAlgorithmPort) {
         this.userRepository = userRepository;
         this.hashAlgorithmPort = hashAlgorithmPort;
     }

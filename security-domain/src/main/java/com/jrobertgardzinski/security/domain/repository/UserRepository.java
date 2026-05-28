@@ -9,5 +9,5 @@ public interface UserRepository {
 
     Optional<User> findBy(Email email);
 
-    SaveResult save(User user);
+    User save(User user);
 }

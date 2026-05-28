@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.usecase;
+package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
@@ -12,16 +12,16 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class BruteForceGuard {
+class _BruteForceGuard {
 
     private final FailedAuthenticationRepository failedAuthenticationRepository;
     private final AuthenticationBlockRepository authenticationBlockRepository;
     private final Clock clock;
     private final BruteForceConfig config;
 
-    public BruteForceGuard(FailedAuthenticationRepository failedAuthenticationRepository,
-                           AuthenticationBlockRepository authenticationBlockRepository,
-                           Clock clock, BruteForceConfig config) {
+    public _BruteForceGuard(FailedAuthenticationRepository failedAuthenticationRepository,
+                            AuthenticationBlockRepository authenticationBlockRepository,
+                            Clock clock, BruteForceConfig config) {
         this.failedAuthenticationRepository = failedAuthenticationRepository;
         this.authenticationBlockRepository = authenticationBlockRepository;
         this.clock = clock;

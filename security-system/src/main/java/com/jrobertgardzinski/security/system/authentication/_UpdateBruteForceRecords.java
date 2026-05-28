@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.usecase;
+package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.security.domain.repository.FailedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.FailedAuthenticationDetails;
@@ -7,11 +7,11 @@ import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
-public class UpdateBruteForceRecords {
+class _UpdateBruteForceRecords {
     private final FailedAuthenticationRepository failedAuthenticationRepository;
     private final Clock clock;
 
-    public UpdateBruteForceRecords(FailedAuthenticationRepository failedAuthenticationRepository, Clock clock) {
+    public _UpdateBruteForceRecords(FailedAuthenticationRepository failedAuthenticationRepository, Clock clock) {
         this.failedAuthenticationRepository = failedAuthenticationRepository;
         this.clock = clock;
     }
