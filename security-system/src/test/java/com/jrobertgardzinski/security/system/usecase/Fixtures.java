@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.feature;
+package com.jrobertgardzinski.security.system.usecase;
 
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.util.constraint.Constraints;

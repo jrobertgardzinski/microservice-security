@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.usecase;
+package com.jrobertgardzinski.security.system.workflow;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashedPassword;

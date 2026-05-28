@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.feature;
+package com.jrobertgardzinski.security.system.usecase;
 
 import com.jrobertgardzinski.security.domain.repository.FailedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.FailedAuthenticationDetails;
