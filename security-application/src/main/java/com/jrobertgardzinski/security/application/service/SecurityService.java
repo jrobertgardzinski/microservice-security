@@ -2,35 +2,34 @@ package com.jrobertgardzinski.security.application.service;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.security.system.event.AuthenticationResult;
-import com.jrobertgardzinski.security.system.usecase.RefreshSession;
-import com.jrobertgardzinski.security.system.workflow.AuthenticateUseCase;
-import com.jrobertgardzinski.security.system.workflow.RegisterResult;
-import com.jrobertgardzinski.security.system.workflow.RegisterUseCase;
-import com.jrobertgardzinski.security.domain.event.RefreshTokenEvent;
+import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
+import com.jrobertgardzinski.security.system.session.RefreshSession;
+import com.jrobertgardzinski.security.system.authentication.Authentication;
+import com.jrobertgardzinski.security.system.registration.RegisterResult;
+import com.jrobertgardzinski.security.system.registration.Register;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
 
 public class SecurityService {
-    private final RegisterUseCase registerUseCase;
+    private final Register register;
     private final RefreshSession refreshSession;
-    private final AuthenticateUseCase authenticateUseCase;
+    private final Authentication authentication;
 
-    public SecurityService(RegisterUseCase registerUseCase, RefreshSession refreshSession, AuthenticateUseCase authenticateUseCase) {
-        this.registerUseCase = registerUseCase;
+    public SecurityService(Register register, RefreshSession refreshSession, Authentication authentication) {
+        this.register = register;
         this.refreshSession = refreshSession;
-        this.authenticateUseCase = authenticateUseCase;
+        this.authentication = authentication;
     }
 
     public RegisterResult register(String email, String password) {
-        return registerUseCase.execute(Email.of(email), PlaintextPassword.of(password));
+        return register.execute(Email.of(email), PlaintextPassword.of(password));
     }
 
     public AuthenticationResult authenticate(AuthenticationRequest authenticationRequest) {
-        return authenticateUseCase.execute(authenticationRequest);
+        return authentication.execute(authenticationRequest);
     }
 
-    public RefreshTokenEvent refreshSession(SessionRefreshRequest sessionRefreshRequest) {
+    public com.jrobertgardzinski.security.system.session.RefreshSessionResult refreshSession(SessionRefreshRequest sessionRefreshRequest) {
         return refreshSession.execute(sessionRefreshRequest);
     }
 }

@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.event;
+package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;

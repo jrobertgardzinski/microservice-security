@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.usecase;
+package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
@@ -7,12 +7,12 @@ import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 
 import java.time.Clock;
 
-public class GenerateSession {
+class _GenerateSession {
     private final AuthorizationDataRepository authorizationDataRepository;
     private final Clock clock;
     private final SessionTokensConfig config;
 
-    public GenerateSession(AuthorizationDataRepository authorizationDataRepository, Clock clock, SessionTokensConfig config) {
+    public _GenerateSession(AuthorizationDataRepository authorizationDataRepository, Clock clock, SessionTokensConfig config) {
         this.authorizationDataRepository = authorizationDataRepository;
         this.clock = clock;
         this.config = config;
