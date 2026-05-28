@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.usecase;
+package com.jrobertgardzinski.security.system.workflow;
 
 import com.jrobertgardzinski.email.config.port.EmailConfigPort;
 import com.jrobertgardzinski.email.domain.Email;
@@ -9,7 +9,7 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.domain.vo.UserRegistration;
-import com.jrobertgardzinski.security.system.feature.Register;
+import com.jrobertgardzinski.security.system.usecase.Register;
 
 public class RegisterUseCase {
     private final Register register;

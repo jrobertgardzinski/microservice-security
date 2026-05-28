@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.feature;
+package com.jrobertgardzinski.security.system.usecase;
 
 public class RegisterRules {
 /*

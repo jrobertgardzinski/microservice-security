@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.usecase;
+package com.jrobertgardzinski.security.system.workflow;
 
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.event.AuthenticationEvent;
@@ -7,7 +7,7 @@ import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.system.event.AuthenticationResult;
-import com.jrobertgardzinski.security.system.feature.*;
+import com.jrobertgardzinski.security.system.usecase.*;
 
 public class AuthenticateUseCase {
     private final BruteForceGuard bruteForceGuard;
