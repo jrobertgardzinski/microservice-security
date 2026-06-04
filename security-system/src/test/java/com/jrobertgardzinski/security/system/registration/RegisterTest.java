@@ -1,6 +1,7 @@
 package com.jrobertgardzinski.security.system.registration;
 
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.email.policy.CanRegister;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
@@ -10,17 +11,13 @@ import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.util.constraint.Decision;
 import com.jrobertgardzinski.util.constraint.Outcome;
 import io.qameta.allure.Epic;
-import net.jqwik.api.Arbitraries;
-import net.jqwik.api.Arbitrary;
-import net.jqwik.api.Assume;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Label;
-import net.jqwik.api.Property;
-import net.jqwik.api.Provide;
+import net.jqwik.api.*;
 import net.jqwik.api.lifecycle.BeforeTry;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,17 +74,23 @@ class RegisterTest {
         return errors.isEmpty() ? new Outcome.Allowed<>(HASH) : new Outcome.Rejected<>(errors);
     }
 
-    @Property
+    @Example
     @Label("Valid when both email and password pass validation")
     void valid_when_both_pass() {
-        User savedUser = new User(EMAIL, HASH);
-        Mockito.when(canRegister.evaluate(EMAIL)).thenReturn(new Decision.Allowed<>());
-        Mockito.when(createPasswordHash.create(PASSWORD)).thenReturn(new Outcome.Allowed<>(HASH));
-        Mockito.when(userRepository.save(Mockito.any(User.class))).thenReturn(savedUser);
+        UUID uuid = Mockito.mock(UUID.class);
+        try (MockedStatic<UUID> uuidMock = Mockito.mockStatic(UUID.class)) {
+            uuidMock.when(UUID::randomUUID).thenReturn(uuid);
 
-        RegisterResult result = register.execute(EMAIL, PASSWORD);
+            User userToSave = new User(EMAIL, HASH);
+            User savedUser = userToSave;
+            Mockito.when(canRegister.evaluate(EMAIL)).thenReturn(new Decision.Allowed<>());
+            Mockito.when(createPasswordHash.create(PASSWORD)).thenReturn(new Outcome.Allowed<>(HASH));
+            Mockito.when(userRepository.save(userToSave)).thenReturn(savedUser);
 
-        RegisterResult.Valid valid = assertInstanceOf(RegisterResult.Valid.class, result);
-        assertEquals(savedUser, valid.user());
+            RegisterResult result = register.execute(EMAIL, PASSWORD);
+
+            RegisterResult.Valid valid = assertInstanceOf(RegisterResult.Valid.class, result);
+            assertEquals(savedUser, valid.user());
+        }
     }
 }
