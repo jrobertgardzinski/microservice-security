@@ -16,6 +16,7 @@ import net.jqwik.api.lifecycle.BeforeTry;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,20 +44,21 @@ class RegisterTest {
         register = new Register(userRepository, canRegister, createPasswordHash);
     }
 
-    @Provide
-    Arbitrary<List<String>> errorCodes() {
-        return Arbitraries.strings().alpha().ofMinLength(1).ofMaxLength(20)
-                .list().ofMaxSize(5);
-    }
     @Property
     @Label("Invalid when email, password, or both fail validation")
     void invalid_when_any_validation_fails(
-            @ForAll("errorCodes") List<String> emailErrors,
-            @ForAll("errorCodes") List<String> passwordErrors) {
-        Assume.that(!emailErrors.isEmpty() || !passwordErrors.isEmpty());
+            @ForAll boolean emailFails,
+            @ForAll boolean passwordFails) {
 
-        Mockito.when(canRegister.evaluate(EMAIL)).thenReturn(emailDecision(emailErrors));
-        Mockito.when(createPasswordHash.create(PASSWORD)).thenReturn(passwordOutcome(passwordErrors));
+        Assume.that(emailFails || passwordFails);
+
+        List<String> emailErrors = emailFails ? someErrors() : Collections.emptyList();
+        List<String> passwordErrors = passwordFails ? someErrors() : Collections.emptyList();
+        Decision<Email> decision = emailDecision(emailErrors);
+        Outcome<HashedPassword> outcome = passwordOutcome(passwordErrors);
+
+        Mockito.when(canRegister.evaluate(EMAIL)).thenReturn(decision);
+        Mockito.when(createPasswordHash.create(PASSWORD)).thenReturn(outcome);
 
         RegisterResult result = register.execute(EMAIL, PASSWORD);
 
@@ -66,6 +68,12 @@ class RegisterTest {
                 () -> assertEquals(passwordErrors, invalid.passwordErrors()),
                 () -> Mockito.verify(userRepository, Mockito.never()).save(Mockito.any())
         );
+    }
+    @SuppressWarnings("unchecked")
+    private List<String> someErrors() {
+        List<String> errors = Mockito.mock(List.class);
+        Mockito.when(errors.isEmpty()).thenReturn(false);
+        return errors;
     }
     private Decision<Email> emailDecision(List<String> errors) {
         return errors.isEmpty() ? new Decision.Allowed<>() : new Decision.Rejected<>(errors);
