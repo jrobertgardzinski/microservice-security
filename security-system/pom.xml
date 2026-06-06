@@ -38,10 +38,6 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>email-security-config</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
             <artifactId>email-security-system</artifactId>
         </dependency>
         <dependency>

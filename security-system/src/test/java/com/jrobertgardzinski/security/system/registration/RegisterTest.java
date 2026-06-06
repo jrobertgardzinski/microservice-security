@@ -1,7 +1,6 @@
 package com.jrobertgardzinski.security.system.registration;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.email.policy.CanRegister;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
@@ -11,25 +10,25 @@ import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.util.constraint.Decision;
 import com.jrobertgardzinski.util.constraint.Outcome;
 import io.qameta.allure.Epic;
+import io.qameta.allure.Feature;
 import net.jqwik.api.*;
 import net.jqwik.api.lifecycle.BeforeTry;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Epic("Register")
+@Epic("Use case")
+@Feature("Register")
 class RegisterTest {
 
-    private static final Email EMAIL = Email.of("user@example.com");
-    private static final PlaintextPassword PASSWORD = PlaintextPassword.of("plaintext");
-    private static final HashedPassword HASH = new HashedPassword("hash");
+    record Given(Email email, PlaintextPassword password, HashedPassword hash) {};
+    private static final Given GIVEN = new Given(
+            Email.of("user@example.com"),
+            PlaintextPassword.of("plaintext"),
+            new HashedPassword("hash"));
 
     private UserRepository userRepository;
     private CanRegister canRegister;
@@ -57,10 +56,10 @@ class RegisterTest {
         Decision<Email> decision = emailDecision(emailErrors);
         Outcome<HashedPassword> outcome = passwordOutcome(passwordErrors);
 
-        Mockito.when(canRegister.evaluate(EMAIL)).thenReturn(decision);
-        Mockito.when(createPasswordHash.create(PASSWORD)).thenReturn(outcome);
+        Mockito.when(canRegister.evaluate(GIVEN.email)).thenReturn(decision);
+        Mockito.when(createPasswordHash.create(GIVEN.password)).thenReturn(outcome);
 
-        RegisterResult result = register.execute(EMAIL, PASSWORD);
+        RegisterResult result = register.execute(GIVEN.email, GIVEN.password);
 
         RegisterResult.Invalid invalid = assertInstanceOf(RegisterResult.Invalid.class, result);
         assertAll(
@@ -79,26 +78,20 @@ class RegisterTest {
         return errors.isEmpty() ? new Decision.Allowed<>() : new Decision.Rejected<>(errors);
     }
     private Outcome<HashedPassword> passwordOutcome(List<String> errors) {
-        return errors.isEmpty() ? new Outcome.Allowed<>(HASH) : new Outcome.Rejected<>(errors);
+        return errors.isEmpty() ? new Outcome.Allowed<>(GIVEN.hash) : new Outcome.Rejected<>(errors);
     }
 
     @Example
     @Label("Valid when both email and password pass validation")
     void valid_when_both_pass() {
-        UUID uuid = Mockito.mock(UUID.class);
-        try (MockedStatic<UUID> uuidMock = Mockito.mockStatic(UUID.class)) {
-            uuidMock.when(UUID::randomUUID).thenReturn(uuid);
+        User user = new User(GIVEN.email, GIVEN.hash);
+        Mockito.when(canRegister.evaluate(GIVEN.email)).thenReturn(new Decision.Allowed<>());
+        Mockito.when(createPasswordHash.create(GIVEN.password)).thenReturn(new Outcome.Allowed<>(GIVEN.hash));
+        Mockito.when(userRepository.save(Mockito.any())).thenReturn(user);
 
-            User userToSave = new User(EMAIL, HASH);
-            User savedUser = userToSave;
-            Mockito.when(canRegister.evaluate(EMAIL)).thenReturn(new Decision.Allowed<>());
-            Mockito.when(createPasswordHash.create(PASSWORD)).thenReturn(new Outcome.Allowed<>(HASH));
-            Mockito.when(userRepository.save(userToSave)).thenReturn(savedUser);
+        RegisterResult result = register.execute(GIVEN.email, GIVEN.password);
 
-            RegisterResult result = register.execute(EMAIL, PASSWORD);
-
-            RegisterResult.Valid valid = assertInstanceOf(RegisterResult.Valid.class, result);
-            assertEquals(savedUser, valid.user());
-        }
+        RegisterResult.Valid valid = assertInstanceOf(RegisterResult.Valid.class, result);
+        assertEquals(user, valid.user());
     }
 }
