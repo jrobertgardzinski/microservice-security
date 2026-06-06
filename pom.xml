@@ -49,6 +49,12 @@
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>3.4.2</version>
                 </plugin>
+<!-- allure reports everywhere-->
+                <plugin>
+                    <groupId>io.qameta.allure</groupId>
+                    <artifactId>allure-maven</artifactId>
+                    <version>2.17.0</version>
+                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
@@ -109,22 +115,6 @@
                 </executions>
             </plugin>
         </plugins>
-<!--        <plugins>
-            <plugin>
-                <groupId>io.qameta.allure</groupId>
-                <artifactId>allure-maven</artifactId>
-                <version>2.12.0</version>
-                <executions>
-                    <execution>
-                        <id>allure-report</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>-->
     </build>
 
     <dependencyManagement>
