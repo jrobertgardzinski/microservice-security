@@ -9,6 +9,7 @@ import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
+import com.jrobertgardzinski.security.system.testkit.Concept;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import net.jqwik.api.Example;
@@ -26,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 @Epic("Use case")
 @Feature("Refresh session")
+@Concept("refresh-token-rotation")
 class RefreshSessionTest {
 
     record Given(Email email, RefreshToken refreshToken, SessionRefreshRequest request) {}

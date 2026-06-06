@@ -8,6 +8,7 @@ import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.event.AuthenticationEvent;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
+import com.jrobertgardzinski.security.system.testkit.Concept;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Epic("Use case")
 @Feature("Authentication")
 @Story("Verify credentials")
+@Concept("credential-verification")
 class _VerifyCredentialsTest {
 
     record Given(Email email, PlaintextPassword password, HashedPassword hash,

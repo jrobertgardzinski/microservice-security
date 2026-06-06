@@ -6,6 +6,7 @@ import com.jrobertgardzinski.security.domain.repository.AuthorizationDataReposit
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
+import com.jrobertgardzinski.security.system.testkit.Concept;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Epic("Use case")
 @Feature("Authentication")
 @Story("Generate session")
+@Concept("session-tokens")
 class _GenerateSessionTest {
 
     private static final Email EMAIL = Email.of("user@example.com");
