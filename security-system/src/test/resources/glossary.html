@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>security-system — Ubiquitous Language Glossary</title>
+</head>
+<body>
+<h1>security-system — Ubiquitous Language Glossary</h1>
+<p>
+    Single source of truth for ubiquitous-language terms. Each term has a stable kebab-slug
+    used as the anchor id. Tests link here via <code>@Concept("&lt;slug&gt;")</code> (Allure),
+    and Javadoc links here via the matching anchor.
+</p>
+
+<h2 id="registration">Registration</h2>
+<p>Creating a new user from an email and a password, subject to email and password validation.</p>
+
+<h2 id="credential-verification">Credential verification</h2>
+<p>Checking presented credentials against a stored user: the user must exist and the password
+    hash must match. Any other outcome is a failure.</p>
+
+<h2 id="brute-force-guard">Brute-force guard</h2>
+<p>Protection that rejects authentication attempts from an IP address that has an active block,
+    or that has reached the failure limit within the configured window (then a new block is created).
+    Backed by failed-authentication and authentication-block records.</p>
+
+<h2 id="session-tokens">Session tokens</h2>
+<p>The pair of tokens (refresh + access, with expirations) that represents an active session,
+    minted for an email and persisted.</p>
+
+<h2 id="refresh-token-rotation">Refresh-token rotation</h2>
+<p>Renewing a session by consuming the presented refresh token (single use): the existing session
+    is deleted and, if the token had not expired, a fresh set of session tokens is issued.</p>
+
+</body>
+</html>

@@ -12,6 +12,7 @@ import com.jrobertgardzinski.security.domain.vo.Credentials;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
+import com.jrobertgardzinski.security.system.testkit.Concept;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import net.jqwik.api.Example;
@@ -70,6 +71,7 @@ class AuthenticationTest {
 
     @Example
     @Label("Blocked when the brute-force guard blocks the IP")
+    @Concept("brute-force-guard")
     void blocked_when_guard_blocks() {
         AuthenticationBlock block = new AuthenticationBlock(GIVEN.ipAddress, LocalDateTime.now(CLOCK).plusMinutes(15));
         Mockito.when(bruteForceGuard.execute(GIVEN.ipAddress))
@@ -89,6 +91,7 @@ class AuthenticationTest {
 
     @Example
     @Label("Passed when the guard allows and credentials are valid")
+    @Concept("credential-verification")
     void passed_when_guard_allows_and_credentials_valid() {
         SessionTokens sessionTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK);
         Mockito.when(bruteForceGuard.execute(GIVEN.ipAddress))
@@ -110,6 +113,7 @@ class AuthenticationTest {
 
     @Example
     @Label("Failed when the guard allows but credentials are invalid")
+    @Concept("credential-verification")
     void failed_when_guard_allows_but_credentials_invalid() {
         Mockito.when(bruteForceGuard.execute(GIVEN.ipAddress))
                 .thenReturn(new BruteForceProtectionEvent.Passed());

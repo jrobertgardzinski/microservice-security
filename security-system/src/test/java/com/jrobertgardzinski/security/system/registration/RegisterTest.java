@@ -7,6 +7,7 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
+import com.jrobertgardzinski.security.system.testkit.Concept;
 import com.jrobertgardzinski.util.constraint.Decision;
 import com.jrobertgardzinski.util.constraint.Outcome;
 import io.qameta.allure.Epic;
@@ -22,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Epic("Use case")
 @Feature("Register")
+@Concept("registration")
 class RegisterTest {
 
     record Given(Email email, PlaintextPassword password, HashedPassword hash) {};
