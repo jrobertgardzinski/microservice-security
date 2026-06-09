@@ -30,10 +30,9 @@ public class Register {
         Outcome<HashedPassword> passwordOutcome = createPasswordHash.create(password);
         List<String> passwordErrors = passwordOutcome.errorCodes();
 
-        if (!emailErrors.isEmpty() || !passwordErrors.isEmpty()) {
-            return new RegisterResult.Invalid(emailErrors, passwordErrors);
-        }
-        return passwordOutcome.findValue()
+        return !emailErrors.isEmpty() || !passwordErrors.isEmpty() ?
+            new RegisterResult.Invalid(emailErrors, passwordErrors) :
+            passwordOutcome.findValue()
                 .map(hash -> {
                     User userToSave = new User(email, hash);
                     User savedUser = userRepository.save(userToSave);
