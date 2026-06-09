@@ -1,21 +1,22 @@
 # Collective Allure Test Report & Documentation
 
-Generated on: 2026-05-12 22:49:27
+Generated on: 2026-06-09 14:06:02
 
 ## 📊 Execution Summary
 
 | Module | Total | Passed | Failed | Broken | Skipped | Duration |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| email/email-domain | 13 | 13 | 0 | 0 | 0 | 157ms |
-| email/email-security/email-security-config | 1 | 1 | 0 | 0 | 0 | 97ms |
-| email/email-security/email-security-system | 28 | 28 | 0 | 0 | 0 | 192ms |
-| microservice-security/security-config | 13 | 13 | 0 | 0 | 0 | 169ms |
-| password/hash-algorithms/argon2 | 2 | 2 | 0 | 0 | 0 | 651ms |
-| password/hash-algorithms/argon2-config | 7 | 7 | 0 | 0 | 0 | 144ms |
-| password/password-domain | 1 | 1 | 0 | 0 | 0 | 181ms |
+| email/email-domain | 13 | 13 | 0 | 0 | 0 | 158ms |
+| email/email-security/email-security-config | 1 | 1 | 0 | 0 | 0 | 99ms |
+| email/email-security/email-security-system | 28 | 28 | 0 | 0 | 0 | 184ms |
+| microservice-security/security-config | 13 | 13 | 0 | 0 | 0 | 170ms |
+| microservice-security/security-system | 18 | 18 | 0 | 0 | 0 | 960ms |
+| password/hash-algorithms/argon2 | 2 | 2 | 0 | 0 | 0 | 649ms |
+| password/hash-algorithms/argon2-config | 7 | 7 | 0 | 0 | 0 | 157ms |
+| password/password-domain | 1 | 1 | 0 | 0 | 0 | 184ms |
 | password/password-security/password-security-config | 9 | 9 | 0 | 0 | 0 | 172ms |
-| password/password-security/password-security-system | 19 | 19 | 0 | 0 | 0 | 169ms |
-| **TOTAL** | **93** | **93** | **0** | **0** | **0** | **1.93s** |
+| password/password-security/password-security-system | 19 | 19 | 0 | 0 | 0 | 184ms |
+| **TOTAL** | **111** | **111** | **0** | **0** | **0** | **2.92s** |
 
 ## 📝 Test Documentation (Behaviors)
 
@@ -27,9 +28,9 @@ This section describes the verified system behaviors based on passing tests.
 
 ##### Story: CanRegister
 
-- **default config → all domain sets are empty**
+- **default config → all domain wrappers are absent**
   - *Parameters:*
-    - default: `CanRegisterConfig[blockedDomains=BlockedDomains[values=[]], disposableDomains=DisposableDomains[values=[]], companyDomains=CompanyDomains[values=[]]]`
+    - default: `CanRegisterConfig[blockedDomains=null, disposableDomains=null, companyDomains=null]`
 
 #### Feature: Constraints
 
@@ -148,25 +149,25 @@ This section describes the verified system behaviors based on passing tests.
 - **if any subset of OTHER_CONSTRAINTS is unsatisfied → reject with all their codes**
   - *Parameters:*
     - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
-    - broken constraints: `[RFC_FORMAT_INVALID, NOT_A_COMPANY_DOMAIN]`
+    - broken constraints: `[RFC_FORMAT_INVALID]`
     - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
     - broken constraints: `[RFC_FORMAT_INVALID]`
     - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
-    - broken constraints: `[NOT_A_COMPANY_DOMAIN, DISPOSABLE_DOMAIN]`
+    - broken constraints: `[NOT_A_COMPANY_DOMAIN]`
     - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
-    - broken constraints: `[NOT_A_COMPANY_DOMAIN, DOMAIN_BLOCKED, RFC_FORMAT_INVALID, DISPOSABLE_DOMAIN]`
+    - broken constraints: `[RFC_FORMAT_INVALID]`
+    - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
+    - broken constraints: `[NOT_A_COMPANY_DOMAIN]`
+    - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
+    - broken constraints: `[DISPOSABLE_DOMAIN, RFC_FORMAT_INVALID, NOT_A_COMPANY_DOMAIN, DOMAIN_BLOCKED]`
+    - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
+    - broken constraints: `[RFC_FORMAT_INVALID]`
+    - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
+    - broken constraints: `[RFC_FORMAT_INVALID]`
     - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
     - broken constraints: `[NOT_A_COMPANY_DOMAIN, DOMAIN_BLOCKED]`
     - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
-    - broken constraints: `[DISPOSABLE_DOMAIN, DOMAIN_BLOCKED, RFC_FORMAT_INVALID]`
-    - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
     - broken constraints: `[RFC_FORMAT_INVALID, NOT_A_COMPANY_DOMAIN, DOMAIN_BLOCKED]`
-    - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
-    - broken constraints: `[RFC_FORMAT_INVALID]`
-    - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
-    - broken constraints: `[RFC_FORMAT_INVALID, DOMAIN_BLOCKED, DISPOSABLE_DOMAIN, NOT_A_COMPANY_DOMAIN]`
-    - OTHER_CONSTRAINTS: `[_RfcFormatConstraint, _BlockedDomainConstraint, _DisposableEmailConstraint, _IsEmployeeConstraint]`
-    - broken constraints: `[NOT_A_COMPANY_DOMAIN, DOMAIN_BLOCKED, RFC_FORMAT_INVALID, DISPOSABLE_DOMAIN]`
 
 ##### Story: CanResetPassword
 
@@ -276,11 +277,11 @@ This section describes the verified system behaviors based on passing tests.
 
 - **Security: toString() does not reveal plaintext**
   - *Parameters:*
-    - password: `mUFmnjLAV`
-    - toString(): `PlaintextPassword[value=REDACTED]`
-    - password: `sTTktDqXmw`
-    - toString(): `PlaintextPassword[value=REDACTED]`
     - password: `AAA`
+    - toString(): `PlaintextPassword[value=REDACTED]`
+    - password: `DBRirGSFIFwYW`
+    - toString(): `PlaintextPassword[value=REDACTED]`
+    - password: `bSJt`
     - toString(): `PlaintextPassword[value=REDACTED]`
 
 #### Feature: Password Security Configuration
@@ -313,38 +314,38 @@ This section describes the verified system behaviors based on passing tests.
     - default: `!@#$%^&*`
 - **Invariant: accepts valid values**
   - *Parameters:*
-    - value: `!@#$%^&*`
-    - value: `!@#$%^&*`
-    - value: `!`
     - value: `!`
     - value: `!@#$%^&*`
-    - value: `~`
     - value: `!@#$%^&*`
     - value: `!@#$%^&*`
-    - value: `~`
+    - value: `!@#$%^&*`
+    - value: `!@#$%^&*`
+    - value: `?!|[_`
+    - value: `?"!,=/.~`
+    - value: `!`
     - value: `!@#$%^&*`
 - **Invariant: rejects duplicate characters**
   - *Parameters:*
-    - value: `//`
-    - value: `**`
-    - value: `{{`
-    - value: `\\`
-    - value: `""`
-    - value: `!!`
     - value: `>>`
-    - value: `((`
-    - value: `||`
-    - value: `::`
-    - value: `<<`
+    - value: `!!`
+    - value: `!!`
+    - value: `**`
+    - value: `$$`
+    - value: `{{`
+    - value: `//`
+    - value: `{{`
+    - value: `==`
+    - value: `--`
+    - value: `~~`
+    - value: `++`
+    - value: `!!`
+    - value: `##`
     - value: `$$`
     - value: `~~`
-    - value: `--`
-    - value: `^^`
-    - value: `//`
-    - value: `^^`
+    - value: `''`
     - value: `&&`
-    - value: `;;`
-    - value: `%%`
+    - value: `\\`
+    - value: `**`
 - **Invariant: rejects invalid values**
   - *Parameters:*
     - letter — not a special char: `a`
@@ -370,19 +371,19 @@ This section describes the verified system behaviors based on passing tests.
 
 ##### Story: Create Password Hash
 
-- **all constraints satisfied → created**
+- **all constraints satisfied → allowed**
 - **if any subset of constraints is unsatisfied → rejected with all their codes**
   - *Parameters:*
-    - broken constraints: `[LOWERCASE_REQUIRED]`
-    - broken constraints: `[UPPERCASE_REQUIRED]`
     - broken constraints: `[MIN_LENGTH_NOT_MET]`
-    - broken constraints: `[SPECIAL_CHAR_REQUIRED, MIN_LENGTH_NOT_MET]`
-    - broken constraints: `[SPECIAL_CHAR_REQUIRED, LOWERCASE_REQUIRED, MIN_LENGTH_NOT_MET, UPPERCASE_REQUIRED]`
-    - broken constraints: `[SPECIAL_CHAR_REQUIRED, DIGIT_REQUIRED, LOWERCASE_REQUIRED, UPPERCASE_REQUIRED, MIN_LENGTH_NOT_MET]`
-    - broken constraints: `[MIN_LENGTH_NOT_MET]`
-    - broken constraints: `[DIGIT_REQUIRED]`
-    - broken constraints: `[MIN_LENGTH_NOT_MET]`
-    - broken constraints: `[SPECIAL_CHAR_REQUIRED, MIN_LENGTH_NOT_MET, UPPERCASE_REQUIRED, DIGIT_REQUIRED, LOWERCASE_REQUIRED]`
+    - broken constraints: `[SPECIAL_CHAR_REQUIRED]`
+    - broken constraints: `[SPECIAL_CHAR_REQUIRED]`
+    - broken constraints: `[MIN_LENGTH_NOT_MET, DIGIT_REQUIRED, SPECIAL_CHAR_REQUIRED]`
+    - broken constraints: `[SPECIAL_CHAR_REQUIRED]`
+    - broken constraints: `[UPPERCASE_REQUIRED, LOWERCASE_REQUIRED, SPECIAL_CHAR_REQUIRED, MIN_LENGTH_NOT_MET, DIGIT_REQUIRED]`
+    - broken constraints: `[SPECIAL_CHAR_REQUIRED]`
+    - broken constraints: `[MIN_LENGTH_NOT_MET, DIGIT_REQUIRED, UPPERCASE_REQUIRED]`
+    - broken constraints: `[LOWERCASE_REQUIRED, SPECIAL_CHAR_REQUIRED, DIGIT_REQUIRED]`
+    - broken constraints: `[SPECIAL_CHAR_REQUIRED, UPPERCASE_REQUIRED]`
 
 ### Epic: Security
 
@@ -410,7 +411,7 @@ This section describes the verified system behaviors based on passing tests.
 - **accepts**
   - *Parameters:*
     - MIN: `3`
-    - between: `83`
+    - between: `76`
     - MAX: `120`
 - **rejects**
   - *Parameters:*
@@ -424,7 +425,7 @@ This section describes the verified system behaviors based on passing tests.
 - **accepts**
   - *Parameters:*
     - MIN: `1`
-    - between: `1230`
+    - between: `346`
     - MAX: `1440`
 - **rejects**
   - *Parameters:*
@@ -452,7 +453,7 @@ This section describes the verified system behaviors based on passing tests.
 - **accepts**
   - *Parameters:*
     - MIN: `1`
-    - between: `23`
+    - between: `16`
     - MAX: `60`
 - **rejects**
   - *Parameters:*
@@ -473,4 +474,51 @@ This section describes the verified system behaviors based on passing tests.
   - *Parameters:*
     - MIN - 1: `0`
     - negative: `-1`
+
+### Epic: Use case
+
+#### Feature: Authentication
+
+- **Blocked when the brute-force guard blocks the IP**
+- **Failed when the guard allows but credentials are invalid**
+- **Passed when the guard allows and credentials are valid**
+
+##### Story: Brute-force guard
+
+- **Blocked and a new block created when the failure limit is reached**
+- **Blocked when an active block already exists for the IP**
+- **Passed when there is no active block and failures are below the limit**
+
+##### Story: Clean brute-force records
+
+- **Removes both failed-authentication records and authentication blocks for the IP**
+
+##### Story: Generate session
+
+- **Creates session tokens for the email and returns the persisted result**
+
+##### Story: Update brute-force records
+
+- **Records a failed authentication for the IP stamped with the current time**
+
+##### Story: Verify credentials
+
+- **Failed when no user exists for the email**
+- **Failed when the user exists but the password hash does not match**
+- **Passed when the user exists and the password hash matches**
+
+#### Feature: Concept glossary
+
+- **Every @Concept slug resolves to an anchor in glossary.html**
+
+#### Feature: Refresh session
+
+- **Expired when refresh token is found but expired**
+- **NotFound when no refresh token is stored**
+- **Passed when refresh token is found and not expired**
+
+#### Feature: Register
+
+- **Invalid when email, password, or both fail validation**
+- **Valid when both email and password pass validation**
 
