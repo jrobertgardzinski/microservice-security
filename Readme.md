@@ -4,6 +4,14 @@
 
 ---
 
+> **Project scope.** The **Domain → Config → System** core is fully tested and
+> self-documenting — that's the part this repository proves today. The **Application**,
+> **Infrastructure** and **UI** layers are a deliberately planned extension of the *same* BDD
+> specification: same behaviour, additional entry points. The architecture below describes the
+> full target shape; the executable specs describe what already holds.
+
+---
+
 A security microservice (registration, authentication, password hashing) built with
 **Domain-Driven Design** and **Hexagonal Architecture**. It is organized into six layers
 with dependencies pointing strictly downward — every layer may use the ones below it,
@@ -35,22 +43,21 @@ This repository is part of a larger portfolio of reusable modules — see my oth
 
 ## Requirements
 
-| Tool  | Version    | Notes                                                               |
-| ----- | ---------- | ------------------------------------------------------------------- |
-| Git   | any recent | to clone the repositories                                           |
-| JDK   | **25**     | the project compiles against Java 25 (`maven.compiler.release=25`)  |
-| Maven | **3.9+**   | no Maven wrapper is bundled, so a system-wide Maven is required     |
+| Tool  | Version    | Notes                                                                          |
+| ----- | ---------- | ------------------------------------------------------------------------------ |
+| Git   | any recent | to clone the repositories                                                      |
+| JDK   | **25**     | the project compiles against Java 25 (`maven.compiler.release=25`)             |
+| Maven | —          | **not required** — every repository bundles a Maven Wrapper (`mvnw` / `mvnw.cmd`) that downloads the right Maven version automatically |
 
 Check what you already have:
 
 ```bash
 git --version
 java -version
-mvn -version
 ```
 
 <details>
-<summary><strong>Don't have Java 25 / Maven yet? Quick install per platform</strong></summary>
+<summary><strong>Don't have Java 25 yet? Quick install per platform</strong></summary>
 
 **Linux / macOS — via [SDKMAN!](https://sdkman.io) (recommended):**
 
@@ -58,20 +65,18 @@ mvn -version
 curl -s "https://get.sdkman.io" | bash
 source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk install java 25-tem      # Temurin JDK 25
-sdk install maven
 ```
 
 **macOS — via Homebrew:**
 
 ```bash
-brew install openjdk@25 maven git
+brew install openjdk@25 git
 ```
 
 **Windows — via [winget](https://learn.microsoft.com/windows/package-manager/) (built into Windows 10/11):**
 
 ```powershell
 winget install EclipseAdoptium.Temurin.25.JDK
-winget install Apache.Maven
 winget install Git.Git
 ```
 
@@ -85,8 +90,9 @@ After installing, **open a new terminal** so the updated `PATH` is picked up.
 
 This microservice depends on a few sibling modules that live in separate repositories
 (`test-starter`, `libs`, `config`, `email`, `password`). The commands below clone all of them
-into one workspace folder and build them in the correct order, installing each into your local
-Maven repository (`~/.m2`) so the final build can resolve them.
+into one workspace folder and build them in the correct order via the bundled **Maven Wrapper**
+(`./mvnw`), installing each into your local Maven repository (`~/.m2`) so the final build can
+resolve them. No system-wide Maven needed — the wrapper fetches the right version on first run.
 
 ### 🐧 Linux &nbsp;/&nbsp; 🍎 macOS &nbsp;(bash / zsh)
 
@@ -98,7 +104,7 @@ for repo in test-starter libs config email password microservice-security; do
 done
 
 for dir in test-starter libs config email password microservice-security; do
-  ( cd "$dir" && mvn clean install ) || break
+  ( cd "$dir" && ./mvnw clean install ) || break
 done
 ```
 
@@ -113,7 +119,7 @@ foreach ($repo in 'test-starter','libs','config','email','password','microservic
 
 foreach ($dir in 'test-starter','libs','config','email','password','microservice-security') {
   Push-Location $dir
-  mvn clean install
+  .\mvnw.cmd clean install
   if ($LASTEXITCODE -ne 0) { Pop-Location; break }
   Pop-Location
 }
@@ -122,6 +128,6 @@ foreach ($dir in 'test-starter','libs','config','email','password','microservice
 When the last build finishes you have the whole project compiled and all of its tests
 (the living specification) executed locally.
 
-> 💡 **Faster build, skipping tests:** append `-DskipTests` to the `mvn` command (e.g.
-> `mvn clean install -DskipTests`). The tests run in just a few seconds, though — and they
+> 💡 **Faster build, skipping tests:** append `-DskipTests` to the wrapper command (e.g.
+> `./mvnw clean install -DskipTests`). The tests run in just a few seconds, though — and they
 > *are* the documentation — so running them is worth it.
