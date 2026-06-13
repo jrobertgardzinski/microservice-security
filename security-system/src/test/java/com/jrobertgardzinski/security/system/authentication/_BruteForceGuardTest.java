@@ -7,7 +7,6 @@ import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepos
 import com.jrobertgardzinski.security.domain.repository.FailedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.FailuresCount;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
-import com.jrobertgardzinski.security.system.testkit.Concept;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
@@ -31,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 @Epic("Use case")
 @Feature("Authentication")
 @Story("Brute-force guard")
-@Concept("brute-force-guard")
 class _BruteForceGuardTest {
 
     record Given(IpAddress ip) {}
