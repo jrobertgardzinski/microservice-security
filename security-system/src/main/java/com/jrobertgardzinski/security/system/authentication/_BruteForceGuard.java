@@ -12,12 +12,6 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Brute-force guard: rejects authentication from an {@link IpAddress} that has an active block,
- * or that has reached the failure limit within the configured window (creating a new block).
- *
- * @see <a href="https://jrobertgardzinski.github.io/portfolio/glossary.html#brute-force-guard">Glossary: brute-force guard</a>
- */
 class _BruteForceGuard {
 
     private final FailedAuthenticationRepository failedAuthenticationRepository;
