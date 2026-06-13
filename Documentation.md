@@ -1,6 +1,6 @@
 # Collective Allure Test Report & Documentation
 
-Generated on: 2026-06-09 14:06:02
+Generated on: 2026-06-13 20:31:30
 
 ## 📊 Execution Summary
 
@@ -9,14 +9,14 @@ Generated on: 2026-06-09 14:06:02
 | email/email-domain | 13 | 13 | 0 | 0 | 0 | 158ms |
 | email/email-security/email-security-config | 1 | 1 | 0 | 0 | 0 | 99ms |
 | email/email-security/email-security-system | 28 | 28 | 0 | 0 | 0 | 184ms |
-| microservice-security/security-config | 13 | 13 | 0 | 0 | 0 | 170ms |
-| microservice-security/security-system | 18 | 18 | 0 | 0 | 0 | 960ms |
+| microservice-security/security-config | 13 | 13 | 0 | 0 | 0 | 168ms |
+| microservice-security/security-system | 17 | 17 | 0 | 0 | 0 | 938ms |
 | password/hash-algorithms/argon2 | 2 | 2 | 0 | 0 | 0 | 649ms |
 | password/hash-algorithms/argon2-config | 7 | 7 | 0 | 0 | 0 | 157ms |
 | password/password-domain | 1 | 1 | 0 | 0 | 0 | 184ms |
 | password/password-security/password-security-config | 9 | 9 | 0 | 0 | 0 | 172ms |
 | password/password-security/password-security-system | 19 | 19 | 0 | 0 | 0 | 184ms |
-| **TOTAL** | **111** | **111** | **0** | **0** | **0** | **2.92s** |
+| **TOTAL** | **110** | **110** | **0** | **0** | **0** | **2.89s** |
 
 ## 📝 Test Documentation (Behaviors)
 
@@ -411,7 +411,7 @@ This section describes the verified system behaviors based on passing tests.
 - **accepts**
   - *Parameters:*
     - MIN: `3`
-    - between: `76`
+    - between: `75`
     - MAX: `120`
 - **rejects**
   - *Parameters:*
@@ -425,7 +425,7 @@ This section describes the verified system behaviors based on passing tests.
 - **accepts**
   - *Parameters:*
     - MIN: `1`
-    - between: `346`
+    - between: `1072`
     - MAX: `1440`
 - **rejects**
   - *Parameters:*
@@ -439,7 +439,7 @@ This section describes the verified system behaviors based on passing tests.
 - **accepts**
   - *Parameters:*
     - MIN: `1`
-    - between: `9`
+    - between: `5`
     - MAX: `20`
 - **rejects**
   - *Parameters:*
@@ -453,7 +453,7 @@ This section describes the verified system behaviors based on passing tests.
 - **accepts**
   - *Parameters:*
     - MIN: `1`
-    - between: `16`
+    - between: `30`
     - MAX: `60`
 - **rejects**
   - *Parameters:*
@@ -506,10 +506,6 @@ This section describes the verified system behaviors based on passing tests.
 - **Failed when no user exists for the email**
 - **Failed when the user exists but the password hash does not match**
 - **Passed when the user exists and the password hash matches**
-
-#### Feature: Concept glossary
-
-- **Every @Concept slug resolves to an anchor in glossary.html**
 
 #### Feature: Refresh session
 
