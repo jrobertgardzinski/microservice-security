@@ -19,7 +19,7 @@ class _VerifyCredentials {
         Email email = credentials.email();
         return userRepository.findBy(email)
                 .filter(user -> hashAlgorithmPort.verify(user.passwordHash(), credentials.plaintextPassword()))
-                .<AuthenticationEvent>map(_ -> new AuthenticationEvent.Passed(email))
-                .orElseGet(() -> new AuthenticationEvent.Failed(email));
+                .<AuthenticationEvent>map(_ -> new AuthenticationEvent.Valid(email))
+                .orElseGet(() -> new AuthenticationEvent.Invalid(email));
     }
 }

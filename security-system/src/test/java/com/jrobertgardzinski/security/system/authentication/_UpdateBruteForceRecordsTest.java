@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.authentication;
 
-import com.jrobertgardzinski.security.domain.repository.FailedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.vo.FailedAuthenticationDetails;
+import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -24,13 +24,13 @@ class _UpdateBruteForceRecordsTest {
     private static final IpAddress IP = new IpAddress("192.168.0.1");
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
 
-    private FailedAuthenticationRepository failedAuthenticationRepository;
+    private RejectedAuthenticationRepository rejectedAuthenticationRepository;
     private _UpdateBruteForceRecords updateBruteForceRecords;
 
     @BeforeTry
     void init() {
-        failedAuthenticationRepository = Mockito.mock(FailedAuthenticationRepository.class);
-        updateBruteForceRecords = new _UpdateBruteForceRecords(failedAuthenticationRepository, CLOCK);
+        rejectedAuthenticationRepository = Mockito.mock(RejectedAuthenticationRepository.class);
+        updateBruteForceRecords = new _UpdateBruteForceRecords(rejectedAuthenticationRepository, CLOCK);
     }
 
     @Example
@@ -38,7 +38,7 @@ class _UpdateBruteForceRecordsTest {
     void records_failed_authentication() {
         updateBruteForceRecords.execute(IP);
 
-        Mockito.verify(failedAuthenticationRepository)
-                .create(new FailedAuthenticationDetails(IP, LocalDateTime.now(CLOCK)));
+        Mockito.verify(rejectedAuthenticationRepository)
+                .create(new RejectedAuthenticationDetails(IP, LocalDateTime.now(CLOCK)));
     }
 }

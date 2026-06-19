@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.repository.FailedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -20,16 +20,16 @@ class _CleanBruteForceRecordsTest {
 
     private static final IpAddress IP = new IpAddress("192.168.0.1");
 
-    private FailedAuthenticationRepository failedAuthenticationRepository;
+    private RejectedAuthenticationRepository rejectedAuthenticationRepository;
     private AuthenticationBlockRepository authenticationBlockRepository;
     private _CleanBruteForceRecords cleanBruteForceRecords;
 
     @BeforeTry
     void init() {
-        failedAuthenticationRepository = Mockito.mock(FailedAuthenticationRepository.class);
+        rejectedAuthenticationRepository = Mockito.mock(RejectedAuthenticationRepository.class);
         authenticationBlockRepository = Mockito.mock(AuthenticationBlockRepository.class);
         cleanBruteForceRecords = new _CleanBruteForceRecords(
-                failedAuthenticationRepository, authenticationBlockRepository);
+                rejectedAuthenticationRepository, authenticationBlockRepository);
     }
 
     @Example
@@ -38,7 +38,7 @@ class _CleanBruteForceRecordsTest {
         cleanBruteForceRecords.execute(IP);
 
         assertAll(
-                () -> Mockito.verify(failedAuthenticationRepository).removeAllFor(IP),
+                () -> Mockito.verify(rejectedAuthenticationRepository).removeAllFor(IP),
                 () -> Mockito.verify(authenticationBlockRepository).removeAllFor(IP)
         );
     }

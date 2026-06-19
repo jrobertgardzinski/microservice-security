@@ -31,7 +31,7 @@ public class RefreshSession {
                     authorizationDataRepository.deleteBy(email);
                     return expiration.hasExpired(clock)
                             ? new RefreshSessionResult.Expired(email)
-                            : new RefreshSessionResult.Passed(
+                            : new RefreshSessionResult.Refreshed(
                                     authorizationDataRepository.create(
                                             SessionTokens.createFor(email, config, clock)));
                 })

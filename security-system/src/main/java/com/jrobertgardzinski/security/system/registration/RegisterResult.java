@@ -6,7 +6,7 @@ import java.util.List;
 
 public sealed interface RegisterResult {
 
-    record Valid(User user) implements RegisterResult {}
+    record Registered(User user) implements RegisterResult {}
 
-    record Invalid(List<String> emailErrors, List<String> passwordErrors) implements RegisterResult {}
+    record Rejected(List<String> emailErrors, List<String> passwordErrors) implements RegisterResult {}
 }

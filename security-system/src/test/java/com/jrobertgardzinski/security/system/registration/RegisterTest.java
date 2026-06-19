@@ -24,11 +24,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @Feature("Register")
 class RegisterTest {
 
-    record Given(Email email, PlaintextPassword password, HashedPassword hash) {};
-    private static final Given GIVEN = new Given(
-            Email.of("user@example.com"),
-            PlaintextPassword.of("plaintext"),
-            new HashedPassword("hash"));
+    private static final String EMAIL = "user@example.com";
+    private static final String PASSWORD = "plaintext";
+    private static final HashedPassword HASH = new HashedPassword("hash");
 
     private UserRepository userRepository;
     private CanRegister canRegister;
@@ -44,8 +42,8 @@ class RegisterTest {
     }
 
     @Property
-    @Label("Invalid when email, password, or both fail validation")
-    void invalid_when_any_validation_fails(
+    @Label("Rejected when email, password, or both fail validation")
+    void rejected_when_any_validation_fails(
             @ForAll boolean emailFails,
             @ForAll boolean passwordFails) {
 
@@ -53,21 +51,22 @@ class RegisterTest {
 
         List<String> emailErrors = emailFails ? someErrors() : Collections.emptyList();
         List<String> passwordErrors = passwordFails ? someErrors() : Collections.emptyList();
+
         Decision<Email> decision = emailDecision(emailErrors);
         Outcome<HashedPassword> outcome = passwordOutcome(passwordErrors);
+        Mockito.when(canRegister.evaluate(Mockito.any())).thenReturn(decision);
+        Mockito.when(createPasswordHash.create(Mockito.any())).thenReturn(outcome);
 
-        Mockito.when(canRegister.evaluate(GIVEN.email)).thenReturn(decision);
-        Mockito.when(createPasswordHash.create(GIVEN.password)).thenReturn(outcome);
+        RegisterResult result = register.execute(() -> Email.of(EMAIL), () -> PlaintextPassword.of(PASSWORD));
 
-        RegisterResult result = register.execute(GIVEN.email, GIVEN.password);
-
-        RegisterResult.Invalid invalid = assertInstanceOf(RegisterResult.Invalid.class, result);
+        RegisterResult.Rejected rejected = assertInstanceOf(RegisterResult.Rejected.class, result);
         assertAll(
-                () -> assertEquals(emailErrors, invalid.emailErrors()),
-                () -> assertEquals(passwordErrors, invalid.passwordErrors()),
+                () -> assertEquals(emailErrors, rejected.emailErrors()),
+                () -> assertEquals(passwordErrors, rejected.passwordErrors()),
                 () -> Mockito.verify(userRepository, Mockito.never()).save(Mockito.any())
         );
     }
+
     @SuppressWarnings("unchecked")
     private List<String> someErrors() {
         List<String> errors = Mockito.mock(List.class);
@@ -78,20 +77,20 @@ class RegisterTest {
         return errors.isEmpty() ? new Decision.Allowed<>() : new Decision.Rejected<>(errors);
     }
     private Outcome<HashedPassword> passwordOutcome(List<String> errors) {
-        return errors.isEmpty() ? new Outcome.Allowed<>(GIVEN.hash) : new Outcome.Rejected<>(errors);
+        return errors.isEmpty() ? new Outcome.Allowed<>(HASH) : new Outcome.Rejected<>(errors);
     }
 
     @Example
-    @Label("Valid when both email and password pass validation")
-    void valid_when_both_pass() {
-        User user = new User(GIVEN.email, GIVEN.hash);
-        Mockito.when(canRegister.evaluate(GIVEN.email)).thenReturn(new Decision.Allowed<>());
-        Mockito.when(createPasswordHash.create(GIVEN.password)).thenReturn(new Outcome.Allowed<>(GIVEN.hash));
+    @Label("Registered when both email and password pass validation")
+    void registered_when_both_pass() {
+        User user = new User(Email.of(EMAIL), HASH);
+        Mockito.when(canRegister.evaluate(Mockito.any())).thenReturn(new Decision.Allowed<>());
+        Mockito.when(createPasswordHash.create(Mockito.any())).thenReturn(new Outcome.Allowed<>(HASH));
         Mockito.when(userRepository.save(Mockito.any())).thenReturn(user);
 
-        RegisterResult result = register.execute(GIVEN.email, GIVEN.password);
+        RegisterResult result = register.execute(() -> Email.of(EMAIL), () -> PlaintextPassword.of(PASSWORD));
 
-        RegisterResult.Valid valid = assertInstanceOf(RegisterResult.Valid.class, result);
-        assertEquals(user, valid.user());
+        RegisterResult.Registered registered = assertInstanceOf(RegisterResult.Registered.class, result);
+        assertEquals(user, registered.user());
     }
 }

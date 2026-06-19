@@ -51,7 +51,7 @@ class RefreshSessionTest {
     }
 
     @Example
-    @Label("Passed when refresh token is found and not expired")
+    @Label("Authenticated when refresh token is found and not expired")
     void passed_when_token_found_and_not_expired() {
         RefreshTokenExpiration expiration = Mockito.mock(RefreshTokenExpiration.class);
         Mockito.when(expiration.hasExpired(CLOCK)).thenReturn(false);
@@ -63,9 +63,9 @@ class RefreshSessionTest {
 
         RefreshSessionResult result = refreshSession.execute(GIVEN.request);
 
-        RefreshSessionResult.Passed passed = assertInstanceOf(RefreshSessionResult.Passed.class, result);
+        RefreshSessionResult.Refreshed refreshed = assertInstanceOf(RefreshSessionResult.Refreshed.class, result);
         assertAll(
-                () -> assertEquals(createdTokens, passed.sessionTokens()),
+                () -> assertEquals(createdTokens, refreshed.sessionTokens()),
                 () -> Mockito.verify(authorizationDataRepository).deleteBy(GIVEN.email),
                 () -> Mockito.verify(authorizationDataRepository).create(Mockito.any())
         );

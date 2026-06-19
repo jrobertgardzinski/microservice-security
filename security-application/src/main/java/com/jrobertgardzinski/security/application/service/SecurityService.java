@@ -22,7 +22,7 @@ public class SecurityService {
     }
 
     public RegisterResult register(String email, String password) {
-        return register.execute(Email.of(email), PlaintextPassword.of(password));
+        return register.execute(() -> Email.of(email), () -> PlaintextPassword.of(password));
     }
 
     public AuthenticationResult authenticate(AuthenticationRequest authenticationRequest) {

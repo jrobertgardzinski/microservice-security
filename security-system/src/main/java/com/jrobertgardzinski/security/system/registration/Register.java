@@ -11,6 +11,7 @@ import com.jrobertgardzinski.util.constraint.Decision;
 import com.jrobertgardzinski.util.constraint.Outcome;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 public class Register {
     private final UserRepository userRepository;
@@ -23,7 +24,7 @@ public class Register {
         this.createPasswordHash = createPasswordHash;
     }
 
-    public RegisterResult execute(Email email, PlaintextPassword password) {
+    public RegisterResult execute(Supplier<Email> email, Supplier<PlaintextPassword> password) {
         Decision<Email> emailDecision = canRegister.evaluate(email);
         List<String> emailErrors = emailDecision.errorCodes();
 
@@ -31,13 +32,40 @@ public class Register {
         List<String> passwordErrors = passwordOutcome.errorCodes();
 
         return !emailErrors.isEmpty() || !passwordErrors.isEmpty() ?
-            new RegisterResult.Invalid(emailErrors, passwordErrors) :
-            passwordOutcome.findValue()
-                .map(hash -> {
-                    User userToSave = new User(email, hash);
-                    User savedUser = userRepository.save(userToSave);
-                    return new RegisterResult.Valid(savedUser);
-                })
-                .orElseThrow();
+                new RegisterResult.Rejected(emailErrors, passwordErrors) :
+                passwordOutcome.findValue()
+                        .map(hash -> {
+                            User userToSave = new User(email.get(), hash);
+                            User savedUser = userRepository.save(userToSave);
+                            return new RegisterResult.Registered(savedUser);
+                        })
+                        .orElseThrow();
     }
+
+
+/*    public RegisterResult execute(String rawEmail, String rawPassword) {
+        Email email = null;
+        List<String> emailErrors;
+        try {
+            email = Email.of(rawEmail);
+            emailErrors = canRegister.evaluate(email).errorCodes();
+        } catch (IllegalArgumentException e) {
+            emailErrors = List.of(e.getMessage());
+        }
+
+        HashedPassword hash = null;
+        List<String> passwordErrors;
+        try {
+            Outcome<HashedPassword> outcome = createPasswordHash.create(PlaintextPassword.of(rawPassword));
+            passwordErrors = outcome.errorCodes();
+            hash = outcome.findValue().orElse(null);
+        } catch (IllegalArgumentException e) {
+            passwordErrors = List.of(e.getMessage());
+        }
+
+        if (!emailErrors.isEmpty() || !passwordErrors.isEmpty()) {
+            return new RegisterResult.Rejected(emailErrors, passwordErrors);
+        }
+        return new RegisterResult.Registered(userRepository.save(new User(email, hash)));
+    }*/
 }

@@ -4,7 +4,7 @@ import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.event.BruteForceProtectionEvent;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.repository.FailedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.FailuresCount;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import io.qameta.allure.Epic;
@@ -24,7 +24,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 @Epic("Use case")
@@ -42,17 +41,19 @@ class _BruteForceGuardTest {
             .maxBlockMinutes(10)
             .build();
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
+    private static final int BLOCK_MINUTES = 5;
+    private static final BlockDurationPolicy BLOCK_DURATION = () -> BLOCK_MINUTES;
 
-    private FailedAuthenticationRepository failedAuthenticationRepository;
+    private RejectedAuthenticationRepository rejectedAuthenticationRepository;
     private AuthenticationBlockRepository authenticationBlockRepository;
     private _BruteForceGuard bruteForceGuard;
 
     @BeforeTry
     void init() {
-        failedAuthenticationRepository = Mockito.mock(FailedAuthenticationRepository.class);
+        rejectedAuthenticationRepository = Mockito.mock(RejectedAuthenticationRepository.class);
         authenticationBlockRepository = Mockito.mock(AuthenticationBlockRepository.class);
         bruteForceGuard = new _BruteForceGuard(
-                failedAuthenticationRepository, authenticationBlockRepository, CLOCK, CONFIG);
+                rejectedAuthenticationRepository, authenticationBlockRepository, CLOCK, CONFIG, BLOCK_DURATION);
     }
 
     @Example
@@ -67,7 +68,7 @@ class _BruteForceGuardTest {
                 assertInstanceOf(BruteForceProtectionEvent.Blocked.class, event);
         assertAll(
                 () -> assertEquals(active, blocked.authenticationBlock()),
-                () -> Mockito.verify(failedAuthenticationRepository, Mockito.never())
+                () -> Mockito.verify(rejectedAuthenticationRepository, Mockito.never())
                         .countFailuresBy(Mockito.any(), Mockito.any()),
                 () -> Mockito.verify(authenticationBlockRepository, Mockito.never()).create(Mockito.any())
         );
@@ -78,7 +79,7 @@ class _BruteForceGuardTest {
     void blocked_and_new_block_created_when_failure_limit_reached() {
         AuthenticationBlock created = new AuthenticationBlock(GIVEN.ip, LocalDateTime.now(CLOCK).plusMinutes(5));
         Mockito.when(authenticationBlockRepository.findBy(GIVEN.ip)).thenReturn(Optional.empty());
-        Mockito.when(failedAuthenticationRepository.countFailuresBy(Mockito.eq(GIVEN.ip), Mockito.any()))
+        Mockito.when(rejectedAuthenticationRepository.countFailuresBy(Mockito.eq(GIVEN.ip), Mockito.any()))
                 .thenReturn(new FailuresCount(CONFIG.maxFailures().value()));
         Mockito.when(authenticationBlockRepository.create(Mockito.any())).thenReturn(created);
 
@@ -90,31 +91,27 @@ class _BruteForceGuardTest {
         Mockito.verify(authenticationBlockRepository).create(captor.capture());
         LocalDateTime until = captor.getValue().expiryDate();
         LocalDateTime base = LocalDateTime.now(CLOCK);
-        // block length comes from ThreadLocalRandom (nondeterministic) — assert it lands within
-        // [minBlockMinutes, maxBlockMinutes]; hard assertion would need an injected randomness source (see todo).
+        // block length now comes from the injected BlockDurationPolicy — deterministic
         assertAll(
                 () -> assertEquals(created, blocked.authenticationBlock()),
-                () -> Mockito.verify(failedAuthenticationRepository).removeAllFor(GIVEN.ip),
-                () -> assertFalse(until.isBefore(base.plusMinutes(CONFIG.minBlockMinutes().value())),
-                        "until must be >= base + minBlockMinutes"),
-                () -> assertFalse(until.isAfter(base.plusMinutes(CONFIG.maxBlockMinutes().value())),
-                        "until must be <= base + maxBlockMinutes")
+                () -> Mockito.verify(rejectedAuthenticationRepository).removeAllFor(GIVEN.ip),
+                () -> assertEquals(base.plusMinutes(BLOCK_MINUTES), until)
         );
     }
 
     @Example
-    @Label("Passed when there is no active block and failures are below the limit")
+    @Label("Authenticated when there is no active block and failures are below the limit")
     void passed_when_no_active_block_and_below_limit() {
         Mockito.when(authenticationBlockRepository.findBy(GIVEN.ip)).thenReturn(Optional.empty());
-        Mockito.when(failedAuthenticationRepository.countFailuresBy(Mockito.eq(GIVEN.ip), Mockito.any()))
+        Mockito.when(rejectedAuthenticationRepository.countFailuresBy(Mockito.eq(GIVEN.ip), Mockito.any()))
                 .thenReturn(new FailuresCount(CONFIG.maxFailures().value() - 1));
 
         BruteForceProtectionEvent event = bruteForceGuard.execute(GIVEN.ip);
 
-        assertInstanceOf(BruteForceProtectionEvent.Passed.class, event);
+        assertInstanceOf(BruteForceProtectionEvent.Allowed.class, event);
         assertAll(
                 () -> Mockito.verify(authenticationBlockRepository, Mockito.never()).create(Mockito.any()),
-                () -> Mockito.verify(failedAuthenticationRepository, Mockito.never()).removeAllFor(Mockito.any())
+                () -> Mockito.verify(rejectedAuthenticationRepository, Mockito.never()).removeAllFor(Mockito.any())
         );
     }
 }
