@@ -17,8 +17,7 @@
         <module>security-domain</module>
         <module>security-config</module>
         <module>security-system</module>
-<!-- security-application: excluded — WIP, RunCucumberTest has undefined (pending) steps -->
-<!--        <module>security-application</module>-->
+        <module>security-application</module>
 <!-- security-infrastructure: excluded — WIP, SecurityController doesn't compile -->
 <!--        <module>security-infrastructure</module>-->
     </modules>

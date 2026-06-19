@@ -32,15 +32,15 @@ public class Authentication {
 
         return switch (bruteForceGuard.execute(ip)) {
             case BruteForceProtectionEvent.Blocked blocked -> new AuthenticationResult.Blocked(blocked.authenticationBlock());
-            case BruteForceProtectionEvent.Passed _ -> switch (verifyCredentials.execute(credentials)) {
-                case AuthenticationEvent.Passed passed -> {
+            case BruteForceProtectionEvent.Allowed _ -> switch (verifyCredentials.execute(credentials)) {
+                case AuthenticationEvent.Valid valid -> {
                     cleanBruteForceRecords.execute(ip);
-                    SessionTokens sessionTokens = generateSession.create(passed.email());
-                    yield new AuthenticationResult.Passed(sessionTokens);
+                    SessionTokens sessionTokens = generateSession.create(valid.email());
+                    yield new AuthenticationResult.Authenticated(sessionTokens);
                 }
-                case AuthenticationEvent.Failed _ -> {
+                case AuthenticationEvent.Invalid _ -> {
                     updateBruteForceRecords.execute(ip);
-                    yield new AuthenticationResult.Failed();
+                    yield new AuthenticationResult.Rejected();
                 }
             };
         };

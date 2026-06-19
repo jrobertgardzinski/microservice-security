@@ -1,50 +1,70 @@
-Feature: authenticate
+Feature: Authentication
 
-    Background:
-    Given a registered user with email "user@example.com" and password "StrongPassword1!"
-    And the authentication attempt comes from IP "192.168.1.1"
+  Repeated failed authentication attempts from the same source temporarily
+  block that source, to protect accounts from password guessing.
 
-    Rule: 1. Valid credentials with no active block return session tokens
+  Background:
+    Given a registered user "user@example.com" with password "StrongPassword1!"
+    And authentication attempts from one source are limited by this policy:
+      | failed attempts before the source is blocked | 3                   |
+      | failures only count within                   | the last 15 minutes |
+      | a block lasts                                | 3 to 10 minutes     |
 
-        Example:
-        Given the IP has no active block and no recent failures
-        When the user authenticates with email "user@example.com" and password "StrongPassword1!"
-        Then the authentication result is passed
-        And session tokens are returned
+  Rule: 1. Correct credentials authenticate the user
 
-    Rule: 2. Wrong credentials cause authentication failure
+    Example:
+      When the user authenticates with the correct credentials
+      Then the user is authenticated
 
-        Scenario Outline: <case>
-        Given the IP has no active block and no recent failures
-        When the user authenticates with email "<email>" and password "<password>"
-        Then the authentication result is failed
+  Rule: 2. Wrong credentials are rejected
 
-        Examples:
-            | case                        | email                   | password                  |
-            | wrong password              | user@example.com        | WrongButStrongPassword1!  |
-            | unknown email               | other@example.com       | StrongPassword1!          |
-            | wrong email and password    | other@example.com       | WrongButStrongPassword1!  |
+    Scenario Outline: <case>
+      When the user tries to authenticate with <case>
+      Then the authentication is rejected
 
-    Rule: 3. Authentication is blocked when brute force protection is active
+      Examples:
+        | case                       |
+        | the wrong password         |
+        | an unknown email           |
+        | a wrong email and password |
 
-        Example: IP is actively blocked
-        Given the IP has an active block
-        When the user authenticates with email "user@example.com" and password "StrongPassword1!"
-        Then the authentication result is blocked
+  Rule: 3. Too many failed attempts block the source
 
-        Example: Too many recent failures
-        Given the IP has no active block but has reached the failure limit
-        When the user authenticates with email "user@example.com" and password "StrongPassword1!"
-        Then the authentication result is blocked
+    Example: reaching the failure limit blocks the source
+      Given the user has reached the failure limit
+      When the user authenticates with the correct credentials
+      Then the authentication is rejected because the source is blocked
 
-    Rule: 4. Only failures within the recent time window count toward the limit
+    Example: staying under the limit keeps the source open
+      Given the user has failed to authenticate but stayed under the limit
+      When the user authenticates with the correct credentials
+      Then the user is authenticated
 
-        Scenario Outline:
-        Given the IP has no active block and <failures> failures recorded <minutes> minutes ago
-        When the user authenticates with email "user@example.com" and password "StrongPassword1!"
-        Then the authentication result is <result>
+  Rule: 4. A blocked source is rejected even with the correct credentials
 
-        Examples:
-            | failures | minutes | result  |
-            | 3        | 14      | blocked |
-            | 3        | 15      | passed  |
+    Example:
+      Given the source is blocked
+      When the user authenticates with the correct credentials
+      Then the authentication is rejected because the source is blocked
+
+  Rule: 5. Failed attempts stop counting after 15 minutes
+
+    Example: within 15 minutes the earlier failures still count
+      Given the user has reached the failure limit
+      When 14 minutes passes
+      And the user authenticates with the correct credentials
+      Then the authentication is rejected because the source is blocked
+
+    Example: after 15 minutes the earlier failures are forgiven
+      Given the user has reached the failure limit
+      When 15 minutes passes
+      And the user authenticates with the correct credentials
+      Then the user is authenticated
+
+  Rule: 6. A block is temporary and expires after a while
+
+    Example:
+      Given the source is blocked
+      When the block expires
+      And the user authenticates with the correct credentials
+      Then the user is authenticated

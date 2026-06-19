@@ -88,20 +88,20 @@ class AuthenticationTest {
     }
 
     @Example
-    @Label("Passed when the guard allows and credentials are valid")
+    @Label("Authenticated when the guard allows and credentials are valid")
     void passed_when_guard_allows_and_credentials_valid() {
         SessionTokens sessionTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK);
         Mockito.when(bruteForceGuard.execute(GIVEN.ipAddress))
-                .thenReturn(new BruteForceProtectionEvent.Passed());
+                .thenReturn(new BruteForceProtectionEvent.Allowed());
         Mockito.when(verifyCredentials.execute(GIVEN.credentials))
-                .thenReturn(new AuthenticationEvent.Passed(GIVEN.email));
+                .thenReturn(new AuthenticationEvent.Valid(GIVEN.email));
         Mockito.when(generateSession.create(GIVEN.email)).thenReturn(sessionTokens);
 
         AuthenticationResult result = authentication.execute(GIVEN.request);
 
-        AuthenticationResult.Passed passed = assertInstanceOf(AuthenticationResult.Passed.class, result);
+        AuthenticationResult.Authenticated authenticated = assertInstanceOf(AuthenticationResult.Authenticated.class, result);
         assertAll(
-                () -> assertEquals(sessionTokens, passed.session()),
+                () -> assertEquals(sessionTokens, authenticated.session()),
                 () -> Mockito.verify(cleanBruteForceRecords).execute(GIVEN.ipAddress),
                 () -> Mockito.verify(generateSession).create(GIVEN.email),
                 () -> Mockito.verify(updateBruteForceRecords, Mockito.never()).execute(Mockito.any())
@@ -109,16 +109,16 @@ class AuthenticationTest {
     }
 
     @Example
-    @Label("Failed when the guard allows but credentials are invalid")
+    @Label("Rejected when the guard allows but credentials are invalid")
     void failed_when_guard_allows_but_credentials_invalid() {
         Mockito.when(bruteForceGuard.execute(GIVEN.ipAddress))
-                .thenReturn(new BruteForceProtectionEvent.Passed());
+                .thenReturn(new BruteForceProtectionEvent.Allowed());
         Mockito.when(verifyCredentials.execute(GIVEN.credentials))
-                .thenReturn(new AuthenticationEvent.Failed(GIVEN.email));
+                .thenReturn(new AuthenticationEvent.Invalid(GIVEN.email));
 
         AuthenticationResult result = authentication.execute(GIVEN.request);
 
-        assertInstanceOf(AuthenticationResult.Failed.class, result);
+        assertInstanceOf(AuthenticationResult.Rejected.class, result);
         assertAll(
                 () -> Mockito.verify(updateBruteForceRecords).execute(GIVEN.ipAddress),
                 () -> Mockito.verify(cleanBruteForceRecords, Mockito.never()).execute(Mockito.any()),

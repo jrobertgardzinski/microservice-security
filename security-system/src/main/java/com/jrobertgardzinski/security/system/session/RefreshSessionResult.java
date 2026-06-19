@@ -5,7 +5,7 @@ import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 
 // todo stop using toString.
 public sealed interface RefreshSessionResult {
-    record Passed(SessionTokens sessionTokens) implements RefreshSessionResult {}
+    record Refreshed(SessionTokens sessionTokens) implements RefreshSessionResult {}
     record Expired(Email email) implements RefreshSessionResult {
         @Override
         public String toString() {

@@ -4,28 +4,30 @@ import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.event.BruteForceProtectionEvent;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.repository.FailedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
 
 class _BruteForceGuard {
 
-    private final FailedAuthenticationRepository failedAuthenticationRepository;
+    private final RejectedAuthenticationRepository rejectedAuthenticationRepository;
     private final AuthenticationBlockRepository authenticationBlockRepository;
     private final Clock clock;
     private final BruteForceConfig config;
+    private final BlockDurationPolicy blockDurationPolicy;
 
-    public _BruteForceGuard(FailedAuthenticationRepository failedAuthenticationRepository,
+    public _BruteForceGuard(RejectedAuthenticationRepository rejectedAuthenticationRepository,
                             AuthenticationBlockRepository authenticationBlockRepository,
-                            Clock clock, BruteForceConfig config) {
-        this.failedAuthenticationRepository = failedAuthenticationRepository;
+                            Clock clock, BruteForceConfig config,
+                            BlockDurationPolicy blockDurationPolicy) {
+        this.rejectedAuthenticationRepository = rejectedAuthenticationRepository;
         this.authenticationBlockRepository = authenticationBlockRepository;
         this.clock = clock;
         this.config = config;
+        this.blockDurationPolicy = blockDurationPolicy;
     }
 
     public BruteForceProtectionEvent execute(IpAddress ipAddress) {
@@ -33,7 +35,7 @@ class _BruteForceGuard {
                 .<BruteForceProtectionEvent>map(BruteForceProtectionEvent.Blocked::new)
                 .orElseGet(() -> failureLimitReachedFor(ipAddress)
                         ? new BruteForceProtectionEvent.Blocked(createNewBlockFor(ipAddress))
-                        : new BruteForceProtectionEvent.Passed());
+                        : new BruteForceProtectionEvent.Allowed());
     }
 
     private Optional<AuthenticationBlock> existingActiveBlockFor(IpAddress ipAddress) {
@@ -43,16 +45,13 @@ class _BruteForceGuard {
 
     private boolean failureLimitReachedFor(IpAddress ipAddress) {
         LocalDateTime since = LocalDateTime.now(clock).minusMinutes(config.failureWindowMinutes().value());
-        return failedAuthenticationRepository.countFailuresBy(ipAddress, since)
+        return rejectedAuthenticationRepository.countFailuresBy(ipAddress, since)
                 .hasReachedTheLimit(config.maxFailures().value());
     }
 
     private AuthenticationBlock createNewBlockFor(IpAddress ipAddress) {
-        failedAuthenticationRepository.removeAllFor(ipAddress);
-        int minutes = ThreadLocalRandom.current().nextInt(
-                config.minBlockMinutes().value(),
-                config.maxBlockMinutes().value() + 1);
-        LocalDateTime until = LocalDateTime.now(clock).plusMinutes(minutes);
+        rejectedAuthenticationRepository.removeAllFor(ipAddress);
+        LocalDateTime until = LocalDateTime.now(clock).plusMinutes(blockDurationPolicy.blockMinutes());
         return authenticationBlockRepository.create(new AuthenticationBlock(ipAddress, until));
     }
 }

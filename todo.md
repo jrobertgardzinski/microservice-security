@@ -1,0 +1,206 @@
+# TODO
+
+## STAN — gdzie jesteśmy (czytaj najpierw)
+
+Pracujemy nad modułem `microservice-security`, wątek: ubiquitous language + czytelność.
+- ✅ REVIEW feature'ów (2026-06-17): input-owe ujednolicone na „the user" + sentence-case.
+  `strong-password-policy` — kody błędów schowane za język biznesu (mapowanie reason→code w step-defie),
+  reguła „fixing one by one" usunięta (pokrycie w `CreatePasswordHashRulesTest`).
+  `email.feature` i `plaintext-password.feature` USUNIĘTE (+ ich step-defs): format pokrywa `EmailTest`,
+  a „required" (pusty/null) to świadomie kontrola warstwy infra — nie testujemy jej tu (patrz pamięć).
+  `strong-password-policy.feature` + `StrongPasswordPolicyRules` też USUNIĘTE (pokrycie:
+  `CreatePasswordHashRulesTest` + per-constraint testy w password-security-system). Katalog `input/` zniknął.
+  REORG: cały test-support scalony w jeden `feature/support/` (6 klas; jeden `InMemoryAuthorizationDataRepository`,
+  bez cross-package importów). `RunCucumberTest` posprzątany (martwy `@SelectClasspathResource` out;
+  komentarz `@wip` zaktualizowany).
+  Zostały 3 feature'y: authenticate / register / refresh-session.
+  ✅ ZIELONE: `clean install` BUILD SUCCESS, RunCucumberTest 17 testów / 0 failures.
+  (Po drodze: usunięto nieużywaną już zależność `constraint` z security-application pom —
+  polityka fail-on-unused ją wyłapała po skasowaniu input-owych feature'ów.)
+- ✅ `authenticate.feature` przepisany na biznes (altitude) + jawna polityka brute force.
+- ✅ Ustalony kierunek UL: jeden język wszędzie, zero aliasów, kod dostosowuje się do biznesu.
+- ✅ `.feature` przepisany na docelowe słownictwo (authenticate/authenticated/rejected/blocked).
+- ✅ rename pod jeden język w KODZIE (user, IDE) — potwierdzony (Authenticated/Refreshed/Rejected
+  kompilują się). Zostały tylko 3 kosmetyczne `passed` (sekcja niżej), opcjonalne.
+- ✅ szew `BlockDurationPolicy` + `AuthenticationFactory` + step-defs + in-memory infra — NAPISANE.
+- ✅ ZIELONE: `authenticate.feature` przechodzi w całości (reaktor `clean install`, JDK 25,
+  35 testów / 0 failures). `security-system` też (17/0). Moduł odkomentowany w parent.
+- ✅ (A) `register.feature` + `refresh-session.feature` otagowane `@wip`; `RunCucumberTest`
+  ma `FILTER_TAGS = "not @wip"` → wykluczone z runnera. Po re-runie spodziewane:
+  ~27 testów / 0 errors / BUILD SUCCESS (znikają 4 z register + 4 z refresh).
+  (Nie zweryfikowane w sandboxie — brak nexusa; user re-runuje `clean install`.)
+- ✅ `register.feature` + `refresh-session.feature` PRZEPISANE na biznes/UL (ten sam schemat
+   co authenticate): aktor „the user …", wyniki w docelowym języku, plumbing schowany.
+   Oba dalej `@wip` (brak step-defs).
+   - register: Feature „Registration"; `Valid`→„the user is registered", `Invalid`→
+     „registration is rejected" + „email/password flagged as invalid/accepted".
+     RULE 3 „already taken" WYCIĘTA (kod jej nie robi — patrz „Ochrona rejestracji").
+   - refresh: Feature „Refreshing a session"; PEŁNY poziom „session" (znika „refresh token”,
+     też z tytułów reguł active/expired/missing). `Refreshed`→„a fresh session is returned";
+     `Expired`→„rejected because the session has expired"; `NotFound`→„rejected because there
+     is no session to refresh".
+- ✅ REGISTER step-defs ZROBIONE (do odpalenia przez usera):
+   - rename `RegisterResult.Valid→Registered`, `Invalid→Rejected` (zrobiony, security-system zielony).
+   - DECYZJA B: zły email daje `Rejected` (nie wyjątek). `Register.execute(String,String)` —
+     waliduje email (Email.of w try/catch → format error; potem CanRegister policy) i hasło
+     (CreatePasswordHash) NIEZALEŻNIE, łączy w `Rejected`. `SecurityService.register` deleguje stringi.
+     `RegisterTest` dopasowany. Rule 2 (z „invalid email") działa znów w pełni.
+   - glue: `RegisterSteps` (realne polityki: `CanRegister.builder().build()` + `CreatePasswordHash`
+     z `PasswordPolicy(MinLength(12), SpecialChars("#?!"))` + Argon2). Reuse `InMemoryUserRepository`
+     z authentication.support (ewentualnie wydzielić wspólny support package — drobny cleanup).
+   - pom: dodane `email-security-system` (test). `@wip` zdjęty z register.feature.
+   - ✅ ZIELONE: `clean install` BUILD SUCCESS, register 4 scenariusze przechodzą.
+- ✅ REFRESH step-defs ZROBIONE (do odpalenia): `SessionSteps` + własne in-memory
+   `AuthorizationDataRepository` (session.support) wspierające `findRefreshTokenExpirationBy`.
+   Stan sesji seedowany przez `RefreshTokenExpiration` (future=active, past=expired, brak=NotFound);
+   fixed `Clock`. Bez nowych zależności (refresh nie hashuje). `@wip` zdjęty z refresh-session.feature.
+   → po tym buildzie NIE ma już żadnych `@wip` (filtr „not @wip" zostaje na przyszłość, nieszkodliwy).
+- ✅ CLEANUP zrobiony: wspólny `feature/support/` (jeden `InMemoryAuthorizationDataRepository`,
+   koniec cross-package importów); `RunCucumberTest` posprzątany.
+- ⏳ POZOSTAJE: prod DI (BeanFactory + `RandomBlockDurationPolicy`) — infra WIP, osobny wątek.
+- 💡 NA PÓŹNIEJ: glosariusz/cross-linking; ochrona rejestracji. (niżej)
+
+## authenticate.feature — podniesienie altitude (business-readability) ✅ ZROBIONE
+
+Plik przepisany na wersję business-readable (zastąpił poprzednią, techniczną).
+Decyzja (pkt 4): Gherkin = living documentation dla biznesu; dev/QA czytają Allure,
+więc cała precyzja zeszła z `.feature` do step-defs.
+
+Linia podziału (wyostrzona): ukrywamy *plumbing*, NIE *politykę*.
+- plumbing (pod maską, do glue): timestampy zegara, IP `192.168.1.1`, `session tokens`,
+  `N minutes ago`, format granicy „14 vs 15 min”, komentarze o implementacji/teście.
+- polityka (user ją odczuje na własnej skórze → jawna w feature): liczba prób (3),
+  okno (15 min), długość bloku (3–10 min). Wrzucona z powrotem jako wykonywalna
+  tabela „sign-ins ... are protected by this policy” w Background — jedno źródło prawdy,
+  step-def ją czyta (liczba w dokumencie = liczba w teście, zero dryfu). Scenariusze
+  odwołują się do niej symbolicznie („reaches the failure limit”), nie powtarzają liczb.
+Granice (14 vs 15 min, 4 vs 5 min) stały się „just moments ago” / „long enough ago” /
+„the lock period elapses” — konkretne liczby pinujemy w step-defs (pokażą się w Allure).
+
+Próg liczbowy też zniknął z tekstu (pochodzi z ukrytego configu): „3 times” / „third
+failure” → „reached the failed sign-in limit” / „stayed under the limit”.
+Reguła 6 odchudzona do jednego przykładu (sama wygasalność blokady) — wariant
+„still locked during the lock period” był powtórzeniem Reguły 4.
+Reguły ponumerowane 1–6.
+
+## Rename pod jeden język (UL) — WSZYSTKO UZGODNIONE, do wykonania (user robi sam)
+
+Zasada: jeden język wszędzie, zero aliasów (słowo biznesowe JEST symbolem); czasownik
+zostaje `authenticate`; zamieniaj przypadkowy żargon, ZOSTAW termin niosący znaczenie
+(`PlaintextPassword`, „block expiry”).
+
+### Krok 1 — IDE „Rename Symbol” (propaguje do wszystkich użyć, łapie też testy)
+Zrób po kolei rename na każdym symbolu (prawy klik → Rename / Shift+F6 w IntelliJ):
+
+| # | symbol (gdzie zdefiniowany) | nowa nazwa |
+|---|---|---|
+| 1 | `AuthenticationResult.Passed` (security-system …/authentication/AuthenticationResult.java) | `Authenticated` |
+| 2 | `AuthenticationResult.Failed` (j.w.) | `Rejected` |
+| 3 | `BruteForceProtectionEvent.Passed` (security-domain …/event/BruteForceProtectionEvent.java) | `Allowed` |
+| 4 | `AuthenticationEvent.Passed` (security-domain …/event/AuthenticationEvent.java) | `Valid` |
+| 5 | `AuthenticationEvent.Failed` (j.w.) | `Invalid` |
+| 6 | `RefreshSessionResult.Passed` (security-system …/session/RefreshSessionResult.java) | `Refreshed` |
+| 7 | `FailedAuthentication` (security-domain …/entity/) | `RejectedAuthentication` |
+| 8 | `FailedAuthenticationDetails` (security-domain …/vo/) | `RejectedAuthenticationDetails` |
+| 9 | `FailedAuthenticationId` (security-domain …/vo/) | `RejectedAuthenticationId` |
+| 10 | `FailedAuthenticationRepository` (security-domain …/repository/) | `RejectedAuthenticationRepository` |
+
+(`*.Blocked` ZOSTAJE bez zmian we wszystkich typach.)
+
+### Krok 2 — ręcznie (stringi/teksty — Rename ich NIE łapie)
+- ✅ `@Label` w `AuthenticationTest.java` — ogarnięte w IDE.
+- ⏳ javadoc klasy `RejectedAuthentication`: „…a failed authentication attempt”
+  → „…a rejected authentication attempt”. NIE self-linkować (link do samego siebie = bez sensu).
+  Formy `{@link RejectedAuthentication rejected authentication}` (tekst po typie = label,
+  małe litery ok) używać w INNYCH klasach wspominających pojęcie (Repository, _BruteForceGuard)
+  — to pierwszy realny smak cross-linkingu z „pomysłu na później”.
+- ⏳ kosmetyka — lokalna zmienna `passed` (rename typu jej nie ruszył), 3 miejsca, `Shift+F6`:
+  - `Authentication.java:36/38` `passed` → `valid`
+  - `AuthenticationTest.java:102/104` `passed` → `authenticated`
+  - `RefreshSessionTest.java:66/68` `passed` → `refreshed`
+  - zmienne `blocked` ZOSTAJĄ (Blocked bez zmian).
+- ✅ pole `failedAuthenticationRepository` → `rejectedAuthenticationRepository` (typ był `Rejected…`,
+  pole zostało stare) — poprawione w 6 plikach (_BruteForceGuard/_Clean/_Update + ich testy).
+- ⏳ OTWARTA OŚ (do decyzji): słownictwo „failure/failures” vs „rejection”. Osobne od renamu
+  encji. Dotyczy `FailuresCount`, `countFailuresBy`, `hasReachedTheLimit`, oraz @Label/nazw
+  metod testów („records_failed_authentication” itd.). „failed to authenticate” / „failed attempts”
+  w `.feature` ZOSTAWIĆ (naturalny angielski, nie symbol). Czy ujednolicać resztę na „rejected/rejection”?
+
+### Krok 3 — feature na nowe słownictwo ✅ ZROBIONE
+`authenticate.feature` przepisany: Feature „Authentication”, czasownik `authenticate`,
+wyniki „is authenticated / authentication is rejected / source is blocked”, „correct credentials”.
+Rule 5: zamiast mglistego „long enough ago” → wprost „14 / 15 minutes later” (Twój pomysł;
+przy okazji bardziej zgodne z kodem — patrz niżej). Wszystkie 6 reguł zweryfikowane
+względem `_BruteForceGuard` (w tym: blok kasuje rekordy porażek; próg okna ścisły >15 min).
+UWAGA: rename w KODZIE (Krok 1–2) wciąż do zrobienia — feature już mówi docelowym językiem,
+step-defs trzeba będzie spiąć z nazwami po renamie.
+
+### Source (osobny, większy temat — NIE część tego renamu)
+Wprowadzić `Source` jako podmiot domeny (guard/`AuthenticationBlock` biorą `Source`,
+`IpAddress` znika z sygnatur i staje się polem w `Source`). Source wielopolowy
+(np. machineName, browserVersion), ALE rozdzielić role pól:
+- TOŻSAMOŚĆ (klucz bloku, w `equals/hashCode`): tylko trudne do podmiany (IP/podsieć/ASN, ew. konto).
+- OBSERWOWANE (machineName, browserVersion): forensics/risk, POZA `equals` — inaczej zmiana
+  user-agenta = nowa tożsamość = obejście lockoutu (więcej pól = SŁABSZA ochrona).
+  Rozważyć osobny `DeviceFingerprint`/`RequestContext`. Uwaga RODO przy utrwalaniu.
+
+## Pomysł na później — glosariusz ubiquitous language (cross-linking)
+
+Marzenie: termin domenowy (np. „authentication") jako hiperłącze w Gherkinie, Allure
+i Javadoc — jeden klik → strona terminu z „gdzie używane” (back-references).
+Czyli centralny glosariusz UL jako indeks, do którego linkują wszystkie 3 artefakty.
+
+- prawdopodobnie zadanie dla Pythona (static-site generator):
+  parsuje `.feature` (oficjalny `gherkin` parser), źródła/Javadoc, `allure-results/*.json`,
+  buduje indeks termin→wystąpienia, emituje glosariusz z cross-linkami
+- Javadoc: linkowanie wewnątrz Javy jest (`{@link}`/`@see`); link na zewnątrz →
+  custom taglet/doclet albo post-processing HTML
+- Allure: wspiera linki (`@Link` + szablony w config) → term per test/krok
+- Gherkin: brak natywnych linków → własny render `.feature`→HTML albo post-proc raportu
+- ŁATWIEJSZE NIŻ SIĘ WYDAWAŁO: po renamie pod jeden język nie ma aliasów —
+  termin = symbol, więc „usage” to zwykły grep jednego słowa w `.feature`/`.java`/allure.
+  Decyzja o jednym języku jest właśnie warunkiem tego pomysłu.
+
+## Pozostałe otwarte wątki (z tej samej rozmowy)
+
+- **Ochrona rejestracji** — `register(email, password)` nie ma IP/throttlingu/brute force.
+  Realna luka (DoS przez haszowanie, masowe fałszywe konta, enumeracja kont przez „email already taken”).
+  Osobna kontrola od guarda uwierzytelniania. Do decyzji: czy domykać.
+  - DOMKNIĘCIE „already taken": `Register.execute` zapisuje usera BEZ sprawdzenia unikalności;
+    `UserAlreadyExistsEvent` istnieje w domenie, ale jest nieużywany. Trzeba: query do repo o duplikat
+    + 3. wariant `RegisterResult` (np. `EmailAlreadyTaken`). Wtedy wraca Rule 3 do `register.feature`.
+
+## Implementacja Fazy 2 (step-defs + szew) — ZROBIONE (kod), do odpalenia (user)
+
+Powstałe pliki:
+- PROD (security-system, `…system.authentication`):
+  - `BlockDurationPolicy` (interfejs, szew na czas bloku)
+  - `RandomBlockDurationPolicy` (prod-impl: losuje z config min..max)
+  - `AuthenticationFactory` (publiczny montaż; konstruktory zostają package-private)
+  - `_BruteForceGuard` — `ThreadLocalRandom` wyjęty, teraz bierze `BlockDurationPolicy`
+  - `_BruteForceGuardTest` — konstruktor + asercja deterministyczna (blok = 5 min)
+- TEST (security-application, `…feature.authentication[.support]`):
+  - `AuthenticationSteps` (glue do wszystkich 6 reguł)
+  - `MutableClock`, `FakeHashAlgorithm`, 4× in-memory repo (User, RejectedAuthentication,
+    AuthenticationBlock, AuthorizationData)
+- `security-application/pom.xml` — dodane `security-config` (test scope; wymóg dependency-analyze)
+
+Weryfikacja w tym środowisku:
+- ✅ `security-system` (main + test) kompiluje się na JDK 25 (`C:\j\25`).
+- ⚠️ `security-application` NIE skompilowany tu — brak sieci do nexusa + dziury w `.m2`
+  (plexus-utils:1.1, junit-platform-suite:1.14.0). To środowiskowe, nie kod.
+  Trzeba odpalić w normalnym środowisku z dostępem do repo.
+
+DO ZROBIENIA przez usera:
+1. Odpalić testy: `mvn -pl security-application test` (z dostępem do nexusa, JDK 25).
+   Moduł jest wykomentowany w parent pom — albo odkomentować `<module>security-application</module>`,
+   albo budować bezpośrednio w module.
+2. (prod DI) Podpiąć `AuthenticationFactory` + `RandomBlockDurationPolicy` w `BeanFactory`
+   (security-infrastructure) — ale infrastructure jest WIP/wyłączone, więc to osobny wątek.
+3. (opcjonalnie) 3 kosmetyczne `passed` (sekcja rename wyżej).
+
+Założenia wierne kodowi (zweryfikowane przy pisaniu):
+- `the user has reached the failure limit` = 3 rekordy porażek, jeszcze bez bloku;
+  blok wpada na kolejnej próbie (guard: `removeAllFor` kasuje rekordy przy bloku).
+- okno 15 min: próg ścisły — failure liczona tylko gdy `time > now-15min` (14 → blocked, 15 → ok).
+- blok deterministyczny w teście: `BlockDurationPolicy` = stałe 5 min.

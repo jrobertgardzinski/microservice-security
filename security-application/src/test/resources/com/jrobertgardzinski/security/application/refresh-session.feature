@@ -1,25 +1,28 @@
-Feature: refresh session
+Feature: Refreshing a session
 
-    Background:
-    Given a registered user with email "user@example.com"
+  A user keeps their session alive by refreshing it. A session that has expired,
+  or that no longer exists, cannot be refreshed — the user must authenticate again.
 
-    Rule: 1. A valid refresh token returns new session tokens
+  Background:
+    Given a registered user "user@example.com"
 
-        Example:
-        Given the user has an active session
-        When the user requests a session refresh
-        Then new session tokens are returned
+  Rule: 1. An active session can be refreshed
 
-    Rule: 2. An expired refresh token is rejected
+    Example:
+      Given the user has an active session
+      When the user refreshes the session
+      Then a fresh session is returned
 
-        Example:
-        Given the user's session has expired
-        When the user requests a session refresh
-        Then the session refresh is rejected with token expired
+  Rule: 2. An expired session cannot be refreshed
 
-    Rule: 3. A non-existent refresh token is rejected
+    Example:
+      Given the user's session has expired
+      When the user refreshes the session
+      Then the refresh is rejected because the session has expired
 
-        Example:
-        Given the user has no active session
-        When the user requests a session refresh
-        Then the session refresh is rejected with token not found
+  Rule: 3. A missing session cannot be refreshed
+
+    Example:
+      Given the user has no session
+      When the user refreshes the session
+      Then the refresh is rejected because there is no session to refresh
