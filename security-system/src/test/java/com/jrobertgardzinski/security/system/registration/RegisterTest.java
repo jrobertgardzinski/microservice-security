@@ -7,7 +7,6 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.util.constraint.Decision;
 import com.jrobertgardzinski.util.constraint.Outcome;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -52,9 +51,9 @@ class RegisterTest {
         List<String> emailErrors = emailFails ? someErrors() : Collections.emptyList();
         List<String> passwordErrors = passwordFails ? someErrors() : Collections.emptyList();
 
-        Decision<Email> decision = emailDecision(emailErrors);
+        Outcome<Email> emailOutcome = emailDecision(emailErrors);
         Outcome<HashedPassword> outcome = passwordOutcome(passwordErrors);
-        Mockito.when(canRegister.evaluate(Mockito.any())).thenReturn(decision);
+        Mockito.when(canRegister.evaluate(Mockito.any())).thenReturn(emailOutcome);
         Mockito.when(createPasswordHash.create(Mockito.any())).thenReturn(outcome);
 
         RegisterResult result = register.execute(() -> Email.of(EMAIL), () -> PlaintextPassword.of(PASSWORD));
@@ -73,8 +72,8 @@ class RegisterTest {
         Mockito.when(errors.isEmpty()).thenReturn(false);
         return errors;
     }
-    private Decision<Email> emailDecision(List<String> errors) {
-        return errors.isEmpty() ? new Decision.Allowed<>() : new Decision.Rejected<>(errors);
+    private Outcome<Email> emailDecision(List<String> errors) {
+        return errors.isEmpty() ? new Outcome.Allowed<>(Email.of(EMAIL)) : new Outcome.Rejected<>(errors);
     }
     private Outcome<HashedPassword> passwordOutcome(List<String> errors) {
         return errors.isEmpty() ? new Outcome.Allowed<>(HASH) : new Outcome.Rejected<>(errors);
@@ -84,7 +83,7 @@ class RegisterTest {
     @Label("Registered when both email and password pass validation")
     void registered_when_both_pass() {
         User user = new User(Email.of(EMAIL), HASH);
-        Mockito.when(canRegister.evaluate(Mockito.any())).thenReturn(new Decision.Allowed<>());
+        Mockito.when(canRegister.evaluate(Mockito.any())).thenReturn(new Outcome.Allowed<>(Email.of(EMAIL)));
         Mockito.when(createPasswordHash.create(Mockito.any())).thenReturn(new Outcome.Allowed<>(HASH));
         Mockito.when(userRepository.save(Mockito.any())).thenReturn(user);
 
