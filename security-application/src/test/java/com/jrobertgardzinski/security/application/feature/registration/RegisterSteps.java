@@ -49,12 +49,12 @@ public class RegisterSteps {
 
     @Then("the email is flagged as {word}")
     public void theEmailIsFlaggedAs(String flag) {
-        assertFlag(flag, rejected().emailErrors());
+        assertFlag(flag, rejected().emailErrors().codes());
     }
 
     @Then("the password is flagged as {word}")
     public void thePasswordIsFlaggedAs(String flag) {
-        assertFlag(flag, rejected().passwordErrors());
+        assertFlag(flag, rejected().passwordErrors().codes());
     }
 
     private RegisterResult.Rejected rejected() {

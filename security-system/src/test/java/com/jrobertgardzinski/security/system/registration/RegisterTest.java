@@ -60,8 +60,8 @@ class RegisterTest {
 
         RegisterResult.Rejected rejected = assertInstanceOf(RegisterResult.Rejected.class, result);
         assertAll(
-                () -> assertEquals(emailErrors, rejected.emailErrors()),
-                () -> assertEquals(passwordErrors, rejected.passwordErrors()),
+                () -> assertEquals(emailErrors, rejected.emailErrors().codes()),
+                () -> assertEquals(passwordErrors, rejected.passwordErrors().codes()),
                 () -> Mockito.verify(userRepository, Mockito.never()).save(Mockito.any())
         );
     }
