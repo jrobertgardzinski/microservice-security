@@ -1,48 +1,38 @@
 # TODO
 
-## 🔜 PRIORYTET 1 — kody błędów: String → enum (następna sesja, DUŻA akcja)
+## ✅ ZROBIONE 2026-06-21 — swap-safety kodów błędów (email vs password)
 
-Ustalone 2026-06-20. Dziś kody błędów to gołe `String` (np. `"NOT_A_COMPANY_DOMAIN"`,
-`"RFC_FORMAT_INVALID"`, `"MIN_LENGTH_NOT_MET"`). Cel: zamienić na enumy domenowe.
+Problem: `RegisterResult.Rejected(List<String> emailErrors, List<String> passwordErrors)` —
+dwa argumenty tego samego typu → ciche przestawienie email↔password (kompilator nie ostrzega).
+Realny strach: „kody błędów email trafią do password".
 
-**Po co (dwa realne zyski):**
-- **Bezpieczeństwo typów na `RegisterResult.Rejected`.** Dziś `Rejected(List<String> emailErrors,
-  List<String> passwordErrors)` — dwa argumenty tego samego typu, więc przestawienie kolejności to
-  CICHY bug (kompilator nie ostrzega; jedyne pozycyjne miejsce konstrukcji: `RegistrationAttempt`).
-  Po zmianie: `Rejected(List<EmailErrorCode>, List<PasswordErrorCode>)` — różne typy → zamiana = błąd
-  kompilacji.
-- **Koniec „stringly-typed".** Zamknięty zbiór, zero literówek, wyczerpujący `switch`. (To był sufit
-  z oceny `RegistrationAttempt` — 4.5/5.)
+**Enum ODRZUCONY (świadomie).** Dziś kod błędu = `static final String CODE` PRZY swoim constraintcie
+(`_RfcFormatConstraint` ma `RFC_FORMAT_INVALID`, `_IsEmployeeConstraint` ma `NOT_A_COMPANY_DOMAIN` itd.)
+— wysoka kohezja, każdy constraint samowystarczalny. Enum CENTRALIZOWAŁBY kody → coupling + każdy
+constraint zależny od wspólnego typu. Co gorsza: framework ograniczeń jest CELOWO OTWARTY
+(`Constraint.code()` abstrakcyjne, dowolny custom constraint z nowym kodem — patrz anonimowe w testach),
+a enum to zbiór ZAMKNIĘTY → walczyłby z rozszerzalnością. Werdykt: String przy constraintcie zostaje.
+(Kod błędu to identyfikator transportowy — i18n key / JSON / UI — prymityw jest tu adekwatny, nie ma
+inwariantów ani zachowania do owinięcia w VO.)
 
-**Kształt: ENUM, nie wrapper.** `record EmailErrorCode(String value)` dałoby tylko bezpieczeństwo typów,
-ale zostawia literówki w środku. Idziemy w:
-- `enum EmailErrorCode { RFC_FORMAT_INVALID, DOMAIN_BLOCKED, DISPOSABLE_DOMAIN, NOT_A_COMPANY_DOMAIN }`
-  (uwaga: `NO_MX_RECORD` to **warning**, nie error — osobny kanał/enum warningów do rozważenia)
-- `enum PasswordErrorCode { MIN_LENGTH_NOT_MET, DIGIT_REQUIRED, SPECIAL_CHAR_REQUIRED, UPPERCASE_REQUIRED, LOWERCASE_REQUIRED }`
+**Rozwiązanie (wybrana opcja B z rozmowy): osobne typy-KONTENERY per kanał, nie per kod.**
+- `EmailErrorCodes` / `PasswordErrorCodes` — finalne klasy (NIE rekordy, bo rekord = publiczny
+  kanoniczny ctor = furtka „zbuduj z gołej listy"). Prywatny ctor + pakietowa fabryka `of(Outcome<…>)`.
+- `Rejected(EmailErrorCodes, PasswordErrorCodes)` — różne typy pól.
+- Trzy spusty zamykające swap: (1) różne typy pól → przestawienie slotów = błąd kompilacji;
+  (2) `of(Outcome<Email>)` otypowane → `EmailErrorCodes.of(passwordOutcome)` = błąd kompilacji;
+  (3) prywatny ctor → `new EmailErrorCodes(jakasLista)` niedostępne spoza klasy.
+  Efekt: cross-slot swap NIEWYRAŻALNY w typach, nie tylko „pilnowany".
+- Kody w środku zostają `String` (`.codes()`), zero couplingu do constraintów.
+- Pliki: nowe `EmailErrorCodes`/`PasswordErrorCodes` (security-system/registration, public);
+  zmienione `RegisterResult`, `RegistrationAttempt` (buduje przez `.of(...)`), `RegisterTest`,
+  `RegisterSteps` (czytają `.codes()`). Usunięty `// todo consider dedicated errors...`.
+- ⚠️ NIE odpalony build w tej sesji (bez shella). Do weryfikacji: `clean install` (JDK 25, `C:\j\25`).
 
-**Gdzie mieszkają:** `EmailErrorCode` → moduł `email`, `PasswordErrorCode` → moduł `password`
-(to ich domena — produkują je ograniczenia `CanRegister`/`CreatePasswordHash`). `security-system`
-już zależy od obu, więc `RegisterResult` może je importować bez łamania warstw.
-
-**Zakres — dwie drogi (wybrać na starcie sesji):**
-- **(A) Konwersja na granicy** — `Outcome`/`Constraint` zostają na `String`, a `RegistrationAttempt`
-  mapuje `String → enum`. Mała zmiana, lokalna. WADA: typujesz za późno, string dalej jest źródłem
-  prawdy. Dobre jako interim.
-- **(B) Rodzą się otypowane (właściwe)** — sparametryzować framework w `libs`:
-  `Constraint<T, C>`, `ErrorConstraint<T, C>`, `Constraints<T, C>`, `Outcome<T, C>` (kod jako typ C),
-  a `email`/`password` definiują enumy i ich ograniczenia zwracają je wprost. Czysto end-to-end,
-  ale RIPPLE przez `libs` + `email` + `password` + `security-system`. To jest „duża akcja".
-
-**Pliki do ruszenia (droga B):**
-- `libs`: `Constraint`, `ErrorConstraint`, `WarningConstraint`, `Constraints`, `Outcome`.
-- `email`: ograniczenia (`_RfcFormatConstraint`, `_BlockedDomainConstraint`, `_DisposableEmailConstraint`,
-  `_IsEmployeeConstraint`, `_MxRecordConstraint`), `CanRegister`, `CanResetPassword` + ich testy.
-- `password`: ograniczenia + `CreatePasswordHash` + testy.
-- `security-system`: `RegisterResult`, `RegistrationAttempt`, `RegisterTest`.
-- `security-application`: `RegisterSteps` (czyta `emailErrors()`/`passwordErrors()`).
-
-**Rekomendacja:** docelowo (B). Jeśli czas ciśnie — (A) jako krok pośredni, potem migracja do (B).
-Skąd to wyszło: rozmowa o `RegisterResult.Rejected` (ryzyko zamiany argumentów tego samego typu).
+**Drobny dług zauważony przy okazji (NIE zrobione):** w niektórych constraintach `code()` zwraca
+ZDUPLIKOWANY literał zamiast stałej `CODE` (np. `_ContainsDigitConstraint`: pole `CODE="DIGIT_REQUIRED"`,
+a `code()` zwraca `"DIGIT_REQUIRED"` literałem). Dwa źródła prawdy w jednej klasie — `code()` powinno
+zwracać `CODE`. Sprawdzić wszystkie constrainty w `email`/`password`.
 
 ## STAN — gdzie jesteśmy (czytaj najpierw)
 
