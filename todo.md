@@ -27,12 +27,60 @@ inwariantów ani zachowania do owinięcia w VO.)
 - Pliki: nowe `EmailErrorCodes`/`PasswordErrorCodes` (security-system/registration, public);
   zmienione `RegisterResult`, `RegistrationAttempt` (buduje przez `.of(...)`), `RegisterTest`,
   `RegisterSteps` (czytają `.codes()`). Usunięty `// todo consider dedicated errors...`.
-- ⚠️ NIE odpalony build w tej sesji (bez shella). Do weryfikacji: `clean install` (JDK 25, `C:\j\25`).
+- ✅ BUILD ZWERYFIKOWANY 2026-06-21 (JDK 25, pełny `clean install`): BUILD SUCCESS.
+  security-config 13/0, security-system 17/0, security-application (RunCucumberTest, 3 feature'y) 17/0.
+  Potwierdza, że swap-safety + `.codes()` w `RegisterSteps` działają end-to-end.
+  (security-infrastructure dalej POZA reaktorem — patrz milestone multi-level niżej.)
 
-**Drobny dług zauważony przy okazji (NIE zrobione):** w niektórych constraintach `code()` zwraca
-ZDUPLIKOWANY literał zamiast stałej `CODE` (np. `_ContainsDigitConstraint`: pole `CODE="DIGIT_REQUIRED"`,
-a `code()` zwraca `"DIGIT_REQUIRED"` literałem). Dwa źródła prawdy w jednej klasie — `code()` powinno
-zwracać `CODE`. Sprawdzić wszystkie constrainty w `email`/`password`.
+**Drobny dług zauważony przy okazji (NIE zrobione — obce repo `email`/`password`):** w niektórych
+constraintach `code()` zwraca ZDUPLIKOWANY literał zamiast stałej `CODE` (np. `_ContainsDigitConstraint`:
+pole `CODE="DIGIT_REQUIRED"`, a `code()` zwraca `"DIGIT_REQUIRED"` literałem). `code()` powinno zwracać
+`CODE`. Świadomie NIE ruszone w nocy: to osobne repozytoria git — nie commituję w nich bez Ciebie.
+Quick win na 10 min, gdy dasz znać.
+
+## 🔜 PRIORYTET 1 (następny) — jeden feature z 2 poziomów: application + infrastructure HTTP
+
+Ustalone 2026-06-21. To jest dowód głównej tezy z Readme: „same behaviour, different entry point".
+Dziś 3 feature'y chodzą TYLKO z warstwy application. Cel milestone'u: ten SAM `.feature` napędzany
+także z infry (realne wejście HTTP). NIE kopiujemy Gherkina — jeden plik, dwa zestawy step-defs.
+
+**Czemu `register.feature` jako pierwszy:** brak zegara, brute-force i sesji — czysta walidacja +
+zapis. Najłatwiej przepchnąć przez sieć i zobaczyć zielone na drugim poziomie. (authenticate ma zegar
+i brute-force, refresh ma stan sesji — trudniejsze, później.)
+
+**Stan startowy (sprawdzone):** w infrze JEST szkielet `SecurityController` (dziś zwraca `"OK"`),
+moduł `security-infrastructure` WYKOMENTOWANY z parent pom → poza reaktorem. ⚠️ DLATEGO tego milestone'u
+NIE DA SIĘ zweryfikować w obecnym sandboxie, dopóki infra nie wróci do builda. To główny powód, czemu
+nie zacząłem go w nocy — nie chcę commitować niezweryfikowanego wejścia HTTP.
+
+**Kroki (do zrobienia z Tobą):**
+1. Odkomentować `security-infrastructure` w parent pom; doprowadzić moduł do `BUILD SUCCESS`
+   (prod DI: `BeanFactory` + `AuthenticationFactory` + `RandomBlockDurationPolicy` — patrz „Faza 2" niżej).
+2. `SecurityController` realnie: `POST /register` {email, password} → `SecurityService.register`
+   → odpowiedź HTTP (201/200 Registered, 4xx Rejected z `emailErrors`/`passwordErrors().codes()`).
+3. Drugi zestaw step-defs dla TEGO SAMEGO `register.feature`, uderzający po HTTP (MockMvc /
+   WebTestClient / realny port) zamiast wołać `SecurityService` wprost.
+4. Runner wskazujący ten sam `.feature` z innym glue (osobny pakiet / profil Cucumbera).
+   KLUCZ: jeden Gherkin, dwa glue → warstwy nie mogą się rozjechać w zachowaniu (czytają tę samą spec).
+5. UI (3. poziom) — ŚWIADOMIE później: wymaga frontu/drivera, dużo plumbingu za mały zysk ponad app+infra.
+
+**Otwarta decyzja w tym milestonie:** jak fizycznie współdzielić `.feature` między dwoma runnerami
+(ten sam plik na classpath + dwa `@SelectClasspathResource` z różnym glue-base, vs jeden runner z
+dwoma profilami). Do ustalenia na starcie.
+
+## ⏳ DECYZJE DO PODJĘCIA (odblokowują mnie jednym słowem — NIE robię sam)
+
+- **Nazewnictwo „failure/failed" vs „rejection/rejected".** Otwarta oś z sekcji „Rename". Dotyczy
+  `FailuresCount`, `countFailuresBy`, `hasReachedTheLimit` ORAZ nazw metod testów (`passed_when_…`
+  w `AuthenticationTest`/`_VerifyCredentialsTest`/`_BruteForceGuardTest`/`RefreshSessionTest`) i ich
+  `@Label`. UWAGA: część `@Label` jest już niespójna (np. `RefreshSessionTest` ma `@Label "Authenticated
+  when…"`, a powinno „Refreshed when…"). NIE ruszyłem w nocy — to Twoja konwencja, nie moja.
+  Pytanie: ujednolicać żargon na „rejected/rejection"? `failed to authenticate` / `failed attempts`
+  w `.feature` ZOSTAJĄ (naturalny angielski).
+- **Ochrona rejestracji — czy domykać „already taken".** `Register.execute` zapisuje usera BEZ
+  sprawdzenia unikalności; `UserAlreadyExistsEvent` istnieje, nieużywany. Domknięcie = query do repo
+  o duplikat + 3. wariant `RegisterResult` (np. `EmailAlreadyTaken`) + powrót Rule 3 do `register.feature`.
+  To ZMIANA ZACHOWANIA + spec — dlatego decyzja Twoja, nie nockowa. (Szerszy temat throttling/IP — niżej.)
 
 ## STAN — gdzie jesteśmy (czytaj najpierw)
 
