@@ -1,5 +1,49 @@
 # TODO
 
+## 🔜 PRIORYTET 1 — kody błędów: String → enum (następna sesja, DUŻA akcja)
+
+Ustalone 2026-06-20. Dziś kody błędów to gołe `String` (np. `"NOT_A_COMPANY_DOMAIN"`,
+`"RFC_FORMAT_INVALID"`, `"MIN_LENGTH_NOT_MET"`). Cel: zamienić na enumy domenowe.
+
+**Po co (dwa realne zyski):**
+- **Bezpieczeństwo typów na `RegisterResult.Rejected`.** Dziś `Rejected(List<String> emailErrors,
+  List<String> passwordErrors)` — dwa argumenty tego samego typu, więc przestawienie kolejności to
+  CICHY bug (kompilator nie ostrzega; jedyne pozycyjne miejsce konstrukcji: `RegistrationAttempt`).
+  Po zmianie: `Rejected(List<EmailErrorCode>, List<PasswordErrorCode>)` — różne typy → zamiana = błąd
+  kompilacji.
+- **Koniec „stringly-typed".** Zamknięty zbiór, zero literówek, wyczerpujący `switch`. (To był sufit
+  z oceny `RegistrationAttempt` — 4.5/5.)
+
+**Kształt: ENUM, nie wrapper.** `record EmailErrorCode(String value)` dałoby tylko bezpieczeństwo typów,
+ale zostawia literówki w środku. Idziemy w:
+- `enum EmailErrorCode { RFC_FORMAT_INVALID, DOMAIN_BLOCKED, DISPOSABLE_DOMAIN, NOT_A_COMPANY_DOMAIN }`
+  (uwaga: `NO_MX_RECORD` to **warning**, nie error — osobny kanał/enum warningów do rozważenia)
+- `enum PasswordErrorCode { MIN_LENGTH_NOT_MET, DIGIT_REQUIRED, SPECIAL_CHAR_REQUIRED, UPPERCASE_REQUIRED, LOWERCASE_REQUIRED }`
+
+**Gdzie mieszkają:** `EmailErrorCode` → moduł `email`, `PasswordErrorCode` → moduł `password`
+(to ich domena — produkują je ograniczenia `CanRegister`/`CreatePasswordHash`). `security-system`
+już zależy od obu, więc `RegisterResult` może je importować bez łamania warstw.
+
+**Zakres — dwie drogi (wybrać na starcie sesji):**
+- **(A) Konwersja na granicy** — `Outcome`/`Constraint` zostają na `String`, a `RegistrationAttempt`
+  mapuje `String → enum`. Mała zmiana, lokalna. WADA: typujesz za późno, string dalej jest źródłem
+  prawdy. Dobre jako interim.
+- **(B) Rodzą się otypowane (właściwe)** — sparametryzować framework w `libs`:
+  `Constraint<T, C>`, `ErrorConstraint<T, C>`, `Constraints<T, C>`, `Outcome<T, C>` (kod jako typ C),
+  a `email`/`password` definiują enumy i ich ograniczenia zwracają je wprost. Czysto end-to-end,
+  ale RIPPLE przez `libs` + `email` + `password` + `security-system`. To jest „duża akcja".
+
+**Pliki do ruszenia (droga B):**
+- `libs`: `Constraint`, `ErrorConstraint`, `WarningConstraint`, `Constraints`, `Outcome`.
+- `email`: ograniczenia (`_RfcFormatConstraint`, `_BlockedDomainConstraint`, `_DisposableEmailConstraint`,
+  `_IsEmployeeConstraint`, `_MxRecordConstraint`), `CanRegister`, `CanResetPassword` + ich testy.
+- `password`: ograniczenia + `CreatePasswordHash` + testy.
+- `security-system`: `RegisterResult`, `RegistrationAttempt`, `RegisterTest`.
+- `security-application`: `RegisterSteps` (czyta `emailErrors()`/`passwordErrors()`).
+
+**Rekomendacja:** docelowo (B). Jeśli czas ciśnie — (A) jako krok pośredni, potem migracja do (B).
+Skąd to wyszło: rozmowa o `RegisterResult.Rejected` (ryzyko zamiany argumentów tego samego typu).
+
 ## STAN — gdzie jesteśmy (czytaj najpierw)
 
 Pracujemy nad modułem `microservice-security`, wątek: ubiquitous language + czytelność.
