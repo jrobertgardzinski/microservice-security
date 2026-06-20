@@ -31,7 +31,7 @@ class RegistrationAttempt {
         var optionalEmail = emailOutcome.findValue();
         var optionalHashedPassword = passwordOutcome.findValue();
         if (optionalEmail.isEmpty() || optionalHashedPassword.isEmpty()) {
-            return new RegisterResult.Rejected(emailOutcome.errorCodes(), passwordOutcome.errorCodes());
+            return new RegisterResult.Rejected(EmailErrorCodes.of(emailOutcome), PasswordErrorCodes.of(passwordOutcome));
         }
         Email email = optionalEmail.get();
         HashedPassword hashedPassword = optionalHashedPassword.get();
