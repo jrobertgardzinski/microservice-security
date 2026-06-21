@@ -1,6 +1,7 @@
 package com.jrobertgardzinski.security.system.registration;
 
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
@@ -36,7 +37,7 @@ class RegistrationAttempt {
         Email email = optionalEmail.get();
         HashedPassword hashedPassword = optionalHashedPassword.get();
 
-        if (userRepository.findBy(email).isPresent()) {
+        if (userRepository.existsBy(NormalizedEmail.of(email))) {
             return new RegisterResult.EmailAlreadyTaken(email);
         }
 

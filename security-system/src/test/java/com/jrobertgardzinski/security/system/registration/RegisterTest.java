@@ -16,7 +16,6 @@ import org.mockito.Mockito;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -99,7 +98,7 @@ class RegisterTest {
     void email_already_taken_when_user_exists() {
         Mockito.when(canRegister.evaluate(Mockito.any())).thenReturn(new Outcome.Allowed<>(Email.of(EMAIL)));
         Mockito.when(createPasswordHash.create(Mockito.any())).thenReturn(new Outcome.Allowed<>(HASH));
-        Mockito.when(userRepository.findBy(Mockito.any())).thenReturn(Optional.of(new User(Email.of(EMAIL), HASH)));
+        Mockito.when(userRepository.existsBy(Mockito.any())).thenReturn(true);
 
         RegisterResult result = register.execute(() -> Email.of(EMAIL), () -> PlaintextPassword.of(PASSWORD));
 

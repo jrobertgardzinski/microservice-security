@@ -25,7 +25,12 @@ Feature: Registration
 
   Rule: 3. An email that is already registered is rejected
 
-    Example:
+    Example: the same email
       Given the email "user@example.com" is already registered
       When the user registers with email "user@example.com" and password "StrongPassword1!"
+      Then registration is rejected because the email is already taken
+
+    Example: a provider alias of that email (Gmail treats dots and "+tags" as the same inbox)
+      Given the email "user@gmail.com" is already registered
+      When the user registers with email "u.s.e.r+promo@gmail.com" and password "StrongPassword1!"
       Then registration is rejected because the email is already taken
