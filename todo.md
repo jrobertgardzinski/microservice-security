@@ -68,16 +68,15 @@ nie zacząłem go w nocy — nie chcę commitować niezweryfikowanego wejścia H
 (ten sam plik na classpath + dwa `@SelectClasspathResource` z różnym glue-base, vs jeden runner z
 dwoma profilami). Do ustalenia na starcie.
 
-## ⏳ DECYZJE DO PODJĘCIA (odblokowują mnie jednym słowem — NIE robię sam)
+## DECYZJE
 
-- **Nazewnictwo „failure/failed" vs „rejection/rejected".** Otwarta oś z sekcji „Rename". Dotyczy
-  `FailuresCount`, `countFailuresBy`, `hasReachedTheLimit` ORAZ nazw metod testów (`passed_when_…`
-  w `AuthenticationTest`/`_VerifyCredentialsTest`/`_BruteForceGuardTest`/`RefreshSessionTest`) i ich
-  `@Label`. UWAGA: część `@Label` jest już niespójna (np. `RefreshSessionTest` ma `@Label "Authenticated
-  when…"`, a powinno „Refreshed when…"). NIE ruszyłem w nocy — to Twoja konwencja, nie moja.
-  Pytanie: ujednolicać żargon na „rejected/rejection"? `failed to authenticate` / `failed attempts`
-  w `.feature` ZOSTAJĄ (naturalny angielski).
-- **Ochrona rejestracji — czy domykać „already taken".** `Register.execute` zapisuje usera BEZ
+- ✅ **Nazewnictwo „failure/failed" vs „rejection/rejected" — ROZSTRZYGNIĘTE 2026-06-21 (rozdziel).**
+  `failure/failures` ZOSTAJE jako pojęcie brute-force w produkcji (`FailuresCount`, `countFailuresBy`,
+  `hasReachedTheLimit` — nietknięte). Nazwy metod testów + `@Label` wyrównane do typu/wariantu, który
+  test sprawdza (`passed_`→`authenticated_/valid_/allowed_/refreshed_`, `failed_`→`rejected_/invalid_`),
+  + naprawione `@Label` czytające „Authenticated" na testach eventów wewnętrznych. Commit `a323cd5`,
+  build zielony (17/0). `failed to authenticate` / `failed attempts` w `.feature` zostawione.
+- ⏳ **Ochrona rejestracji — czy domykać „already taken".** (Czeka na Twoją odpowiedź.) `Register.execute` zapisuje usera BEZ
   sprawdzenia unikalności; `UserAlreadyExistsEvent` istnieje, nieużywany. Domknięcie = query do repo
   o duplikat + 3. wariant `RegisterResult` (np. `EmailAlreadyTaken`) + powrót Rule 3 do `register.feature`.
   To ZMIANA ZACHOWANIA + spec — dlatego decyzja Twoja, nie nockowa. (Szerszy temat throttling/IP — niżej.)
