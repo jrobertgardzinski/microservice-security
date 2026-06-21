@@ -81,11 +81,14 @@ dwoma profilami). Do ustalenia na starcie.
   wariant `RegisterResult.EmailAlreadyTaken(email)` zamiast zapisać duplikat. Dodane: Rule 3 w
   `register.feature` + step-defs (`the email "…" is already registered`) + test w `RegisterTest`.
   Commit `3ed375c`, build zielony (RegisterTest 3/3, RunCucumberTest 18/18).
-  UWAGI: (1) klucz unikalności = `findBy(Email)` (jak w authentication), NIE `NormalizedEmail` —
-  duplikat przez alias (kropki gmaila) wciąż przejdzie; uniknięcie tego = osobny `findByNormalized`,
-  do rozważenia. (2) `UserAlreadyExistsEvent` (domena) dalej nieużywany — `RegisterResult` to wynik
-  systemu, nie event; świadomie nie wpinałem eventów (Registered/Rejected też nie są eventami).
-  (3) Throttling/IP/enumeracja kont przy rejestracji — NADAL otwarte, osobny większy temat (niżej).
+- ✅ **Unikalność po ZNORMALIZOWANYM mailu — DOMKNIĘTE 2026-06-21** (commit `82a35fd`).
+  `UserRepository.existsBy(NormalizedEmail)`; `RegistrationAttempt` sprawdza to zamiast `findBy(Email)`,
+  więc aliasy providera (kropki gmaila, `+tag`) tej samej skrzynki liczą się jako zajęte. Dodane:
+  `register.feature` Rule 4 (alias gmaila) + test + in-memory repo indeksuje po znormalizowanym.
+  Build zielony (RegisterTest 3/3, RunCucumberTest 19/19).
+  POZOSTAJE: (1) `UserAlreadyExistsEvent` (domena) dalej nieużywany — `RegisterResult` to wynik systemu,
+  nie event; świadomie nie wpinałem eventów (Registered/Rejected też nie są eventami). (2) Throttling/IP/
+  enumeracja kont przy rejestracji — NADAL otwarte, osobny większy temat (niżej).
 
 ## STAN — gdzie jesteśmy (czytaj najpierw)
 
