@@ -16,6 +16,7 @@ import org.mockito.Mockito;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -91,5 +92,21 @@ class RegisterTest {
 
         RegisterResult.Registered registered = assertInstanceOf(RegisterResult.Registered.class, result);
         assertEquals(user, registered.user());
+    }
+
+    @Example
+    @Label("EmailAlreadyTaken when a user with that email already exists")
+    void email_already_taken_when_user_exists() {
+        Mockito.when(canRegister.evaluate(Mockito.any())).thenReturn(new Outcome.Allowed<>(Email.of(EMAIL)));
+        Mockito.when(createPasswordHash.create(Mockito.any())).thenReturn(new Outcome.Allowed<>(HASH));
+        Mockito.when(userRepository.findBy(Mockito.any())).thenReturn(Optional.of(new User(Email.of(EMAIL), HASH)));
+
+        RegisterResult result = register.execute(() -> Email.of(EMAIL), () -> PlaintextPassword.of(PASSWORD));
+
+        RegisterResult.EmailAlreadyTaken alreadyTaken = assertInstanceOf(RegisterResult.EmailAlreadyTaken.class, result);
+        assertAll(
+                () -> assertEquals(Email.of(EMAIL), alreadyTaken.email()),
+                () -> Mockito.verify(userRepository, Mockito.never()).save(Mockito.any())
+        );
     }
 }

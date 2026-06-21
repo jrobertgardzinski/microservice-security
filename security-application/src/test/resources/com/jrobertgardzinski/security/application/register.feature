@@ -1,7 +1,7 @@
 Feature: Registration
 
   A new user registers with an email and a password. Registration is refused
-  when the email or the password is invalid.
+  when the email or the password is invalid, or when the email is already taken.
 
   Rule: 1. A valid email and password register the user
 
@@ -22,3 +22,10 @@ Feature: Registration
         | both invalid              | invalid        | weak             | invalid     | invalid        |
         | only the email invalid    | invalid        | StrongPassword1! | invalid     | accepted       |
         | only the password invalid | user@gmail.com | weak             | accepted    | invalid        |
+
+  Rule: 3. An email that is already registered is rejected
+
+    Example:
+      Given the email "user@example.com" is already registered
+      When the user registers with email "user@example.com" and password "StrongPassword1!"
+      Then registration is rejected because the email is already taken

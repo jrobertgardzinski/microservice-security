@@ -7,10 +7,13 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.password.security.config.MinLength;
+import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.security.config.SpecialChars;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryUserRepository;
+import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.system.registration.Register;
 import com.jrobertgardzinski.security.system.registration.RegisterResult;
+import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -32,6 +35,11 @@ public class RegisterSteps {
 
     private RegisterResult result;
 
+    @Given("the email {string} is already registered")
+    public void theEmailIsAlreadyRegistered(String email) {
+        users.save(new User(Email.of(email), new HashedPassword("seed-hash")));
+    }
+
     @When("the user registers with email {string} and password {string}")
     public void theUserRegisters(String email, String password) {
         result = register.execute(() -> Email.of(email), () -> PlaintextPassword.of(password));
@@ -45,6 +53,11 @@ public class RegisterSteps {
     @Then("registration is rejected")
     public void registrationIsRejected() {
         assertInstanceOf(RegisterResult.Rejected.class, result);
+    }
+
+    @Then("registration is rejected because the email is already taken")
+    public void registrationIsRejectedBecauseEmailAlreadyTaken() {
+        assertInstanceOf(RegisterResult.EmailAlreadyTaken.class, result);
     }
 
     @Then("the email is flagged as {word}")
