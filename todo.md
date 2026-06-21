@@ -35,11 +35,6 @@ Guard/`AuthenticationBlock` biorą `Source`, `IpAddress` staje się jego polem. 
 - OBSERWOWANE (machineName, browserVersion): forensics, POZA `equals` — inaczej zmiana
   user-agenta = obejście lockoutu. Rozważyć `DeviceFingerprint`/`RequestContext`. Uwaga RODO.
 
-## Drobne
-
-- **Usunąć martwy `UserAlreadyExistsEvent` / `RegistrationEvent`** — koncept „zajęty email"
-  pokryty przez `RegisterResult.EmailAlreadyTaken`; event jest nieużywany i redundantny.
-
 ## Zaparkowane
 
 - **Glosariusz / cross-linking UL** — termin domenowy jako hiperłącze w Gherkin/Allure/Javadoc
