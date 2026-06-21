@@ -51,8 +51,8 @@ class RefreshSessionTest {
     }
 
     @Example
-    @Label("Authenticated when refresh token is found and not expired")
-    void passed_when_token_found_and_not_expired() {
+    @Label("Refreshed when refresh token is found and not expired")
+    void refreshed_when_token_found_and_not_expired() {
         RefreshTokenExpiration expiration = Mockito.mock(RefreshTokenExpiration.class);
         Mockito.when(expiration.hasExpired(CLOCK)).thenReturn(false);
         SessionTokens createdTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK);

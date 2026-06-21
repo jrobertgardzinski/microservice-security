@@ -100,8 +100,8 @@ class _BruteForceGuardTest {
     }
 
     @Example
-    @Label("Authenticated when there is no active block and failures are below the limit")
-    void passed_when_no_active_block_and_below_limit() {
+    @Label("Allowed when there is no active block and failures are below the limit")
+    void allowed_when_no_active_block_and_below_limit() {
         Mockito.when(authenticationBlockRepository.findBy(GIVEN.ip)).thenReturn(Optional.empty());
         Mockito.when(rejectedAuthenticationRepository.countFailuresBy(Mockito.eq(GIVEN.ip), Mockito.any()))
                 .thenReturn(new FailuresCount(CONFIG.maxFailures().value() - 1));

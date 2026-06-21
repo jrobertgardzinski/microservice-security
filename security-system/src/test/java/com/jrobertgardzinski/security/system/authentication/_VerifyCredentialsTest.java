@@ -50,8 +50,8 @@ class _VerifyCredentialsTest {
     }
 
     @Example
-    @Label("Authenticated when the user exists and the password hash matches")
-    void passed_when_user_found_and_hash_matches() {
+    @Label("Valid when the user exists and the password hash matches")
+    void valid_when_user_found_and_hash_matches() {
         Mockito.when(userRepository.findBy(GIVEN.email)).thenReturn(Optional.of(GIVEN.user));
         Mockito.when(hashAlgorithmPort.verify(GIVEN.hash, GIVEN.password)).thenReturn(true);
 
@@ -61,8 +61,8 @@ class _VerifyCredentialsTest {
     }
 
     @Example
-    @Label("Rejected when the user exists but the password hash does not match")
-    void failed_when_user_found_but_hash_mismatches() {
+    @Label("Invalid when the user exists but the password hash does not match")
+    void invalid_when_user_found_but_hash_mismatches() {
         Mockito.when(userRepository.findBy(GIVEN.email)).thenReturn(Optional.of(GIVEN.user));
         Mockito.when(hashAlgorithmPort.verify(GIVEN.hash, GIVEN.password)).thenReturn(false);
 
@@ -72,8 +72,8 @@ class _VerifyCredentialsTest {
     }
 
     @Example
-    @Label("Rejected when no user exists for the email")
-    void failed_when_user_not_found() {
+    @Label("Invalid when no user exists for the email")
+    void invalid_when_user_not_found() {
         Mockito.when(userRepository.findBy(GIVEN.email)).thenReturn(Optional.empty());
 
         AuthenticationEvent event = verifyCredentials.execute(GIVEN.credentials);

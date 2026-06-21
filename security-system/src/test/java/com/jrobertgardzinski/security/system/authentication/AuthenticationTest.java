@@ -89,7 +89,7 @@ class AuthenticationTest {
 
     @Example
     @Label("Authenticated when the guard allows and credentials are valid")
-    void passed_when_guard_allows_and_credentials_valid() {
+    void authenticated_when_guard_allows_and_credentials_valid() {
         SessionTokens sessionTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK);
         Mockito.when(bruteForceGuard.execute(GIVEN.ipAddress))
                 .thenReturn(new BruteForceProtectionEvent.Allowed());
@@ -110,7 +110,7 @@ class AuthenticationTest {
 
     @Example
     @Label("Rejected when the guard allows but credentials are invalid")
-    void failed_when_guard_allows_but_credentials_invalid() {
+    void rejected_when_guard_allows_but_credentials_invalid() {
         Mockito.when(bruteForceGuard.execute(GIVEN.ipAddress))
                 .thenReturn(new BruteForceProtectionEvent.Allowed());
         Mockito.when(verifyCredentials.execute(GIVEN.credentials))
