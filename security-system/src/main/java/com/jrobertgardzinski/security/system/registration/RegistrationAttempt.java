@@ -12,8 +12,8 @@ import com.jrobertgardzinski.util.constraint.Outcome;
  *
  * The input suppliers were already consumed into these outcomes before this
  * object existed, so {@link #resolve} cannot re-run them. It rejects with the
- * collected error codes if either input failed; otherwise it builds and persists
- * the user from the validated values.
+ * collected error codes if either input failed; otherwise, once the email is
+ * confirmed free, it builds and persists the user from the validated values.
  */
 class RegistrationAttempt {
 
@@ -35,6 +35,10 @@ class RegistrationAttempt {
         }
         Email email = optionalEmail.get();
         HashedPassword hashedPassword = optionalHashedPassword.get();
+
+        if (userRepository.findBy(email).isPresent()) {
+            return new RegisterResult.EmailAlreadyTaken(email);
+        }
 
         User user = new User(email, hashedPassword);
         User persisted = userRepository.save(user);
