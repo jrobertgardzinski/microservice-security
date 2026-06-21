@@ -76,10 +76,16 @@ dwoma profilami). Do ustalenia na starcie.
   test sprawdza (`passed_`→`authenticated_/valid_/allowed_/refreshed_`, `failed_`→`rejected_/invalid_`),
   + naprawione `@Label` czytające „Authenticated" na testach eventów wewnętrznych. Commit `a323cd5`,
   build zielony (17/0). `failed to authenticate` / `failed attempts` w `.feature` zostawione.
-- ⏳ **Ochrona rejestracji — czy domykać „already taken".** (Czeka na Twoją odpowiedź.) `Register.execute` zapisuje usera BEZ
-  sprawdzenia unikalności; `UserAlreadyExistsEvent` istnieje, nieużywany. Domknięcie = query do repo
-  o duplikat + 3. wariant `RegisterResult` (np. `EmailAlreadyTaken`) + powrót Rule 3 do `register.feature`.
-  To ZMIANA ZACHOWANIA + spec — dlatego decyzja Twoja, nie nockowa. (Szerszy temat throttling/IP — niżej.)
+- ✅ **Ochrona rejestracji „already taken" — DOMKNIĘTE 2026-06-21.** `RegistrationAttempt.resolve`
+  sprawdza `userRepository.findBy(email)` PO walidacji, PRZED zapisem; przy duplikacie zwraca nowy
+  wariant `RegisterResult.EmailAlreadyTaken(email)` zamiast zapisać duplikat. Dodane: Rule 3 w
+  `register.feature` + step-defs (`the email "…" is already registered`) + test w `RegisterTest`.
+  Commit `3ed375c`, build zielony (RegisterTest 3/3, RunCucumberTest 18/18).
+  UWAGI: (1) klucz unikalności = `findBy(Email)` (jak w authentication), NIE `NormalizedEmail` —
+  duplikat przez alias (kropki gmaila) wciąż przejdzie; uniknięcie tego = osobny `findByNormalized`,
+  do rozważenia. (2) `UserAlreadyExistsEvent` (domena) dalej nieużywany — `RegisterResult` to wynik
+  systemu, nie event; świadomie nie wpinałem eventów (Registered/Rejected też nie są eventami).
+  (3) Throttling/IP/enumeracja kont przy rejestracji — NADAL otwarte, osobny większy temat (niżej).
 
 ## STAN — gdzie jesteśmy (czytaj najpierw)
 
