@@ -6,8 +6,10 @@ import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
+import com.jrobertgardzinski.security.domain.port.EmailVerificationNotifier;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
@@ -22,6 +24,8 @@ import com.jrobertgardzinski.security.system.registration.Register;
 import com.jrobertgardzinski.security.system.session.Logout;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RevokeAllSessions;
+import com.jrobertgardzinski.security.system.verification.RequestEmailVerification;
+import com.jrobertgardzinski.security.system.verification.VerifyEmail;
 import io.micronaut.context.annotation.Factory;
 import jakarta.inject.Singleton;
 
@@ -103,5 +107,16 @@ public class BeanFactory {
     @Singleton
     RevokeAllSessions revokeAllSessions(AuthorizationDataRepository authorizationDataRepository) {
         return new RevokeAllSessions(authorizationDataRepository);
+    }
+
+    @Singleton
+    RequestEmailVerification requestEmailVerification(
+            EmailVerificationRepository emailVerificationRepository, EmailVerificationNotifier notifier) {
+        return new RequestEmailVerification(emailVerificationRepository, notifier);
+    }
+
+    @Singleton
+    VerifyEmail verifyEmail(EmailVerificationRepository emailVerificationRepository) {
+        return new VerifyEmail(emailVerificationRepository);
     }
 }

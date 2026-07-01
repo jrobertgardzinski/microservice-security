@@ -1,0 +1,47 @@
+package com.jrobertgardzinski.persistence;
+
+import com.jrobertgardzinski.TokenHashing;
+import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
+import io.micronaut.context.annotation.Requires;
+import jakarta.inject.Singleton;
+
+import javax.sql.DataSource;
+import java.util.Optional;
+
+/**
+ * PostgreSQL-backed {@link EmailVerificationRepository}. Stores the pending token as a SHA-256 hash
+ * (see {@link TokenHashing}); completing verification matches on that hash, marks the row verified
+ * and clears the token. Raw tokens are never stored.
+ */
+@Singleton
+@Requires(beans = DataSource.class)
+final class JdbcEmailVerificationRepository implements EmailVerificationRepository {
+
+    private final EmailVerificationJdbcRepository repository;
+
+    JdbcEmailVerificationRepository(EmailVerificationJdbcRepository repository) {
+        this.repository = repository;
+    }
+
+    @Override
+    public void startVerification(Email email, VerificationToken token) {
+        repository.deleteById(email.value());   // re-requesting reissues a fresh token
+        repository.save(new EmailVerificationEntity(email.value(), TokenHashing.hash(token), false));
+    }
+
+    @Override
+    public Optional<Email> completeVerification(VerificationToken token) {
+        String hash = TokenHashing.hash(token);
+        return repository.findByPendingTokenHash(hash).map(entity -> {
+            repository.markVerified(hash);
+            return Email.of(entity.email());
+        });
+    }
+
+    @Override
+    public boolean isVerified(Email email) {
+        return repository.findById(email.value()).map(EmailVerificationEntity::verified).orElse(false);
+    }
+}
