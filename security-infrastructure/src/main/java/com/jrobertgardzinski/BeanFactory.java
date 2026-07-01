@@ -29,6 +29,7 @@ import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RevokeAllSessions;
 import com.jrobertgardzinski.security.system.account.ChangePassword;
 import com.jrobertgardzinski.security.system.account.ConfirmEmailChange;
+import com.jrobertgardzinski.security.system.account.DeleteAccount;
 import com.jrobertgardzinski.security.system.account.RequestEmailChange;
 import com.jrobertgardzinski.security.system.passwordreset.RequestPasswordReset;
 import com.jrobertgardzinski.security.system.passwordreset.ResetPassword;
@@ -157,5 +158,10 @@ public class BeanFactory {
     @Singleton
     ConfirmEmailChange confirmEmailChange(EmailChangeRepository emailChangeRepository, UserRepository userRepository) {
         return new ConfirmEmailChange(emailChangeRepository, userRepository);
+    }
+
+    @Singleton
+    DeleteAccount deleteAccount(UserRepository userRepository, AuthorizationDataRepository authorizationDataRepository) {
+        return new DeleteAccount(userRepository, authorizationDataRepository);
     }
 }

@@ -50,6 +50,11 @@ final class JdbcUserRepository implements UserRepository {
     }
 
     @Override
+    public void deleteByEmail(Email email) {
+        repository.deleteByEmail(email.value());
+    }
+
+    @Override
     public User save(User user) {
         try {
             repository.save(new UserEntity(

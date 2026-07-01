@@ -52,4 +52,12 @@ public final class InMemoryUserRepository implements UserRepository {
             byNormalizedEmail.put(moved.normalizedEmail().value(), moved);
         }
     }
+
+    @Override
+    public void deleteByEmail(Email email) {
+        User removed = byEmail.remove(email.value());
+        if (removed != null) {
+            byNormalizedEmail.remove(removed.normalizedEmail().value());
+        }
+    }
 }

@@ -17,6 +17,9 @@ public interface UserRepository {
     /** Move an existing user to a new email (and its normalized form); a no-op if absent. */
     void updateEmail(Email currentEmail, Email newEmail);
 
+    /** Delete a user by email (close account); a no-op if absent. */
+    void deleteByEmail(Email email);
+
     /**
      * Whether a user already exists under the given normalized email — the identity
      * used for registration deduplication, so provider aliases (e.g. Gmail dots or

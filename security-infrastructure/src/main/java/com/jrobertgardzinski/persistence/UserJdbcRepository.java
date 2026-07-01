@@ -23,4 +23,6 @@ interface UserJdbcRepository extends CrudRepository<UserEntity, UUID> {
 
     @Query("UPDATE users SET email = :newEmail, normalized_email = :normalizedEmail WHERE email = :currentEmail")
     void updateEmail(String currentEmail, String newEmail, String normalizedEmail);
+
+    void deleteByEmail(String email);
 }
