@@ -79,7 +79,7 @@ Proven by executable specifications (**jqwik** + **Allure**); concepts explained
   security microservice, and separate, relaxed ones for other services (newsletters, notifications,
   RSS feeds).
 
-This repository is part of a larger portfolio of reusable modules — see my other repositories:
+This repository is part of a larger security of reusable modules — see my other repositories:
 **https://github.com/jrobertgardzinski?tab=repositories**
 
 ---
@@ -140,7 +140,7 @@ resolve them. No system-wide Maven needed — the wrapper fetches the right vers
 ### 🐧 Linux &nbsp;/&nbsp; 🍎 macOS &nbsp;(bash / zsh)
 
 ```bash
-mkdir portfolio && cd portfolio
+mkdir security && cd security
 
 for repo in test-starter libs config email password microservice-security; do
   git clone "https://github.com/jrobertgardzinski/$repo.git"
@@ -154,7 +154,7 @@ done
 ### 🪟 Windows &nbsp;(PowerShell)
 
 ```powershell
-mkdir portfolio; cd portfolio
+mkdir security; cd security
 
 foreach ($repo in 'test-starter','libs','config','email','password','microservice-security') {
   git clone "https://github.com/jrobertgardzinski/$repo.git"

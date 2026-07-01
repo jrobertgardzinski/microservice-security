@@ -122,13 +122,13 @@ Gotcha: po micronaut-data POST bez `consumes` rejestruje trasę dwuznacznie → 
 ### Deployment — ZROBIONE (zweryfikowane realnym compose up)
 Dockerfile przerobiony na **runtime-only** (`eclipse-temurin:25-jre`, uruchamia z classpath
 `java -cp 'app.jar:lib/*' App`) — jar+`lib/` budowane na hoście (`copy-dependencies` → target/lib).
-To omija problem multi-repo (build w kontenerze nie ma portfolio-libów) i scalanie metadanych Micronauta.
+To omija problem multi-repo (build w kontenerze nie ma security-libów) i scalanie metadanych Micronauta.
 compose: Postgres `16-alpine` z `POSTGRES_PASSWORD`/`POSTGRES_DB=security` + healthcheck, security-service
 `MICRONAUT_ENVIRONMENTS=dev` + DB_*; `depends_on: service_healthy`. Zweryfikowane: `compose up` →
 Flyway migruje schemat → `POST /register` 201 → wiersz w realnym Postgresie (`flyway_schema_history` v1 ok).
 GOTCHA: brak `snakeyaml` na runtime = Micronaut milcząco ignoruje `application*.yml` (datasource!) →
 dodany `org.yaml:snakeyaml` (runtime). Uwaga: jar wymaga `mvn package` przed `docker compose build`
-(nie self-contained od zera) — jak chcesz build-od-zera, kontekst=portfolio root + maven:3.9-eclipse-temurin-25.
+(nie self-contained od zera) — jak chcesz build-od-zera, kontekst=security root + maven:3.9-eclipse-temurin-25.
 
 ### Dług z Fazy 5 — ZROBIONE
 Wyścig dedup w `register`: `JdbcUserRepository.save` łapie `DataAccessException` z SQLSTATE 23505
