@@ -8,6 +8,11 @@ import com.jrobertgardzinski.security.domain.repository.UserRepository;
 
 import java.util.function.Supplier;
 
+/**
+ * Registers a new user from an email and a plaintext password: the email must
+ * be allowed to register and not already taken, and the password is hashed
+ * before the user is stored. The outcome is reported as a {@link RegisterResult}.
+ */
 public class Register {
     private final UserRepository userRepository;
     private final CanRegister canRegister;
