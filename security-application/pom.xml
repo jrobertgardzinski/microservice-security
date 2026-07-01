@@ -57,6 +57,11 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>adjustable-clock</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
             <artifactId>bdd-test-starter</artifactId>
             <scope>test</scope>
         </dependency>
@@ -73,6 +78,32 @@
                         <include>**/*Test.java</include>
                     </includes>
                 </configuration>
+            </plugin>
+            <!-- register.feature is the single source of truth for both entry points;
+                 pull the shared specs/ dir onto the test classpath instead of copying Gherkin -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>add-shared-specs</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>add-test-resource</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/../specs</directory>
+                                    <includes>
+                                        <include>**/*.feature</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

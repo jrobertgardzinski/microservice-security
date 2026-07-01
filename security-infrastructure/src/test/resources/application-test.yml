@@ -1,0 +1,5 @@
+# test environment only: serve the refresh cookie without the Secure flag so it round-trips over
+# plain HTTP in the embedded-server tests. Production keeps Secure on (the default in RefreshCookies).
+security:
+  cookie:
+    secure: false

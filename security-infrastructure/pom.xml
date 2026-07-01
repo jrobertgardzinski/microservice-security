@@ -8,19 +8,48 @@
     </parent>
     <artifactId>security-infrastructure</artifactId>
     <packaging>jar</packaging>
+
     <dependencies>
+        <!-- the registration use case + the types its HTTP adapter touches directly -->
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>security-domain</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-application</artifactId>
+            <artifactId>security-system</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>security-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>email-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>email-security-system</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>password-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>password-security-system</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>argon2</artifactId>
         </dependency>
+        <!-- env-gated Clock bean + test-only time-control endpoint; beans discovered from the jar -->
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>infrastructure-micronaut-clock</artifactId>
+        </dependency>
+
+        <!-- Micronaut runtime: HTTP server + DI + JSON (serde) -->
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-inject-java</artifactId>
@@ -35,18 +64,81 @@
             <artifactId>micronaut-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.micronaut</groupId>
-            <artifactId>micronaut-management</artifactId>
+            <groupId>io.micronaut.serde</groupId>
+            <artifactId>micronaut-serde-jackson</artifactId>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
+        </dependency>
+        <!-- jakarta.transaction.Transactional on the transaction boundary; needed at runtime too -->
+        <dependency>
+            <groupId>jakarta.transaction</groupId>
+            <artifactId>jakarta.transaction-api</artifactId>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.5.16</version>
             <scope>runtime</scope>
+        </dependency>
+
+        <!-- Persistence: Micronaut Data JDBC over a Hikari pool to PostgreSQL; schema by Flyway.
+             The JDBC repository adapters activate only when a datasource is present; with none
+             (tests) the in-memory repositories take over. -->
+        <dependency>
+            <groupId>io.micronaut.data</groupId>
+            <artifactId>micronaut-data-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micronaut.sql</groupId>
+            <artifactId>micronaut-jdbc-hikari</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micronaut.flyway</groupId>
+            <artifactId>micronaut-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- YAML config parser: without it Micronaut silently ignores application*.yml at runtime
+             (tests get it transitively). Needed so the dev/prod datasource config is actually read. -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- BDD: the same Cucumber stack the application runner uses, plus an HTTP client to
+             drive the embedded server "from the outside" -->
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>bdd-test-starter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-http-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- real PostgreSQL for the JDBC adapter integration tests (skipped when Docker is absent) -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -71,8 +163,83 @@
                             <groupId>io.micronaut</groupId>
                             <artifactId>micronaut-inject-java</artifactId>
                         </path>
+                        <path>
+                            <groupId>io.micronaut.data</groupId>
+                            <artifactId>micronaut-data-processor</artifactId>
+                        </path>
                     </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+            <!-- single source of truth: the shared specs/register.feature, on the test classpath -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>add-shared-specs</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>add-test-resource</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/../specs</directory>
+                                    <includes>
+                                        <include>**/*.feature</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- This is the project's first framework module. The strict dependency-analyze
+                 (failOnWarning) is built for plain library modules; Micronaut's annotation- and
+                 runtime-driven graph (HTTP server impl, DI, serde) is invisible to static
+                 byte-code analysis and trips both "used undeclared" and "unused declared". Keep
+                 the check ON for our own modules, but whitelist the framework's own coordinates. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <!-- collect the runtime classpath next to the jar so the container can run
+                         `java -cp 'app.jar:lib/*' App` — Micronaut scans each jar's own
+                         META-INF/micronaut, so no fragile fat-jar metadata merging is needed -->
+                    <execution>
+                        <id>copy-runtime-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>analyze</id>
+                        <configuration>
+                            <ignoredUsedUndeclaredDependencies combine.children="append">
+                                <ignoredUsedUndeclaredDependency>io.micronaut*:*</ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>jakarta.inject:*</ignoredUsedUndeclaredDependency>
+                            </ignoredUsedUndeclaredDependencies>
+                            <ignoredUnusedDeclaredDependencies combine.children="append">
+                                <ignoredUnusedDeclaredDependency>io.micronaut*:*</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>jakarta.annotation:*</ignoredUnusedDeclaredDependency>
+                                <!-- supplies the Clock bean + time-control endpoint via Micronaut
+                                     bean discovery from the jar; no compile-time reference here -->
+                                <ignoredUnusedDeclaredDependency>com.jrobertgardzinski:infrastructure-micronaut-clock</ignoredUnusedDeclaredDependency>
+                                <!-- runtime-only: JDBC driver + Flyway migrations, no compile-time reference -->
+                                <ignoredUnusedDeclaredDependency>org.postgresql:*</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.flywaydb:*</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.testcontainers:*</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.yaml:*</ignoredUnusedDeclaredDependency>
+                            </ignoredUnusedDeclaredDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

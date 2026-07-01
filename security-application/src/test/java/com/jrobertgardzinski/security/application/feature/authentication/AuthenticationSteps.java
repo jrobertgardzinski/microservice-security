@@ -7,7 +7,7 @@ import com.jrobertgardzinski.security.application.feature.support.InMemoryAuthen
 import com.jrobertgardzinski.security.application.feature.support.InMemoryAuthorizationDataRepository;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryRejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryUserRepository;
-import com.jrobertgardzinski.security.application.feature.support.MutableClock;
+import com.jrobertgardzinski.clock.AdjustableClock;
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.entity.User;
@@ -26,6 +26,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -51,7 +52,7 @@ public class AuthenticationSteps {
     private final InMemoryAuthenticationBlockRepository blocks = new InMemoryAuthenticationBlockRepository();
     private final InMemoryAuthorizationDataRepository sessions = new InMemoryAuthorizationDataRepository();
     private final FakeHashAlgorithm hashAlgorithm = new FakeHashAlgorithm();
-    private final MutableClock clock = new MutableClock(Instant.parse("2026-06-15T10:00:00Z"), ZoneOffset.UTC);
+    private final AdjustableClock clock = new AdjustableClock(Instant.parse("2026-06-15T10:00:00Z"), ZoneOffset.UTC);
     private final BlockDurationPolicy blockDuration = () -> FIXED_BLOCK_MINUTES;
 
     private Email registeredEmail;
@@ -112,7 +113,7 @@ public class AuthenticationSteps {
 
     @When("{int} minutes passes")
     public void skip(int minutes) {
-        clock.advanceMinutes(minutes);
+        clock.advance(Duration.ofMinutes(minutes));
     }
 
     @When("^the user tries to authenticate with (.+)$")
@@ -139,7 +140,7 @@ public class AuthenticationSteps {
 
     @When("the block expires")
     public void theBlockExpires() {
-        clock.advanceMinutes(blockDuration.blockMinutes());
+        clock.advance(Duration.ofMinutes(blockDuration.blockMinutes()));
     }
 
     // --- Thens ----------------------------------------------------------------

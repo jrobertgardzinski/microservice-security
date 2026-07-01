@@ -2,11 +2,14 @@ package com.jrobertgardzinski.security.application.feature.session;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryAuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
+import com.jrobertgardzinski.security.domain.vo.token.expiration.AuthorizationTokenExpiration;
 import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RefreshSessionResult;
@@ -41,22 +44,22 @@ public class SessionSteps {
 
     @Given("the user has an active session")
     public void theUserHasAnActiveSession() {
-        authorizationData.store(email, new RefreshTokenExpiration(LocalDateTime.now(clock).plusHours(1)));
+        authorizationData.store(sessionExpiringAt(LocalDateTime.now(clock).plusHours(1)));
     }
 
     @Given("the user's session has expired")
     public void theUsersSessionHasExpired() {
-        authorizationData.store(email, new RefreshTokenExpiration(LocalDateTime.now(clock).minusHours(1)));
+        authorizationData.store(sessionExpiringAt(LocalDateTime.now(clock).minusHours(1)));
     }
 
     @Given("the user has no session")
     public void theUserHasNoSession() {
-        // nothing stored — findRefreshTokenExpirationBy will return null
+        // nothing stored — findByRefreshToken will return empty
     }
 
     @When("the user refreshes the session")
     public void theUserRefreshesTheSession() {
-        result = refreshSession.execute(new SessionRefreshRequest(email, TOKEN));
+        result = refreshSession.execute(new SessionRefreshRequest(TOKEN));
     }
 
     @Then("a fresh session is returned")
@@ -72,5 +75,14 @@ public class SessionSteps {
     @Then("the refresh is rejected because there is no session to refresh")
     public void rejectedAsNotFound() {
         assertInstanceOf(RefreshSessionResult.NotFound.class, result);
+    }
+
+    private SessionTokens sessionExpiringAt(LocalDateTime refreshExpiry) {
+        return new SessionTokens(
+                email,
+                TOKEN,
+                AccessToken.random(),
+                new RefreshTokenExpiration(refreshExpiry),
+                AuthorizationTokenExpiration.validInHours(new AccessTokenValidityInHours(1), clock));
     }
 }

@@ -3,19 +3,16 @@ package com.jrobertgardzinski.security.system.session;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 
-// todo stop using toString.
 public sealed interface RefreshSessionResult {
+    /** A new session was issued; the old refresh token has been rotated out. */
     record Refreshed(SessionTokens sessionTokens) implements RefreshSessionResult {}
-    record Expired(Email email) implements RefreshSessionResult {
-        @Override
-        public String toString() {
-            return String.format("Refresh Token for %s has expired", email);
-        }
-    }
-    record NotFound(Email email) implements RefreshSessionResult {
-        @Override
-        public String toString() {
-            return "No refresh token found for " + email.value();
-        }
-    }
+
+    /** The session was found but its refresh token had expired. */
+    record Expired(Email email) implements RefreshSessionResult {}
+
+    /** No session matched the presented refresh token. */
+    record NotFound() implements RefreshSessionResult {}
+
+    /** An already-rotated refresh token was replayed — theft. The whole family has been revoked. */
+    record ReuseDetected() implements RefreshSessionResult {}
 }

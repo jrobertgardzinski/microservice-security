@@ -45,13 +45,13 @@ class _GenerateSessionTest {
     @Label("Creates session tokens for the email and returns the persisted result")
     void creates_session_tokens_for_email() {
         SessionTokens persisted = SessionTokens.createFor(EMAIL, CONFIG, CLOCK);
-        Mockito.when(authorizationDataRepository.create(Mockito.any())).thenReturn(persisted);
+        Mockito.when(authorizationDataRepository.create(Mockito.any(), Mockito.any())).thenReturn(persisted);
 
         SessionTokens result = generateSession.create(EMAIL);
 
         assertAll(
                 () -> assertEquals(persisted, result),
-                () -> Mockito.verify(authorizationDataRepository).create(Mockito.any())
+                () -> Mockito.verify(authorizationDataRepository).create(Mockito.any(), Mockito.any())
         );
     }
 }

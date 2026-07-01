@@ -1,50 +1,62 @@
 package com.jrobertgardzinski.security.application.feature.support;
 
-import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.vo.AccessGrant;
+import com.jrobertgardzinski.security.domain.vo.SessionFamily;
+import com.jrobertgardzinski.security.domain.vo.SessionStatus;
+import com.jrobertgardzinski.security.domain.vo.StoredSession;
+import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
- * Holds at most one stored refresh-token expiration (one user per scenario), so
- * {@code findRefreshTokenExpirationBy} can answer active / expired / missing.
+ * In-memory sessions keyed by refresh token (raw, since this is test support). Tracks lineage and
+ * status so the use case can rotate and detect refresh-token reuse.
  */
 public final class InMemoryAuthorizationDataRepository implements AuthorizationDataRepository {
 
-    private Email email;
-    private RefreshTokenExpiration expiration;
-    private SessionTokens created;
+    private record Row(SessionTokens tokens, SessionFamily family, SessionStatus status) {}
 
-    /** Test seam: seed a stored refresh token for the given user. */
-    public void store(Email email, RefreshTokenExpiration expiration) {
-        this.email = email;
-        this.expiration = expiration;
+    private final Map<String, Row> byRefreshToken = new HashMap<>();
+
+    /** Test seam: seed a stored active session in its own family. */
+    public void store(SessionTokens session) {
+        create(session, SessionFamily.start());
     }
 
     @Override
-    public SessionTokens create(SessionTokens sessionTokens) {
-        this.created = sessionTokens;
+    public SessionTokens create(SessionTokens sessionTokens, SessionFamily family) {
+        byRefreshToken.put(sessionTokens.refreshToken().value(), new Row(sessionTokens, family, SessionStatus.ACTIVE));
         return sessionTokens;
     }
 
     @Override
-    public void deleteBy(Email email) {
-        this.email = null;
-        this.expiration = null;
+    public Optional<StoredSession> findByRefreshToken(RefreshToken refreshToken) {
+        return Optional.ofNullable(byRefreshToken.get(refreshToken.value()))
+                .map(row -> new StoredSession(
+                        row.tokens().email(), row.tokens().refreshTokenExpiration(), row.family(), row.status()));
     }
 
     @Override
-    public RefreshTokenExpiration findRefreshTokenExpirationBy(Email email, RefreshToken refreshToken) {
-        return expiration != null && this.email != null && this.email.value().equals(email.value())
-                ? expiration
-                : null;
+    public Optional<AccessGrant> findByAccessToken(AccessToken accessToken) {
+        return byRefreshToken.values().stream()
+                .filter(row -> row.tokens().accessToken().equals(accessToken) && row.status() == SessionStatus.ACTIVE)
+                .map(row -> new AccessGrant(row.tokens().email(), row.tokens().authorizationTokenExpiration()))
+                .findFirst();
     }
 
     @Override
-    public Optional<SessionTokens> findBy(Email email) {
-        return Optional.ofNullable(created);
+    public void markRotated(RefreshToken refreshToken) {
+        byRefreshToken.computeIfPresent(refreshToken.value(),
+                (token, row) -> new Row(row.tokens(), row.family(), SessionStatus.ROTATED));
+    }
+
+    @Override
+    public void revokeFamily(SessionFamily family) {
+        byRefreshToken.values().removeIf(row -> row.family().equals(family));
     }
 }

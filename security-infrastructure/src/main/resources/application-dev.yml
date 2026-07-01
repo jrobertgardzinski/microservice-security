@@ -1,0 +1,13 @@
+# dev environment (compose passes MICRONAUT_ENVIRONMENTS=dev): connect to the bundled Postgres and
+# let Flyway create the schema on startup. Hosts/credentials are overridable via env vars.
+datasources:
+  default:
+    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:postgres}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:secret}
+    driver-class-name: org.postgresql.Driver
+    dialect: POSTGRES
+flyway:
+  datasources:
+    default:
+      enabled: true

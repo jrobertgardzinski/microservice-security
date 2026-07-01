@@ -4,6 +4,7 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.security.domain.entity.User;
+import com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.util.constraint.Outcome;
 
@@ -42,7 +43,11 @@ class RegistrationAttempt {
         }
 
         User user = new User(email, hashedPassword);
-        User persisted = userRepository.save(user);
-        return new RegisterResult.Registered(persisted);
+        try {
+            return new RegisterResult.Registered(userRepository.save(user));
+        } catch (EmailAlreadyTakenException e) {
+            // the storage uniqueness check lost the race after our existsBy check passed
+            return new RegisterResult.EmailAlreadyTaken(email);
+        }
     }
 }

@@ -1,14 +1,101 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.email.policy.CanRegister;
 import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
+import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
+import com.jrobertgardzinski.password.policy.CreatePasswordHash;
+import com.jrobertgardzinski.password.policy.PasswordPolicy;
+import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
+import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
+import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.repository.UserRepository;
+import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
+import com.jrobertgardzinski.security.system.authentication.Authentication;
+import com.jrobertgardzinski.security.system.authentication.AuthenticationFactory;
+import com.jrobertgardzinski.security.system.authentication.BlockDurationPolicy;
+import com.jrobertgardzinski.security.system.authentication.RandomBlockDurationPolicy;
+import com.jrobertgardzinski.security.system.authorization.Authorize;
+import com.jrobertgardzinski.security.system.registration.Register;
+import com.jrobertgardzinski.security.system.session.Logout;
+import com.jrobertgardzinski.security.system.session.RefreshSession;
 import io.micronaut.context.annotation.Factory;
 import jakarta.inject.Singleton;
 
+import java.time.Clock;
+
+/**
+ * Production wiring for the use cases behind the HTTP entry points. Each use case the controllers
+ * call is the very object the application-level Cucumber glue builds — shared behaviour, different
+ * entry point. The repositories and the {@link Clock} (system clock in production, a steerable one
+ * under the {@code test} environment) are contributed as beans elsewhere and injected here.
+ */
 @Factory
 public class BeanFactory {
 
+    /** One hash algorithm shared by registration (hashing) and authentication (verifying). */
     @Singleton
-    public Argon2HashAlgorithm argon2HashAlgorithm() {
+    HashAlgorithmPort hashAlgorithm() {
         return new Argon2HashAlgorithm();
+    }
+
+    @Singleton
+    Register register(UserRepository userRepository, HashAlgorithmPort hashAlgorithm) {
+        return new Register(
+                userRepository,
+                CanRegister.builder().build(),
+                new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()));
+    }
+
+    @Singleton
+    BruteForceConfig bruteForceConfig() {
+        return BruteForceConfig.builder().build();
+    }
+
+    @Singleton
+    SessionTokensConfig sessionTokensConfig() {
+        return new SessionTokensConfig(new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1));
+    }
+
+    @Singleton
+    BlockDurationPolicy blockDurationPolicy(BruteForceConfig bruteForceConfig) {
+        return new RandomBlockDurationPolicy(bruteForceConfig);
+    }
+
+    @Singleton
+    Authentication authentication(
+            UserRepository userRepository,
+            RejectedAuthenticationRepository rejectedAuthenticationRepository,
+            AuthenticationBlockRepository authenticationBlockRepository,
+            AuthorizationDataRepository authorizationDataRepository,
+            HashAlgorithmPort hashAlgorithm,
+            BruteForceConfig bruteForceConfig,
+            SessionTokensConfig sessionTokensConfig,
+            Clock clock,
+            BlockDurationPolicy blockDurationPolicy) {
+        return AuthenticationFactory.create(
+                userRepository, rejectedAuthenticationRepository, authenticationBlockRepository,
+                authorizationDataRepository, hashAlgorithm, bruteForceConfig, sessionTokensConfig,
+                clock, blockDurationPolicy);
+    }
+
+    @Singleton
+    RefreshSession refreshSession(
+            AuthorizationDataRepository authorizationDataRepository,
+            Clock clock,
+            SessionTokensConfig sessionTokensConfig) {
+        return new RefreshSession(authorizationDataRepository, clock, sessionTokensConfig);
+    }
+
+    @Singleton
+    Authorize authorize(AuthorizationDataRepository authorizationDataRepository, Clock clock) {
+        return new Authorize(authorizationDataRepository, clock);
+    }
+
+    @Singleton
+    Logout logout(AuthorizationDataRepository authorizationDataRepository) {
+        return new Logout(authorizationDataRepository);
     }
 }

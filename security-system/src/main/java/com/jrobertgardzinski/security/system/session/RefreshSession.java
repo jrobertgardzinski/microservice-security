@@ -1,14 +1,13 @@
 package com.jrobertgardzinski.security.system.session;
 
-import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
+import com.jrobertgardzinski.security.domain.vo.SessionStatus;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
+import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 
 import java.time.Clock;
-import java.util.Optional;
 
 public class RefreshSession {
     private final AuthorizationDataRepository authorizationDataRepository;
@@ -22,19 +21,24 @@ public class RefreshSession {
     }
 
     public RefreshSessionResult execute(SessionRefreshRequest request) {
-        Email email = request.email();
-        Optional<RefreshTokenExpiration> optionalRefreshTokenExpiration = Optional.ofNullable(
-                authorizationDataRepository.findRefreshTokenExpirationBy(email, request.refreshToken()));
+        RefreshToken refreshToken = request.refreshToken();
 
-        return optionalRefreshTokenExpiration
-                .<RefreshSessionResult>map(expiration -> {
-                    authorizationDataRepository.deleteBy(email);
-                    return expiration.hasExpired(clock)
-                            ? new RefreshSessionResult.Expired(email)
-                            : new RefreshSessionResult.Refreshed(
-                                    authorizationDataRepository.create(
-                                            SessionTokens.createFor(email, config, clock)));
+        return authorizationDataRepository.findByRefreshToken(refreshToken)
+                .<RefreshSessionResult>map(session -> {
+                    if (session.status() == SessionStatus.ROTATED) {
+                        // this refresh token was already rotated away — a replay signals theft
+                        authorizationDataRepository.revokeFamily(session.family());
+                        return new RefreshSessionResult.ReuseDetected();
+                    }
+                    if (session.refreshTokenExpiration().hasExpired(clock)) {
+                        return new RefreshSessionResult.Expired(session.email());
+                    }
+                    // single-use: rotate the presented token out, issue a new one in the same family
+                    authorizationDataRepository.markRotated(refreshToken);
+                    return new RefreshSessionResult.Refreshed(
+                            authorizationDataRepository.create(
+                                    SessionTokens.createFor(session.email(), config, clock), session.family()));
                 })
-                .orElseGet(() -> new RefreshSessionResult.NotFound(email));
+                .orElseGet(RefreshSessionResult.NotFound::new);
     }
 }

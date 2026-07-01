@@ -3,6 +3,7 @@ package com.jrobertgardzinski.security.system.authentication;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.vo.SessionFamily;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 
 import java.time.Clock;
@@ -19,6 +20,7 @@ class _GenerateSession {
     }
 
     public SessionTokens create(Email email) {
-        return authorizationDataRepository.create(SessionTokens.createFor(email, config, clock));
+        // each authentication starts a fresh session lineage
+        return authorizationDataRepository.create(SessionTokens.createFor(email, config, clock), SessionFamily.start());
     }
 }

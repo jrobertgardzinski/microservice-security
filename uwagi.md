@@ -1,0 +1,2 @@
+1. Coś Ty odjebał z Register?! To było całe założenie projektu: system operuje na domenach, a dopiero application mapuje String na domenę. SecurityService zrollbackowany.
+2. Dokumentacja odjechała Outcome. Czy musimy mieć te linki do implementacji???
