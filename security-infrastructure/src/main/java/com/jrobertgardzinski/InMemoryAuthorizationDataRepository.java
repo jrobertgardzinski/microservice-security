@@ -4,6 +4,7 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.vo.AccessGrant;
+import com.jrobertgardzinski.security.domain.vo.ActiveSession;
 import com.jrobertgardzinski.security.domain.vo.SessionFamily;
 import com.jrobertgardzinski.security.domain.vo.SessionStatus;
 import com.jrobertgardzinski.security.domain.vo.StoredSession;
@@ -74,5 +75,14 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
     @Override
     public void revokeAllSessions(Email email) {
         byRefreshTokenHash.values().removeIf(row -> row.session().email().equals(email));
+    }
+
+    @Override
+    public java.util.List<ActiveSession> listActiveSessions(Email email) {
+        return byRefreshTokenHash.values().stream()
+                .map(Row::session)
+                .filter(s -> s.email().equals(email) && s.status() == SessionStatus.ACTIVE)
+                .map(s -> new ActiveSession(s.family(), s.refreshTokenExpiration()))
+                .toList();
     }
 }

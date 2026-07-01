@@ -16,6 +16,8 @@ interface SessionJdbcRepository extends CrudRepository<SessionEntity, String> {
 
     Optional<SessionEntity> findByAccessTokenHashAndStatus(String accessTokenHash, String status);
 
+    java.util.List<SessionEntity> findByEmailAndStatus(String email, String status);
+
     @Query("UPDATE sessions SET status = :status WHERE refresh_token_hash = :refreshTokenHash")
     void updateStatus(String refreshTokenHash, String status);
 

@@ -65,4 +65,13 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
     public void revokeAllSessions(Email email) {
         byRefreshToken.values().removeIf(row -> row.tokens().email().equals(email));
     }
+
+    @Override
+    public java.util.List<com.jrobertgardzinski.security.domain.vo.ActiveSession> listActiveSessions(Email email) {
+        return byRefreshToken.values().stream()
+                .filter(row -> row.tokens().email().equals(email) && row.status() == SessionStatus.ACTIVE)
+                .map(row -> new com.jrobertgardzinski.security.domain.vo.ActiveSession(
+                        row.family(), row.tokens().refreshTokenExpiration()))
+                .toList();
+    }
 }

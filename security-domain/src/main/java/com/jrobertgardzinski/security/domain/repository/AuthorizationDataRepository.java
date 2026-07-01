@@ -3,11 +3,13 @@ package com.jrobertgardzinski.security.domain.repository;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.vo.AccessGrant;
+import com.jrobertgardzinski.security.domain.vo.ActiveSession;
 import com.jrobertgardzinski.security.domain.vo.SessionFamily;
 import com.jrobertgardzinski.security.domain.vo.StoredSession;
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -36,4 +38,7 @@ public interface AuthorizationDataRepository {
 
     /** Revoke every session of a user, across all lineages ("log out everywhere"). */
     void revokeAllSessions(Email email);
+
+    /** The user's currently active sessions (for showing devices/sessions). */
+    List<ActiveSession> listActiveSessions(Email email);
 }

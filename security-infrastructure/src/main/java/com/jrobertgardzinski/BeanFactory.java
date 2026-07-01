@@ -24,6 +24,7 @@ import com.jrobertgardzinski.security.system.authentication.BlockDurationPolicy;
 import com.jrobertgardzinski.security.system.authentication.RandomBlockDurationPolicy;
 import com.jrobertgardzinski.security.system.authorization.Authorize;
 import com.jrobertgardzinski.security.system.registration.Register;
+import com.jrobertgardzinski.security.system.session.ListActiveSessions;
 import com.jrobertgardzinski.security.system.session.Logout;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RevokeAllSessions;
@@ -116,6 +117,11 @@ public class BeanFactory {
     @Singleton
     RevokeAllSessions revokeAllSessions(AuthorizationDataRepository authorizationDataRepository) {
         return new RevokeAllSessions(authorizationDataRepository);
+    }
+
+    @Singleton
+    ListActiveSessions listActiveSessions(AuthorizationDataRepository authorizationDataRepository) {
+        return new ListActiveSessions(authorizationDataRepository);
     }
 
     @Singleton

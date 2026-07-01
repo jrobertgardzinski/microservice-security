@@ -78,4 +78,13 @@ final class JdbcAuthorizationDataRepository implements AuthorizationDataReposito
     public void revokeAllSessions(Email email) {
         repository.deleteByEmail(email.value());
     }
+
+    @Override
+    public java.util.List<com.jrobertgardzinski.security.domain.vo.ActiveSession> listActiveSessions(Email email) {
+        return repository.findByEmailAndStatus(email.value(), SessionStatus.ACTIVE.name()).stream()
+                .map(entity -> new com.jrobertgardzinski.security.domain.vo.ActiveSession(
+                        new SessionFamily(entity.familyId()),
+                        new RefreshTokenExpiration(entity.refreshTokenExpiration())))
+                .toList();
+    }
 }
