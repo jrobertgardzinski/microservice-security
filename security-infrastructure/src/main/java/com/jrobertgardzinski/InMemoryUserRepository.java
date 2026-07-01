@@ -52,4 +52,15 @@ public final class InMemoryUserRepository implements UserRepository {
             byNormalizedEmail.put(existing.normalizedEmail().value(), updated);
         }
     }
+
+    @Override
+    public void updateEmail(Email currentEmail, Email newEmail) {
+        User existing = byEmail.remove(currentEmail.value());
+        if (existing != null) {
+            byNormalizedEmail.remove(existing.normalizedEmail().value());
+            User moved = new User(existing.id(), newEmail, existing.passwordHash(), NormalizedEmail.of(newEmail));
+            byEmail.put(newEmail.value(), moved);
+            byNormalizedEmail.put(moved.normalizedEmail().value(), moved);
+        }
+    }
 }

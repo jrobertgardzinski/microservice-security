@@ -10,6 +10,7 @@ import com.jrobertgardzinski.security.domain.port.EmailVerificationNotifier;
 import com.jrobertgardzinski.security.domain.port.PasswordResetNotifier;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.EmailChangeRepository;
 import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.repository.PasswordResetRepository;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
@@ -27,6 +28,8 @@ import com.jrobertgardzinski.security.system.session.Logout;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RevokeAllSessions;
 import com.jrobertgardzinski.security.system.account.ChangePassword;
+import com.jrobertgardzinski.security.system.account.ConfirmEmailChange;
+import com.jrobertgardzinski.security.system.account.RequestEmailChange;
 import com.jrobertgardzinski.security.system.passwordreset.RequestPasswordReset;
 import com.jrobertgardzinski.security.system.passwordreset.ResetPassword;
 import com.jrobertgardzinski.security.system.verification.RequestEmailVerification;
@@ -142,5 +145,17 @@ public class BeanFactory {
     ChangePassword changePassword(UserRepository userRepository, HashAlgorithmPort hashAlgorithm) {
         return new ChangePassword(userRepository, hashAlgorithm,
                 new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()));
+    }
+
+    @Singleton
+    RequestEmailChange requestEmailChange(UserRepository userRepository,
+                                          EmailChangeRepository emailChangeRepository,
+                                          EmailVerificationNotifier notifier) {
+        return new RequestEmailChange(userRepository, emailChangeRepository, notifier);
+    }
+
+    @Singleton
+    ConfirmEmailChange confirmEmailChange(EmailChangeRepository emailChangeRepository, UserRepository userRepository) {
+        return new ConfirmEmailChange(emailChangeRepository, userRepository);
     }
 }

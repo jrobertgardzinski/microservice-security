@@ -14,6 +14,9 @@ public interface UserRepository {
     /** Replace an existing user's password hash (e.g. after a password reset); a no-op if absent. */
     void updatePassword(Email email, HashedPassword passwordHash);
 
+    /** Move an existing user to a new email (and its normalized form); a no-op if absent. */
+    void updateEmail(Email currentEmail, Email newEmail);
+
     /**
      * Whether a user already exists under the given normalized email — the identity
      * used for registration deduplication, so provider aliases (e.g. Gmail dots or
