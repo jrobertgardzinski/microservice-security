@@ -40,6 +40,11 @@ final class JdbcUserRepository implements UserRepository {
     }
 
     @Override
+    public void updatePassword(Email email, HashedPassword passwordHash) {
+        repository.updatePassword(email.value(), passwordHash.value());
+    }
+
+    @Override
     public User save(User user) {
         try {
             repository.save(new UserEntity(

@@ -2,6 +2,7 @@ package com.jrobertgardzinski.security.domain.repository;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
+import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.security.domain.entity.User;
 
 import java.util.Optional;
@@ -9,6 +10,9 @@ import java.util.Optional;
 public interface UserRepository {
 
     Optional<User> findBy(Email email);
+
+    /** Replace an existing user's password hash (e.g. after a password reset); a no-op if absent. */
+    void updatePassword(Email email, HashedPassword passwordHash);
 
     /**
      * Whether a user already exists under the given normalized email — the identity

@@ -31,4 +31,14 @@ public final class InMemoryUserRepository implements UserRepository {
         byNormalizedEmail.put(user.normalizedEmail().value(), user);
         return user;
     }
+
+    @Override
+    public void updatePassword(Email email, com.jrobertgardzinski.password.domain.HashedPassword passwordHash) {
+        User existing = byEmail.get(email.value());
+        if (existing != null) {
+            User updated = new User(existing.id(), existing.email(), passwordHash, existing.normalizedEmail());
+            byEmail.put(email.value(), updated);
+            byNormalizedEmail.put(existing.normalizedEmail().value(), updated);
+        }
+    }
 }
