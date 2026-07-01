@@ -5,3 +5,10 @@ endpoints:
   health:
     enabled: true
     sensitive: false
+# Standalone microservice-email that delivers verification / password-reset links. Overridden by
+# env at deploy (EMAIL_SERVICE_URL, EMAIL_SERVICE_API_KEY, VERIFY_LINK_BASE, RESET_LINK_BASE).
+email-service:
+  url: ${EMAIL_SERVICE_URL:`http://localhost:8082`}
+  api-key: ${EMAIL_SERVICE_API_KEY:changeme}
+  verify-link-base: ${VERIFY_LINK_BASE:`http://localhost:8080/verify-email?token=`}
+  reset-link-base: ${RESET_LINK_BASE:`http://localhost:8080/reset-password?token=`}

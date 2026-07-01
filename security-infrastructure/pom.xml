@@ -127,7 +127,6 @@
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-http-client</artifactId>
-            <scope>test</scope>
         </dependency>
         <!-- real PostgreSQL for the JDBC adapter integration tests (skipped when Docker is absent) -->
         <dependency>
