@@ -35,32 +35,32 @@ public class RegisterSteps {
 
     private RegisterResult result;
 
-    @Given("the email {string} is already registered")
+    @Given("the EMAIL {string} is already REGISTERED")
     public void theEmailIsAlreadyRegistered(String email) {
         users.save(new User(Email.of(email), new HashedPassword("seed-hash")));
     }
 
-    @When("the user registers with email {string} and password {string}")
+    @When("the USER REGISTERS with EMAIL {string} and password {string}")
     public void theUserRegisters(String email, String password) {
         result = register.execute(() -> Email.of(email), () -> PlaintextPassword.of(password));
     }
 
-    @Then("the user is registered")
+    @Then("the USER is REGISTERED")
     public void theUserIsRegistered() {
         assertInstanceOf(RegisterResult.Registered.class, result);
     }
 
-    @Then("registration is rejected")
+    @Then("REGISTRATION is rejected")
     public void registrationIsRejected() {
         assertInstanceOf(RegisterResult.Rejected.class, result);
     }
 
-    @Then("registration is rejected because the email is already taken")
+    @Then("REGISTRATION is rejected because the EMAIL is already taken")
     public void registrationIsRejectedBecauseEmailAlreadyTaken() {
         assertInstanceOf(RegisterResult.EmailAlreadyTaken.class, result);
     }
 
-    @Then("the email is flagged as {word}")
+    @Then("the EMAIL is flagged as {word}")
     public void theEmailIsFlaggedAs(String flag) {
         assertFlag(flag, rejected().emailErrors().codes());
     }

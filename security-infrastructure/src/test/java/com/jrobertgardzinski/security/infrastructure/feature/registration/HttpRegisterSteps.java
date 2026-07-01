@@ -48,33 +48,33 @@ public class HttpRegisterSteps {
         }
     }
 
-    @Given("the email {string} is already registered")
+    @Given("the EMAIL {string} is already REGISTERED")
     public void theEmailIsAlreadyRegistered(String email) {
         post(email, "StrongPassword1!"); // seed through the real entry point
         assertEquals(HttpStatus.CREATED, response.getStatus(), "failed to seed the existing user");
     }
 
-    @When("the user registers with email {string} and password {string}")
+    @When("the USER REGISTERS with EMAIL {string} and password {string}")
     public void theUserRegisters(String email, String password) {
         post(email, password);
     }
 
-    @Then("the user is registered")
+    @Then("the USER is REGISTERED")
     public void theUserIsRegistered() {
         assertEquals(HttpStatus.CREATED, response.getStatus());
     }
 
-    @Then("registration is rejected")
+    @Then("REGISTRATION is rejected")
     public void registrationIsRejected() {
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatus());
     }
 
-    @Then("registration is rejected because the email is already taken")
+    @Then("REGISTRATION is rejected because the EMAIL is already taken")
     public void registrationIsRejectedBecauseEmailAlreadyTaken() {
         assertEquals(HttpStatus.CONFLICT, response.getStatus());
     }
 
-    @Then("the email is flagged as {word}")
+    @Then("the EMAIL is flagged as {word}")
     public void theEmailIsFlaggedAs(String flag) {
         assertFlag(flag, errors("emailErrors"));
     }
