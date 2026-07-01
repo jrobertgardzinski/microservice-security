@@ -20,4 +20,6 @@ interface SessionJdbcRepository extends CrudRepository<SessionEntity, String> {
     void updateStatus(String refreshTokenHash, String status);
 
     void deleteByFamilyId(UUID familyId);
+
+    void deleteByEmail(String email);
 }

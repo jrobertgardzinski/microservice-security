@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.security.domain.repository;
 
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.vo.AccessGrant;
 import com.jrobertgardzinski.security.domain.vo.SessionFamily;
@@ -32,4 +33,7 @@ public interface AuthorizationDataRepository {
 
     /** Revoke an entire session lineage (logout, or theft detected). */
     void revokeFamily(SessionFamily family);
+
+    /** Revoke every session of a user, across all lineages ("log out everywhere"). */
+    void revokeAllSessions(Email email);
 }

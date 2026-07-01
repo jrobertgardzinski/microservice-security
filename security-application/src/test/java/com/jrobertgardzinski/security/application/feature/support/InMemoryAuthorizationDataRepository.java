@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.security.application.feature.support;
 
+import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.vo.AccessGrant;
@@ -58,5 +59,10 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
     @Override
     public void revokeFamily(SessionFamily family) {
         byRefreshToken.values().removeIf(row -> row.family().equals(family));
+    }
+
+    @Override
+    public void revokeAllSessions(Email email) {
+        byRefreshToken.values().removeIf(row -> row.tokens().email().equals(email));
     }
 }

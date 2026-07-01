@@ -15,7 +15,7 @@ import io.micronaut.http.annotation.ServerFilter;
  * email as a request attribute for the resource to read) or rejects it with 401 — for a missing,
  * malformed, unknown or expired token alike.
  */
-@ServerFilter("/me")
+@ServerFilter({"/me", "/sessions/**"})
 final class AuthorizationFilter {
 
     static final String AUTHENTICATED_EMAIL = "authenticatedEmail";

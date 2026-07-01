@@ -21,6 +21,7 @@ import com.jrobertgardzinski.security.system.authorization.Authorize;
 import com.jrobertgardzinski.security.system.registration.Register;
 import com.jrobertgardzinski.security.system.session.Logout;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
+import com.jrobertgardzinski.security.system.session.RevokeAllSessions;
 import io.micronaut.context.annotation.Factory;
 import jakarta.inject.Singleton;
 
@@ -97,5 +98,10 @@ public class BeanFactory {
     @Singleton
     Logout logout(AuthorizationDataRepository authorizationDataRepository) {
         return new Logout(authorizationDataRepository);
+    }
+
+    @Singleton
+    RevokeAllSessions revokeAllSessions(AuthorizationDataRepository authorizationDataRepository) {
+        return new RevokeAllSessions(authorizationDataRepository);
     }
 }

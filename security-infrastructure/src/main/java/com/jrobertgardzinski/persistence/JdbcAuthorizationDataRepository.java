@@ -73,4 +73,9 @@ final class JdbcAuthorizationDataRepository implements AuthorizationDataReposito
     public void revokeFamily(SessionFamily family) {
         repository.deleteByFamilyId(family.value());
     }
+
+    @Override
+    public void revokeAllSessions(Email email) {
+        repository.deleteByEmail(email.value());
+    }
 }
