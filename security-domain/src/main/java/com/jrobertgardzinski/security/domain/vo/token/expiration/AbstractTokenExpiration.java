@@ -11,7 +11,6 @@ public abstract class AbstractTokenExpiration {
     private final LocalDateTime value;
 
     protected AbstractTokenExpiration(LocalDateTime value) {
-        if (value == null) throw new IllegalArgumentException("TokenExpiration value must not be null");
         this.value = value;
     }
 

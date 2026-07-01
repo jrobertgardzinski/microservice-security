@@ -8,7 +8,6 @@ public abstract class AbstractToken {
     private final String value;
 
     protected AbstractToken(String value) {
-        if (value == null) throw new IllegalArgumentException("Token value must not be null");
         if (value.isBlank()) throw new IllegalArgumentException("Token value must not be blank");
         this.value = value;
     }
