@@ -52,14 +52,14 @@ public class HttpReuseDetectionSteps {
         }
     }
 
-    @Given("a registered user {string} with password {string}")
+    @Given("a registered USER {string} with password {string}")
     public void aRegisteredUser(String email, String password) {
         this.email = email;
         HttpResponse<Map> seeded = exchange(HttpRequest.POST("/register", Map.of("email", email, "password", password)));
         assertEquals(HttpStatus.CREATED, seeded.getStatus(), "failed to seed the user");
     }
 
-    @Given("the user has authenticated")
+    @Given("the USER has AUTHENTICATED")
     public void theUserHasAuthenticated() {
         HttpResponse<Map> authenticated = exchange(
                 HttpRequest.POST("/authenticate", Map.of("email", email, "password", PASSWORD)));
@@ -67,24 +67,24 @@ public class HttpReuseDetectionSteps {
         previousRefreshToken = refreshCookieOf(authenticated);
     }
 
-    @Given("the user has refreshed the session once")
+    @Given("the USER has REFRESHED the session once")
     public void theUserHasRefreshedOnce() {
         HttpResponse<Map> refreshed = refreshWith(previousRefreshToken);
         assertEquals(HttpStatus.OK, refreshed.getStatus());
         currentRefreshToken = refreshCookieOf(refreshed);
     }
 
-    @When("the session is refreshed again with the previous refresh token")
+    @When("the session is REFRESHED again with the previous REFRESH TOKEN")
     public void refreshedWithPreviousToken() {
         response = refreshWith(previousRefreshToken);
     }
 
-    @Then("the refresh is rejected")
+    @Then("the REFRESH is rejected")
     public void theRefreshIsRejected() {
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatus());
     }
 
-    @Then("the current refresh token no longer works")
+    @Then("the current REFRESH TOKEN no longer works")
     public void theCurrentRefreshTokenNoLongerWorks() {
         assertEquals(HttpStatus.UNAUTHORIZED, refreshWith(currentRefreshToken).getStatus());
     }

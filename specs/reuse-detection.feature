@@ -1,17 +1,24 @@
 Feature: Refresh token theft detection
 
-  Refresh tokens are single-use: each refresh rotates to a new one. Presenting a refresh token that
+  REFRESH tokens are single-use: each REFRESH rotates to a new one. Presenting a REFRESH TOKEN that
   has already been rotated away signals theft, so the whole session lineage is revoked — including
   the attacker's freshly obtained token.
 
-  Background:
-    Given a registered user "user@example.com" with password "StrongPassword1!"
+  Nouns:
+    USER           -> User
+    REFRESH TOKEN  -> RefreshToken
+    SESSION FAMILY -> SessionFamily
+  Verbs:
+    REFRESH* -> RefreshSession
 
-  Rule: A replayed (already-rotated) refresh token revokes the whole session family
+  Background:
+    Given a registered USER "user@example.com" with password "StrongPassword1!"
+
+  Rule: A replayed (already-rotated) REFRESH TOKEN revokes the whole SESSION FAMILY
 
     Example:
-      Given the user has authenticated
-      And the user has refreshed the session once
-      When the session is refreshed again with the previous refresh token
-      Then the refresh is rejected
-      And the current refresh token no longer works
+      Given the USER has AUTHENTICATED
+      And the USER has REFRESHED the session once
+      When the session is REFRESHED again with the previous REFRESH TOKEN
+      Then the REFRESH is rejected
+      And the current REFRESH TOKEN no longer works

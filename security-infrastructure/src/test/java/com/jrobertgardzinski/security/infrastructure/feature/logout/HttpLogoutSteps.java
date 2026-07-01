@@ -54,14 +54,14 @@ public class HttpLogoutSteps {
         }
     }
 
-    @Given("a registered user {string} with password {string}")
+    @Given("a registered USER {string} with password {string}")
     public void aRegisteredUser(String email, String password) {
         this.email = email;
         HttpResponse<Map> seeded = exchange(HttpRequest.POST("/register", Map.of("email", email, "password", password)));
         assertEquals(HttpStatus.CREATED, seeded.getStatus(), "failed to seed the user");
     }
 
-    @Given("the user has authenticated")
+    @Given("the USER has AUTHENTICATED")
     public void theUserHasAuthenticated() {
         HttpResponse<Map> authenticated = exchange(
                 HttpRequest.POST("/authenticate", Map.of("email", email, "password", PASSWORD)));
@@ -71,7 +71,7 @@ public class HttpLogoutSteps {
                 .map(Cookie::getValue).orElseThrow(() -> new AssertionError("no refresh cookie"));
     }
 
-    @When("the user logs out")
+    @When("the USER LOGS OUT")
     public void theUserLogsOut() {
         MutableHttpRequest<?> request = HttpRequest.POST("/logout", null);
         if (refreshCookie != null) {
@@ -80,17 +80,17 @@ public class HttpLogoutSteps {
         logoutResponse = exchange(request);
     }
 
-    @When("the user tries to refresh the session")
+    @When("the USER tries to REFRESH the session")
     public void theUserTriesToRefresh() {
         response = exchange(HttpRequest.POST("/refresh", null).cookie(Cookie.of(REFRESH_COOKIE, refreshCookie)));
     }
 
-    @When("the user requests the protected resource with the access token")
+    @When("the USER requests the protected resource with the ACCESS TOKEN")
     public void requestsProtectedResource() {
         response = exchange(HttpRequest.GET("/me").header("Authorization", "Bearer " + accessToken));
     }
 
-    @Then("the refresh is refused")
+    @Then("the REFRESH is refused")
     public void theRefreshIsRefused() {
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatus());
     }
@@ -100,7 +100,7 @@ public class HttpLogoutSteps {
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatus());
     }
 
-    @Then("the logout succeeds")
+    @Then("the LOGOUT succeeds")
     public void theLogoutSucceeds() {
         assertEquals(HttpStatus.OK, logoutResponse.getStatus());
     }

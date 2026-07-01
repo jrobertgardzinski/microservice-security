@@ -63,14 +63,14 @@ public class AuthenticationSteps {
 
     // --- Background -----------------------------------------------------------
 
-    @Given("a registered user {string} with password {string}")
+    @Given("a registered USER {string} with password {string}")
     public void aRegisteredUser(String email, String password) {
         registeredEmail = Email.of(email);
         registeredPassword = PlaintextPassword.of(password);
         users.save(new User(registeredEmail, hashAlgorithm.hash(registeredPassword)));
     }
 
-    @Given("authentication attempts from one source are limited by this policy:")
+    @Given("AUTHENTICATION attempts from one source are limited by this policy:")
     public void thePolicy(DataTable policy) {
         BruteForceConfig.Builder builder = BruteForceConfig.builder();
         for (List<String> row : policy.asLists()) {
@@ -89,12 +89,12 @@ public class AuthenticationSteps {
 
     // --- Givens ---------------------------------------------------------------
 
-    @Given("the user has reached the failure limit")
+    @Given("the USER has reached the failure limit")
     public void reachedFailureLimit() {
         recordFailures(config.maxFailures().value());
     }
 
-    @Given("the user has failed to authenticate but stayed under the limit")
+    @Given("the USER has failed to AUTHENTICATE but stayed under the limit")
     public void underFailureLimit() {
         recordFailures(config.maxFailures().value() - 1);
     }
@@ -106,7 +106,7 @@ public class AuthenticationSteps {
 
     // --- Whens ----------------------------------------------------------------
 
-    @When("the user authenticates with the correct credentials")
+    @When("the USER AUTHENTICATES with the correct CREDENTIALS")
     public void authenticatesCorrectly() {
         result = authentication().execute(new AuthenticationRequest(SOURCE, registeredEmail, registeredPassword));
     }
@@ -116,7 +116,7 @@ public class AuthenticationSteps {
         clock.advance(Duration.ofMinutes(minutes));
     }
 
-    @When("^the user tries to authenticate with (.+)$")
+    @When("^the USER tries to AUTHENTICATE with (.+)$")
     public void triesToAuthenticateWith(String wrongCredentials) {
         Email email;
         PlaintextPassword password;
@@ -145,17 +145,17 @@ public class AuthenticationSteps {
 
     // --- Thens ----------------------------------------------------------------
 
-    @Then("the user is authenticated")
+    @Then("the USER is AUTHENTICATED")
     public void userIsAuthenticated() {
         assertInstanceOf(AuthenticationResult.Authenticated.class, result);
     }
 
-    @Then("the authentication is rejected")
+    @Then("the AUTHENTICATION is rejected")
     public void authenticationIsRejected() {
         assertInstanceOf(AuthenticationResult.Rejected.class, result);
     }
 
-    @Then("the authentication is rejected because the source is blocked")
+    @Then("the AUTHENTICATION is rejected because the source is blocked")
     public void authenticationIsBlocked() {
         assertInstanceOf(AuthenticationResult.Blocked.class, result);
     }

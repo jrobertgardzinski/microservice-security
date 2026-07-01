@@ -50,14 +50,14 @@ public class HttpAuthorizeSteps {
         }
     }
 
-    @Given("a registered user {string} with password {string}")
+    @Given("a registered USER {string} with password {string}")
     public void aRegisteredUser(String email, String password) {
         this.email = email;
         HttpResponse<Map> seeded = exchange(HttpRequest.POST("/register", Map.of("email", email, "password", password)));
         assertEquals(HttpStatus.CREATED, seeded.getStatus(), "failed to seed the user");
     }
 
-    @Given("the user has authenticated")
+    @Given("the USER has AUTHENTICATED")
     public void theUserHasAuthenticated() {
         HttpResponse<Map> authenticated = exchange(
                 HttpRequest.POST("/authenticate", Map.of("email", email, "password", PASSWORD)));
@@ -65,18 +65,18 @@ public class HttpAuthorizeSteps {
         accessToken = (String) authenticated.getBody(Map.class).orElseThrow().get("accessToken");
     }
 
-    @When("the access token expires")
+    @When("the ACCESS TOKEN expires")
     public void theAccessTokenExpires() {
         // access tokens are valid for 1h; advance past it
         client.exchange(HttpRequest.POST("/test/clock/advance", Map.of("duration", "PT61M")));
     }
 
-    @When("the user requests the protected resource with their access token")
+    @When("the USER requests the protected resource with their ACCESS TOKEN")
     public void requestsWithAccessToken() {
         response = getMe("Bearer " + accessToken);
     }
 
-    @When("^the user requests the protected resource with (no token|a garbage token)$")
+    @When("^the USER requests the protected resource with (no token|a garbage token)$")
     public void requestsWith(String tokenCase) {
         response = switch (tokenCase) {
             case "no token" -> getMe(null);

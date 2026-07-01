@@ -62,7 +62,7 @@ public class HttpAuthenticateSteps {
 
     // --- Background -----------------------------------------------------------
 
-    @Given("a registered user {string} with password {string}")
+    @Given("a registered USER {string} with password {string}")
     public void aRegisteredUser(String email, String password) {
         this.email = email;
         this.password = password;
@@ -70,7 +70,7 @@ public class HttpAuthenticateSteps {
         assertEquals(HttpStatus.CREATED, seeded.getStatus(), "failed to seed the user through the real entry point");
     }
 
-    @Given("authentication attempts from one source are limited by this policy:")
+    @Given("AUTHENTICATION attempts from one source are limited by this policy:")
     public void thePolicy(DataTable policy) {
         // The running service is configured with the default brute-force policy, which equals the
         // values in this table; we read them only to know how many attempts trip the limit and how
@@ -89,12 +89,12 @@ public class HttpAuthenticateSteps {
 
     // --- Givens ---------------------------------------------------------------
 
-    @Given("the user has reached the failure limit")
+    @Given("the USER has reached the failure limit")
     public void reachedFailureLimit() {
         failToAuthenticate(maxFailures);
     }
 
-    @Given("the user has failed to authenticate but stayed under the limit")
+    @Given("the USER has failed to AUTHENTICATE but stayed under the limit")
     public void underFailureLimit() {
         failToAuthenticate(maxFailures - 1);
     }
@@ -108,12 +108,12 @@ public class HttpAuthenticateSteps {
 
     // --- Whens ----------------------------------------------------------------
 
-    @When("the user authenticates with the correct credentials")
+    @When("the USER AUTHENTICATES with the correct CREDENTIALS")
     public void authenticatesCorrectly() {
         authenticateCorrectly();
     }
 
-    @When("^the user tries to authenticate with (.+)$")
+    @When("^the USER tries to AUTHENTICATE with (.+)$")
     public void triesToAuthenticateWith(String wrongCredentials) {
         String attemptedEmail;
         String attemptedPassword;
@@ -148,17 +148,17 @@ public class HttpAuthenticateSteps {
 
     // --- Thens ----------------------------------------------------------------
 
-    @Then("the user is authenticated")
+    @Then("the USER is AUTHENTICATED")
     public void userIsAuthenticated() {
         assertEquals(HttpStatus.OK, response.getStatus());
     }
 
-    @Then("the authentication is rejected")
+    @Then("the AUTHENTICATION is rejected")
     public void authenticationIsRejected() {
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatus());
     }
 
-    @Then("the authentication is rejected because the source is blocked")
+    @Then("the AUTHENTICATION is rejected because the source is blocked")
     public void authenticationIsBlocked() {
         assertBlocked();
     }

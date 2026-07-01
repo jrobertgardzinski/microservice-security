@@ -37,27 +37,27 @@ public class SessionSteps {
     private Email email;
     private RefreshSessionResult result;
 
-    @Given("a registered user {string}")
+    @Given("a registered USER {string}")
     public void aRegisteredUser(String email) {
         this.email = Email.of(email);
     }
 
-    @Given("the user has an active session")
+    @Given("the USER has an active session")
     public void theUserHasAnActiveSession() {
         authorizationData.store(sessionExpiringAt(LocalDateTime.now(clock).plusHours(1)));
     }
 
-    @Given("the user's session has expired")
+    @Given("the USER'S session has expired")
     public void theUsersSessionHasExpired() {
         authorizationData.store(sessionExpiringAt(LocalDateTime.now(clock).minusHours(1)));
     }
 
-    @Given("the user has no session")
+    @Given("the USER has no session")
     public void theUserHasNoSession() {
         // nothing stored — findByRefreshToken will return empty
     }
 
-    @When("the user refreshes the session")
+    @When("the USER REFRESHES the session")
     public void theUserRefreshesTheSession() {
         result = refreshSession.execute(new SessionRefreshRequest(TOKEN));
     }
@@ -67,12 +67,12 @@ public class SessionSteps {
         assertInstanceOf(RefreshSessionResult.Refreshed.class, result);
     }
 
-    @Then("the refresh is rejected because the session has expired")
+    @Then("the REFRESH is rejected because the session has expired")
     public void rejectedAsExpired() {
         assertInstanceOf(RefreshSessionResult.Expired.class, result);
     }
 
-    @Then("the refresh is rejected because there is no session to refresh")
+    @Then("the REFRESH is rejected because there is no session to REFRESH")
     public void rejectedAsNotFound() {
         assertInstanceOf(RefreshSessionResult.NotFound.class, result);
     }

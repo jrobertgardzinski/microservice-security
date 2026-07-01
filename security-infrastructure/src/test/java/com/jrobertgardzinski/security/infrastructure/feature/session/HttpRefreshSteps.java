@@ -53,30 +53,30 @@ public class HttpRefreshSteps {
         }
     }
 
-    @Given("a registered user {string}")
+    @Given("a registered USER {string}")
     public void aRegisteredUser(String email) {
         this.email = email;
         HttpResponse<Map> seeded = post("/register", Map.of("email", email, "password", PASSWORD));
         assertEquals(HttpStatus.CREATED, seeded.getStatus(), "failed to seed the user through the real entry point");
     }
 
-    @Given("the user has an active session")
+    @Given("the USER has an active session")
     public void theUserHasAnActiveSession() {
         authenticateAndKeepCookie();
     }
 
-    @Given("the user's session has expired")
+    @Given("the USER'S session has expired")
     public void theUsersSessionHasExpired() {
         authenticateAndKeepCookie();
         advanceClockByHours(25); // past the 24h refresh-token validity
     }
 
-    @Given("the user has no session")
+    @Given("the USER has no session")
     public void theUserHasNoSession() {
         // registered but never authenticated — the client holds no refresh cookie
     }
 
-    @When("the user refreshes the session")
+    @When("the USER REFRESHES the session")
     public void theUserRefreshesTheSession() {
         MutableHttpRequest<?> request = HttpRequest.POST("/refresh", null);
         if (refreshCookie != null) {
@@ -90,12 +90,12 @@ public class HttpRefreshSteps {
         assertEquals(HttpStatus.OK, response.getStatus());
     }
 
-    @Then("the refresh is rejected because the session has expired")
+    @Then("the REFRESH is rejected because the session has expired")
     public void rejectedAsExpired() {
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatus());
     }
 
-    @Then("the refresh is rejected because there is no session to refresh")
+    @Then("the REFRESH is rejected because there is no session to REFRESH")
     public void rejectedAsNotFound() {
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatus());
     }
