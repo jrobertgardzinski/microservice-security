@@ -26,6 +26,7 @@ import com.jrobertgardzinski.security.system.registration.Register;
 import com.jrobertgardzinski.security.system.session.Logout;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RevokeAllSessions;
+import com.jrobertgardzinski.security.system.account.ChangePassword;
 import com.jrobertgardzinski.security.system.passwordreset.RequestPasswordReset;
 import com.jrobertgardzinski.security.system.passwordreset.ResetPassword;
 import com.jrobertgardzinski.security.system.verification.RequestEmailVerification;
@@ -134,6 +135,12 @@ public class BeanFactory {
     ResetPassword resetPassword(PasswordResetRepository passwordResetRepository, UserRepository userRepository,
                                 HashAlgorithmPort hashAlgorithm) {
         return new ResetPassword(passwordResetRepository, userRepository,
+                new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()));
+    }
+
+    @Singleton
+    ChangePassword changePassword(UserRepository userRepository, HashAlgorithmPort hashAlgorithm) {
+        return new ChangePassword(userRepository, hashAlgorithm,
                 new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()));
     }
 }
