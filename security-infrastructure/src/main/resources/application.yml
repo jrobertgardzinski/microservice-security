@@ -1,6 +1,14 @@
 micronaut:
   application:
     name: security-service
+  server:
+    cors:
+      enabled: true
+      configurations:
+        # the meme gallery UI (served by microservice-memes) signs users in against this service
+        ui:
+          allowed-origins:
+            - http://localhost:8083
 endpoints:
   health:
     enabled: true
