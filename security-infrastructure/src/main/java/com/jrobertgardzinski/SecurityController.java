@@ -4,6 +4,7 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.system.registration.Register;
 import com.jrobertgardzinski.security.system.registration.RegisterResult;
+import com.jrobertgardzinski.security.system.verification.RequestEmailVerification;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
@@ -18,7 +19,8 @@ import java.util.Map;
  * use case that the application-level Cucumber glue drives directly — "same behaviour,
  * different entry point". The HTTP contract:
  * <ul>
- *   <li>{@code Registered}        &rarr; 201 Created, {@code {"id": "<uuid>"}}</li>
+ *   <li>{@code Registered}        &rarr; 201 Created, {@code {"id": "<uuid>"}}; a verification
+ *       link is e-mailed — sign-in stays blocked until the address is verified</li>
  *   <li>{@code Rejected}          &rarr; 422 Unprocessable Entity,
  *       {@code {"emailErrors": [...], "passwordErrors": [...]}}</li>
  *   <li>{@code EmailAlreadyTaken} &rarr; 409 Conflict, {@code {"error": "EMAIL_ALREADY_TAKEN"}}</li>
@@ -29,10 +31,13 @@ import java.util.Map;
 public class SecurityController {
 
     private final Register register;
+    private final RequestEmailVerification requestEmailVerification;
     private final TransactionBoundary transactionBoundary;
 
-    public SecurityController(Register register, TransactionBoundary transactionBoundary) {
+    public SecurityController(Register register, RequestEmailVerification requestEmailVerification,
+                              TransactionBoundary transactionBoundary) {
         this.register = register;
+        this.requestEmailVerification = requestEmailVerification;
         this.transactionBoundary = transactionBoundary;
     }
 
@@ -45,8 +50,14 @@ public class SecurityController {
                 () -> register.execute(() -> Email.of(email), () -> PlaintextPassword.of(password)));
 
         return switch (result) {
-            case RegisterResult.Registered registered ->
-                    HttpResponse.<Map<String, Object>>created(Map.of("id", registered.user().id().toString()));
+            case RegisterResult.Registered registered -> {
+                // sign-in requires a verified address, so onboarding starts the verification here
+                transactionBoundary.execute(() -> {
+                    requestEmailVerification.execute(Email.of(email));
+                    return null;
+                });
+                yield HttpResponse.<Map<String, Object>>created(Map.of("id", registered.user().id().toString()));
+            }
             case RegisterResult.Rejected rejected ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.UNPROCESSABLE_ENTITY)
                             .body(Map.of(

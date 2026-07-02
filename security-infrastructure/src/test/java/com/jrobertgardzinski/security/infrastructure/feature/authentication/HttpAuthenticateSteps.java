@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.security.infrastructure.feature.authentication;
 
+import com.jrobertgardzinski.CapturingEmailVerificationNotifier;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
@@ -21,6 +22,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * The HTTP entry point's glue for {@code authenticate.feature}. A real embedded server is started
@@ -64,6 +66,13 @@ public class HttpAuthenticateSteps {
 
     @Given("a registered USER {string} with password {string}")
     public void aRegisteredUser(String email, String password) {
+        // "registered" implies a completed onboarding: the address has been verified
+        aRegisteredButUnverifiedUser(email, password);
+        verifySeededUser(email);
+    }
+
+    @Given("a registered USER {string} with password {string} whose EMAIL is not verified yet")
+    public void aRegisteredButUnverifiedUser(String email, String password) {
         this.email = email;
         this.password = password;
         HttpResponse<Map> seeded = post("/register", Map.of("email", email, "password", password));
@@ -163,6 +172,12 @@ public class HttpAuthenticateSteps {
         assertBlocked();
     }
 
+    @Then("the AUTHENTICATION is rejected because the EMAIL is not verified")
+    public void authenticationIsRejectedAsUnverified() {
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatus());
+        assertEquals("EMAIL_NOT_VERIFIED", response.getBody().map(body -> body.get("error")).orElse(null));
+    }
+
     // --- Helpers --------------------------------------------------------------
 
     private void authenticateCorrectly() {
@@ -204,5 +219,14 @@ public class HttpAuthenticateSteps {
             numbers.add(Integer.parseInt(matcher.group()));
         }
         return numbers;
+    }
+
+    private void verifySeededUser(String email) {
+        // sign-in requires a verified address, so seeding completes onboarding with the e-mailed token
+        String token = server.getApplicationContext()
+                .getBean(CapturingEmailVerificationNotifier.class).lastTokenFor(email);
+        assertNotNull(token, "no verification link was e-mailed on registration");
+        HttpResponse<Map> verified = post("/verify-email", Map.of("token", token));
+        assertEquals(HttpStatus.OK, verified.getStatus(), "failed to verify the seeded user");
     }
 }

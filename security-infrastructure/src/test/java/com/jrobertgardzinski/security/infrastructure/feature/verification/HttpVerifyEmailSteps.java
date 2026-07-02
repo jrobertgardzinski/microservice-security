@@ -86,6 +86,13 @@ public class HttpVerifyEmailSteps {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
     }
 
+    @Then("a VERIFICATION link has been e-mailed to the USER")
+    public void aVerificationLinkHasBeenEmailed() {
+        String token = server.getApplicationContext()
+                .getBean(CapturingEmailVerificationNotifier.class).lastTokenFor(email);
+        assertNotNull(token, "expected registration to e-mail a verification link automatically");
+    }
+
     @SuppressWarnings("unchecked")
     private HttpResponse<Map> exchange(HttpRequest<?> request) {
         try {

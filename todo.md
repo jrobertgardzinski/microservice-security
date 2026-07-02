@@ -6,9 +6,11 @@ Tylko otwarte rzeczy. Historia zrobionego = git log.
 ## Stan (2026-07-02) — kontekst, nie backlog
 
 **13 feature'ów w `specs/`**, każdy napędzany czarną skrzynką przez HTTP (+ warstwa application
-dla części): Register, Authenticate (+brute-force), RefreshSession (+reuse-detection), Authorize,
-Logout, Verify email (request+confirm), Reset hasła (request+complete), Change password,
-Change email (z re-weryfikacją nowego adresu), Delete account (RODO), List active sessions,
+dla części): Register, Authenticate (+brute-force; od 2026-07-02 wymaga zweryfikowanego
+emaila — 403 `EMAIL_NOT_VERIFIED`, rejestracja auto-wysyła link), RefreshSession
+(+reuse-detection), Authorize, Logout, Verify email (request+confirm), Reset hasła
+(request+complete), Change password, Change email (z re-weryfikacją nowego adresu; potwierdzenie
+oznacza nowy adres jako zweryfikowany), Delete account (RODO), List active sessions,
 Revoke all sessions. Persystencja: Micronaut Data JDBC + Flyway + Testcontainers (in-memory,
 gdy brak datasource). Deployment: docker-compose (Postgres + serwis). Maile: standalone
 `microservice-email` przez `EmailServiceClient` (nagłówek `X-Api-Key`).
@@ -20,9 +22,10 @@ gdy brak datasource). Deployment: docker-compose (Postgres + serwis). Maile: sta
   (Change password, Delete account).
 - **Role/permissions (RBAC)** — dziś Authorize mówi „token ważny + kto", nie „czy może X";
   osobny wymiar (model ról).
-- **Gating po weryfikacji emaila** — verify-email jest addytywny: niezweryfikowane konto wciąż
-  może wszystko. Zdecydować, co blokować przed weryfikacją (przy okazji domyka enumerację
-  na `/register`).
+- **Enumeracja na `/register`** — rejestracja nadal zwraca 409 dla zajętego adresu. Fundament
+  do domknięcia jest od 2026-07-02: logowanie wymaga zweryfikowanego emaila, więc `/register`
+  może odpowiadać jednolicie („wysłaliśmy link") bez otwierania konta atakującemu. Zmiana
+  kontraktu → decyzja usera.
 - **Hardening rejestracji** — IP/throttling na register (DoS przez haszowanie, masowe konta);
   osobna kontrola od guarda uwierzytelniania.
 - **JWT self-contained** — alternatywa/uzupełnienie opaque tokenów (osobny temat: infra

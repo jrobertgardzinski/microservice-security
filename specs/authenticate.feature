@@ -74,3 +74,10 @@ Feature: Authentication
       When the block expires
       And the USER AUTHENTICATES with the correct CREDENTIALS
       Then the USER is AUTHENTICATED
+
+  Rule: 7. Correct CREDENTIALS are not enough while the EMAIL is unverified
+
+    Example:
+      Given a registered USER "fresh@example.com" with password "StrongPassword1!" whose EMAIL is not verified yet
+      When the USER AUTHENTICATES with the correct CREDENTIALS
+      Then the AUTHENTICATION is rejected because the EMAIL is not verified

@@ -42,6 +42,11 @@ final class InMemoryEmailVerificationRepository implements EmailVerificationRepo
     }
 
     @Override
+    public void markVerified(Email email) {
+        byEmail.put(email.value(), new Row(null, true));
+    }
+
+    @Override
     public boolean isVerified(Email email) {
         Row row = byEmail.get(email.value());
         return row != null && row.verified();

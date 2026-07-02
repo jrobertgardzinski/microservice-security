@@ -18,5 +18,11 @@ public interface EmailVerificationRepository {
     /** If the token matches a pending verification, mark that address verified and return it; else empty. */
     Optional<Email> completeVerification(VerificationToken token);
 
+    /**
+     * Mark the address verified without a token — for flows that proved ownership by other means
+     * (e.g. confirming an email change, whose own token was delivered to that address).
+     */
+    void markVerified(Email email);
+
     boolean isVerified(Email email);
 }

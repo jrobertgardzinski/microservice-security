@@ -26,3 +26,8 @@ Feature: Verifying an email address
     Example:
       When the USER VERIFIES the EMAIL with a garbage VERIFICATION TOKEN
       Then the VERIFICATION is rejected
+
+  Rule: Registration automatically starts VERIFICATION
+
+    Example:
+      Then a VERIFICATION link has been e-mailed to the USER

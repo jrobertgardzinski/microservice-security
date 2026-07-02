@@ -82,6 +82,7 @@ public class BeanFactory {
     @Singleton
     Authentication authentication(
             UserRepository userRepository,
+            EmailVerificationRepository emailVerificationRepository,
             RejectedAuthenticationRepository rejectedAuthenticationRepository,
             AuthenticationBlockRepository authenticationBlockRepository,
             AuthorizationDataRepository authorizationDataRepository,
@@ -91,9 +92,9 @@ public class BeanFactory {
             Clock clock,
             BlockDurationPolicy blockDurationPolicy) {
         return AuthenticationFactory.create(
-                userRepository, rejectedAuthenticationRepository, authenticationBlockRepository,
-                authorizationDataRepository, hashAlgorithm, bruteForceConfig, sessionTokensConfig,
-                clock, blockDurationPolicy);
+                userRepository, emailVerificationRepository, rejectedAuthenticationRepository,
+                authenticationBlockRepository, authorizationDataRepository, hashAlgorithm,
+                bruteForceConfig, sessionTokensConfig, clock, blockDurationPolicy);
     }
 
     @Singleton
@@ -162,8 +163,9 @@ public class BeanFactory {
     }
 
     @Singleton
-    ConfirmEmailChange confirmEmailChange(EmailChangeRepository emailChangeRepository, UserRepository userRepository) {
-        return new ConfirmEmailChange(emailChangeRepository, userRepository);
+    ConfirmEmailChange confirmEmailChange(EmailChangeRepository emailChangeRepository, UserRepository userRepository,
+                                          EmailVerificationRepository emailVerificationRepository) {
+        return new ConfirmEmailChange(emailChangeRepository, userRepository, emailVerificationRepository);
     }
 
     @Singleton

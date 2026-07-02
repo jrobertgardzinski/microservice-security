@@ -51,6 +51,7 @@ class AuthenticationTest {
 
     private _BruteForceGuard bruteForceGuard;
     private _VerifyCredentials verifyCredentials;
+    private _RequireVerifiedEmail requireVerifiedEmail;
     private _GenerateSession generateSession;
     private _CleanBruteForceRecords cleanBruteForceRecords;
     private _UpdateBruteForceRecords updateBruteForceRecords;
@@ -60,11 +61,14 @@ class AuthenticationTest {
     void init() {
         bruteForceGuard = Mockito.mock(_BruteForceGuard.class);
         verifyCredentials = Mockito.mock(_VerifyCredentials.class);
+        requireVerifiedEmail = Mockito.mock(_RequireVerifiedEmail.class);
+        // most examples exercise a completed onboarding; the unverified example overrides this
+        Mockito.when(requireVerifiedEmail.isVerified(Mockito.any())).thenReturn(true);
         generateSession = Mockito.mock(_GenerateSession.class);
         cleanBruteForceRecords = Mockito.mock(_CleanBruteForceRecords.class);
         updateBruteForceRecords = Mockito.mock(_UpdateBruteForceRecords.class);
         authentication = new Authentication(
-                bruteForceGuard, verifyCredentials, generateSession,
+                bruteForceGuard, verifyCredentials, requireVerifiedEmail, generateSession,
                 cleanBruteForceRecords, updateBruteForceRecords);
     }
 
@@ -123,6 +127,25 @@ class AuthenticationTest {
                 () -> Mockito.verify(updateBruteForceRecords).execute(GIVEN.ipAddress),
                 () -> Mockito.verify(cleanBruteForceRecords, Mockito.never()).execute(Mockito.any()),
                 () -> Mockito.verify(generateSession, Mockito.never()).create(Mockito.any())
+        );
+    }
+
+    @Example
+    @Label("Email-not-verified when credentials are valid but the address is unverified")
+    void email_not_verified_when_address_unverified() {
+        Mockito.when(bruteForceGuard.execute(GIVEN.ipAddress))
+                .thenReturn(new BruteForceProtectionEvent.Allowed());
+        Mockito.when(verifyCredentials.execute(GIVEN.credentials))
+                .thenReturn(new AuthenticationEvent.Valid(GIVEN.email));
+        Mockito.when(requireVerifiedEmail.isVerified(GIVEN.email)).thenReturn(false);
+
+        AuthenticationResult result = authentication.execute(GIVEN.request);
+
+        assertInstanceOf(AuthenticationResult.EmailNotVerified.class, result);
+        assertAll(
+                () -> Mockito.verify(generateSession, Mockito.never()).create(Mockito.any()),
+                () -> Mockito.verify(cleanBruteForceRecords, Mockito.never()).execute(Mockito.any()),
+                () -> Mockito.verify(updateBruteForceRecords, Mockito.never()).execute(Mockito.any())
         );
     }
 }

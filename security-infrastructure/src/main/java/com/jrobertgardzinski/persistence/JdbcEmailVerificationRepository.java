@@ -41,6 +41,12 @@ final class JdbcEmailVerificationRepository implements EmailVerificationReposito
     }
 
     @Override
+    public void markVerified(Email email) {
+        repository.deleteById(email.value());
+        repository.save(new EmailVerificationEntity(email.value(), null, true));
+    }
+
+    @Override
     public boolean isVerified(Email email) {
         return repository.findById(email.value()).map(EmailVerificationEntity::verified).orElse(false);
     }

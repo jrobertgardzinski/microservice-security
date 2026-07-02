@@ -27,9 +27,11 @@ import java.util.Map;
  *
  * <p>The HTTP contract:
  * <ul>
- *   <li>{@code Authenticated} &rarr; 200 OK, {@code {"accessToken": ..., "refreshToken": ...}}</li>
- *   <li>{@code Rejected}      &rarr; 401 Unauthorized</li>
- *   <li>{@code Blocked}       &rarr; 429 Too Many Requests, with a {@code Retry-After} header
+ *   <li>{@code Authenticated}    &rarr; 200 OK, {@code {"accessToken": ..., "refreshToken": ...}}</li>
+ *   <li>{@code Rejected}         &rarr; 401 Unauthorized</li>
+ *   <li>{@code EmailNotVerified} &rarr; 403 Forbidden, {@code {"error": "EMAIL_NOT_VERIFIED"}}
+ *       (correct credentials, but the address awaits verification)</li>
+ *   <li>{@code Blocked}          &rarr; 429 Too Many Requests, with a {@code Retry-After} header
  *       (seconds until the block expires)</li>
  * </ul>
  */
@@ -64,6 +66,9 @@ public class AuthenticationController {
                             .cookie(refreshCookies.issue(authenticated.session().plainRefreshToken()));
             case AuthenticationResult.Rejected rejected ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.UNAUTHORIZED);
+            case AuthenticationResult.EmailNotVerified notVerified ->
+                    HttpResponse.<Map<String, Object>>status(HttpStatus.FORBIDDEN)
+                            .body(Map.of("error", "EMAIL_NOT_VERIFIED"));
             case AuthenticationResult.Blocked blocked ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.TOO_MANY_REQUESTS)
                             .header("Retry-After", Long.toString(secondsUntil(blocked.authenticationBlock().expiryDate())))

@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.security.infrastructure.feature.deleteaccount;
 
+import com.jrobertgardzinski.CapturingEmailVerificationNotifier;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
@@ -17,6 +18,7 @@ import io.micronaut.runtime.server.EmbeddedServer;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * HTTP glue for {@code delete-account.feature}. Black-box: authenticate, close the account, then
@@ -51,6 +53,7 @@ public class HttpDeleteAccountSteps {
         this.email = email;
         HttpResponse<Map> seeded = exchange(HttpRequest.POST("/register", Map.of("email", email, "password", password)));
         assertEquals(HttpStatus.CREATED, seeded.getStatus(), "failed to seed the user");
+        verifySeededUser(email);
     }
 
     @Given("the USER has AUTHENTICATED")
@@ -95,5 +98,14 @@ public class HttpDeleteAccountSteps {
         } catch (HttpClientResponseException e) {
             return (HttpResponse<Map>) e.getResponse();
         }
+    }
+
+    private void verifySeededUser(String email) {
+        // sign-in requires a verified address, so seeding completes onboarding with the e-mailed token
+        String token = server.getApplicationContext()
+                .getBean(CapturingEmailVerificationNotifier.class).lastTokenFor(email);
+        assertNotNull(token, "no verification link was e-mailed on registration");
+        HttpResponse<Map> verified = exchange(HttpRequest.POST("/verify-email", Map.of("token", token)));
+        assertEquals(HttpStatus.OK, verified.getStatus(), "failed to verify the seeded user");
     }
 }

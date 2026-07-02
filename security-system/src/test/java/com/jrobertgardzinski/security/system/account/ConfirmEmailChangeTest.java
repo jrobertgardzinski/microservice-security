@@ -2,6 +2,7 @@ package com.jrobertgardzinski.security.system.account;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.repository.EmailChangeRepository;
+import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.EmailChange;
 import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
@@ -27,22 +28,25 @@ class ConfirmEmailChangeTest {
 
     private EmailChangeRepository emailChangeRepository;
     private UserRepository userRepository;
+    private EmailVerificationRepository emailVerificationRepository;
     private ConfirmEmailChange confirmEmailChange;
 
     @BeforeTry
     void init() {
         emailChangeRepository = Mockito.mock(EmailChangeRepository.class);
         userRepository = Mockito.mock(UserRepository.class);
-        confirmEmailChange = new ConfirmEmailChange(emailChangeRepository, userRepository);
+        emailVerificationRepository = Mockito.mock(EmailVerificationRepository.class);
+        confirmEmailChange = new ConfirmEmailChange(emailChangeRepository, userRepository, emailVerificationRepository);
     }
 
     @Example
-    @Label("A matching token moves the user to the new address")
+    @Label("A matching token moves the user to the new address and marks it verified")
     void matching_token_changes_the_email() {
         Mockito.when(emailChangeRepository.confirmChange(TOKEN)).thenReturn(Optional.of(new EmailChange(OLD, NEW)));
 
         assertEquals(new ConfirmEmailChangeResult.EmailChanged(NEW), confirmEmailChange.execute(TOKEN));
         Mockito.verify(userRepository).updateEmail(OLD, NEW);
+        Mockito.verify(emailVerificationRepository).markVerified(NEW);
     }
 
     @Example

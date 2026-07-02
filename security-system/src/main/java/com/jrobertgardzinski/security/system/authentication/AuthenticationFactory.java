@@ -4,6 +4,7 @@ import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
@@ -24,6 +25,7 @@ public final class AuthenticationFactory {
 
     public static Authentication create(
             UserRepository userRepository,
+            EmailVerificationRepository emailVerificationRepository,
             RejectedAuthenticationRepository rejectedAuthenticationRepository,
             AuthenticationBlockRepository authenticationBlockRepository,
             AuthorizationDataRepository authorizationDataRepository,
@@ -37,13 +39,14 @@ public final class AuthenticationFactory {
                 rejectedAuthenticationRepository, authenticationBlockRepository,
                 clock, bruteForceConfig, blockDurationPolicy);
         var verifyCredentials = new _VerifyCredentials(userRepository, hashAlgorithmPort);
+        var requireVerifiedEmail = new _RequireVerifiedEmail(emailVerificationRepository);
         var generateSession = new _GenerateSession(authorizationDataRepository, clock, sessionTokensConfig);
         var cleanBruteForceRecords = new _CleanBruteForceRecords(
                 rejectedAuthenticationRepository, authenticationBlockRepository);
         var updateBruteForceRecords = new _UpdateBruteForceRecords(rejectedAuthenticationRepository, clock);
 
         return new Authentication(
-                bruteForceGuard, verifyCredentials, generateSession,
+                bruteForceGuard, verifyCredentials, requireVerifiedEmail, generateSession,
                 cleanBruteForceRecords, updateBruteForceRecords);
     }
 }

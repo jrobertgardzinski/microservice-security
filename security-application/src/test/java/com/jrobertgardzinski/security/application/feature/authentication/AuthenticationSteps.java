@@ -5,6 +5,7 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.application.feature.support.FakeHashAlgorithm;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryAuthenticationBlockRepository;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryAuthorizationDataRepository;
+import com.jrobertgardzinski.security.application.feature.support.InMemoryEmailVerificationRepository;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryRejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryUserRepository;
 import com.jrobertgardzinski.clock.AdjustableClock;
@@ -48,6 +49,7 @@ public class AuthenticationSteps {
     private static final Pattern INTEGER = Pattern.compile("\\d+");
 
     private final InMemoryUserRepository users = new InMemoryUserRepository();
+    private final InMemoryEmailVerificationRepository verifications = new InMemoryEmailVerificationRepository();
     private final InMemoryRejectedAuthenticationRepository rejections = new InMemoryRejectedAuthenticationRepository();
     private final InMemoryAuthenticationBlockRepository blocks = new InMemoryAuthenticationBlockRepository();
     private final InMemoryAuthorizationDataRepository sessions = new InMemoryAuthorizationDataRepository();
@@ -65,6 +67,13 @@ public class AuthenticationSteps {
 
     @Given("a registered USER {string} with password {string}")
     public void aRegisteredUser(String email, String password) {
+        // "registered" implies a completed onboarding: the address has been verified
+        aRegisteredButUnverifiedUser(email, password);
+        verifications.markVerified(registeredEmail);
+    }
+
+    @Given("a registered USER {string} with password {string} whose EMAIL is not verified yet")
+    public void aRegisteredButUnverifiedUser(String email, String password) {
         registeredEmail = Email.of(email);
         registeredPassword = PlaintextPassword.of(password);
         users.save(new User(registeredEmail, hashAlgorithm.hash(registeredPassword)));
@@ -160,12 +169,17 @@ public class AuthenticationSteps {
         assertInstanceOf(AuthenticationResult.Blocked.class, result);
     }
 
+    @Then("the AUTHENTICATION is rejected because the EMAIL is not verified")
+    public void authenticationIsRejectedAsUnverified() {
+        assertInstanceOf(AuthenticationResult.EmailNotVerified.class, result);
+    }
+
     // --- Helpers --------------------------------------------------------------
 
     private Authentication authentication() {
         if (authentication == null) {
             authentication = AuthenticationFactory.create(
-                    users, rejections, blocks, sessions, hashAlgorithm,
+                    users, verifications, rejections, blocks, sessions, hashAlgorithm,
                     config, SESSION_TOKENS_CONFIG, clock, blockDuration);
         }
         return authentication;
