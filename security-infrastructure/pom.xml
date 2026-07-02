@@ -99,6 +99,11 @@
             <groupId>io.micronaut.flyway</groupId>
             <artifactId>micronaut-flyway</artifactId>
         </dependency>
+        <!-- transactional-outbox publisher: mail requests leave as Kafka events, not HTTP calls -->
+        <dependency>
+            <groupId>io.micronaut.kafka</groupId>
+            <artifactId>micronaut-kafka</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>

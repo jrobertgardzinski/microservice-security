@@ -3,3 +3,7 @@
 security:
   cookie:
     secure: false
+
+# no broker in tests: the outbox publisher is @Requires(notEnv=test); this silences kafka's health check
+kafka:
+  enabled: false

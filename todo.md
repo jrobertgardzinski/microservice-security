@@ -12,8 +12,10 @@ emaila — 403 `EMAIL_NOT_VERIFIED`, rejestracja auto-wysyła link), RefreshSess
 (request+complete), Change password, Change email (z re-weryfikacją nowego adresu; potwierdzenie
 oznacza nowy adres jako zweryfikowany), Delete account (RODO), List active sessions,
 Revoke all sessions. Persystencja: Micronaut Data JDBC + Flyway + Testcontainers (in-memory,
-gdy brak datasource). Deployment: docker-compose (Postgres + serwis). Maile: standalone
-`microservice-email` przez `EmailServiceClient` (nagłówek `X-Api-Key`).
+gdy brak datasource). Deployment: docker-compose (Postgres + serwis). Maile: od 2026-07-02 **zdarzenia przez Kafkę**
+— transactional outbox w Postgresie (`outbox_events`, V5; ta sama transakcja co zmiana stanu),
+poller publikuje na topik `mail-requests`, konsumuje `microservice-email` (at-least-once,
+dedup po id zdarzenia). Awaria mail-serwisu nie psuje rejestracji — zdarzenie czeka.
 
 ## Otwarte — use case'y / security
 
