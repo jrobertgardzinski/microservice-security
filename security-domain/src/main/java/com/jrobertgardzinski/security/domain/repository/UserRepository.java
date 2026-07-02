@@ -20,6 +20,14 @@ public interface UserRepository {
     /** Delete a user by email (close account); a no-op if absent. */
     void deleteByEmail(Email email);
 
+    /** Lock the account while its deletion saga runs: the user stays but cannot sign in. */
+    void markPendingDeletion(Email email);
+
+    /** Roll the deletion lock back (saga compensation): the account works again. */
+    void clearPendingDeletion(Email email);
+
+    boolean isPendingDeletion(Email email);
+
     /**
      * Whether a user already exists under the given normalized email — the identity
      * used for registration deduplication, so provider aliases (e.g. Gmail dots or

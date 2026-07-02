@@ -16,6 +16,11 @@ gdy brak datasource). Deployment: docker-compose (Postgres + serwis). Maile: od 
 — transactional outbox w Postgresie (`outbox_events`, V5; ta sama transakcja co zmiana stanu),
 poller publikuje na topik `mail-requests`, konsumuje `microservice-email` (at-least-once,
 dedup po id zdarzenia). Awaria mail-serwisu nie psuje rejestracji — zdarzenie czeka.
+**Delete account jest sagą** (orkiestracja, stan w `account_deletion_sagas`, V6): konto blokuje się
+od razu (`users.pending_deletion`), memes czyści treści (komenda `memes-commands` przez outbox,
+potwierdzenie `memes-events`), dopiero potwierdzenie kasuje usera i wysyła mail pożegnalny;
+brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min) = kompensacja
+(odblokowanie + mail z przeprosinami).
 
 ## Otwarte — use case'y / security
 

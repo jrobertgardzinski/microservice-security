@@ -14,6 +14,12 @@ import java.util.UUID;
 @Requires(beans = DataSource.class)
 interface UserJdbcRepository extends CrudRepository<UserEntity, UUID> {
 
+    @Query("UPDATE users SET pending_deletion = :pending WHERE email = :email")
+    void setPendingDeletion(String email, boolean pending);
+
+    boolean existsByEmailAndPendingDeletionTrue(String email);
+
+
     Optional<UserEntity> findByEmail(String email);
 
     boolean existsByNormalizedEmail(String normalizedEmail);

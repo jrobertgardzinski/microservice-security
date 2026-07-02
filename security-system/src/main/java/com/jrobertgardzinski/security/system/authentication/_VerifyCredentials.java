@@ -19,6 +19,8 @@ class _VerifyCredentials {
         Email email = credentials.email();
         return userRepository.findBy(email)
                 .filter(user -> hashAlgorithmPort.verify(user.passwordHash(), credentials.plaintextPassword()))
+                // an account locked by a running deletion saga behaves like a wrong password
+                .filter(user -> !userRepository.isPendingDeletion(email))
                 .<AuthenticationEvent>map(_ -> new AuthenticationEvent.Valid(email))
                 .orElseGet(() -> new AuthenticationEvent.Invalid(email));
     }

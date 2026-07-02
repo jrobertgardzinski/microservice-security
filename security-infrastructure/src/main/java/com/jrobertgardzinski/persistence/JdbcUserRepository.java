@@ -55,10 +55,26 @@ final class JdbcUserRepository implements UserRepository {
     }
 
     @Override
+    public void markPendingDeletion(Email email) {
+        repository.setPendingDeletion(email.value(), true);
+    }
+
+    @Override
+    public void clearPendingDeletion(Email email) {
+        repository.setPendingDeletion(email.value(), false);
+    }
+
+    @Override
+    public boolean isPendingDeletion(Email email) {
+        return repository.existsByEmailAndPendingDeletionTrue(email.value());
+    }
+
+    @Override
     public User save(User user) {
         try {
             repository.save(new UserEntity(
-                    user.id(), user.email().value(), user.normalizedEmail().value(), user.passwordHash().value()));
+                    user.id(), user.email().value(), user.normalizedEmail().value(), user.passwordHash().value(),
+                    false));
             return user;
         } catch (DataAccessException e) {
             if (isUniqueViolation(e)) {

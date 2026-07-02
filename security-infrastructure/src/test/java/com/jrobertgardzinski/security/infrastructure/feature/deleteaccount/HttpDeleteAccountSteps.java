@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.security.infrastructure.feature.deleteaccount;
 
+import com.jrobertgardzinski.AccountDeletionOrchestrator;
 import com.jrobertgardzinski.CapturingEmailVerificationNotifier;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
@@ -21,9 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * HTTP glue for {@code delete-account.feature}. Black-box: authenticate, close the account, then
- * show the access token no longer authorizes, the user can no longer authenticate, and the email is
- * free to register again.
+ * HTTP glue for {@code delete-account.feature}. The saga's edges that need other services are
+ * driven through the orchestrator bean — the same code path the Kafka listener calls — while
+ * everything else stays black-box HTTP; the full loop over a real broker runs in the workspace's
+ * compose smoke test. Time is steered through the test clock endpoint, so "overdue" is exact.
  */
 public class HttpDeleteAccountSteps {
 
@@ -63,11 +65,40 @@ public class HttpDeleteAccountSteps {
         accessToken = (String) authenticated.getBody(Map.class).orElseThrow().get("accessToken");
     }
 
-    @When("the USER DELETES the account")
-    public void theUserDeletesTheAccount() {
+    @When("the USER requests account DELETION")
+    public void theUserRequestsAccountDeletion() {
         HttpResponse<Map> closed = exchange(HttpRequest.POST("/account/delete", null)
                 .header("Authorization", "Bearer " + accessToken));
-        assertEquals(HttpStatus.OK, closed.getStatus());
+        assertEquals(HttpStatus.ACCEPTED, closed.getStatus());
+    }
+
+    @Given("the USER requested account DELETION")
+    public void theUserRequestedAccountDeletion() {
+        theUserRequestsAccountDeletion();
+    }
+
+    @When("the meme service confirms the content purge")
+    public void theMemeServiceConfirmsThePurge() {
+        // the orchestrator method the Kafka listener calls on a USER_CONTENT_PURGED event
+        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).completePurge(email);
+    }
+
+    @When("the content purge does not confirm within the time limit")
+    public void thePurgeDoesNotConfirmInTime() {
+        client.exchange(HttpRequest.POST("/test/clock/advance", Map.of("duration", "PT3M")));
+        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).compensateOverdue();
+    }
+
+    @Then("the email is not yet free to REGISTER")
+    public void theEmailIsNotYetFree() {
+        HttpResponse<Map> refused = exchange(
+                HttpRequest.POST("/register", Map.of("email", email, "password", "StrongPassword1!")));
+        assertEquals(HttpStatus.CONFLICT, refused.getStatus());
+    }
+
+    @Then("the USER can AUTHENTICATE again with {string}")
+    public void canAuthenticateAgainWith(String password) {
+        assertEquals(HttpStatus.OK, authenticate(password).getStatus());
     }
 
     @Then("the access token no longer authorizes")

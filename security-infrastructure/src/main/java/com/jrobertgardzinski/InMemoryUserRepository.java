@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Requires(missingBeans = DataSource.class)
 public final class InMemoryUserRepository implements UserRepository {
 
+    private final java.util.Set<String> pendingDeletion = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Map<String, User> byEmail = new ConcurrentHashMap<>();
     private final Map<String, User> byNormalizedEmail = new ConcurrentHashMap<>();
 
@@ -70,5 +71,21 @@ public final class InMemoryUserRepository implements UserRepository {
         if (removed != null) {
             byNormalizedEmail.remove(removed.normalizedEmail().value());
         }
+        pendingDeletion.remove(email.value());
+    }
+
+    @Override
+    public void markPendingDeletion(Email email) {
+        pendingDeletion.add(email.value());
+    }
+
+    @Override
+    public void clearPendingDeletion(Email email) {
+        pendingDeletion.remove(email.value());
+    }
+
+    @Override
+    public boolean isPendingDeletion(Email email) {
+        return pendingDeletion.contains(email.value());
     }
 }

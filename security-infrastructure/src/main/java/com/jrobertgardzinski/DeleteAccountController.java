@@ -1,7 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.system.account.DeleteAccount;
+import com.jrobertgardzinski.security.system.account.StartAccountDeletion;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
@@ -14,19 +14,20 @@ import java.util.Map;
 
 /**
  * HTTP entry point for closing an account. Protected: {@link AuthorizationFilter} has authorized the
- * access token and published the caller's email; here we delete that account and revoke its
- * sessions via the {@link DeleteAccount} use case, so the presented token stops working right after.
+ * access token and published the caller's email. Closing is a saga: {@link StartAccountDeletion}
+ * locks the account at once (sessions revoked, sign-in refused) and asks microservice-memes to
+ * purge the user's content; the confirmation — not this request — deletes the user for good.
  */
 // controllers do blocking work (JDBC, the mail service's HTTP client) — keep it off the event loop
 @ExecuteOn(TaskExecutors.BLOCKING)
 @Controller("/account/delete")
 final class DeleteAccountController {
 
-    private final DeleteAccount deleteAccount;
+    private final StartAccountDeletion startAccountDeletion;
     private final TransactionBoundary transactionBoundary;
 
-    DeleteAccountController(DeleteAccount deleteAccount, TransactionBoundary transactionBoundary) {
-        this.deleteAccount = deleteAccount;
+    DeleteAccountController(StartAccountDeletion startAccountDeletion, TransactionBoundary transactionBoundary) {
+        this.startAccountDeletion = startAccountDeletion;
         this.transactionBoundary = transactionBoundary;
     }
 
@@ -34,9 +35,9 @@ final class DeleteAccountController {
     HttpResponse<Map<String, Object>> delete(HttpRequest<?> request) {
         Email email = Email.of(request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow());
         transactionBoundary.execute(() -> {
-            deleteAccount.execute(email);
+            startAccountDeletion.execute(email);
             return null;
         });
-        return HttpResponse.ok(Map.of("status", "ACCOUNT_CLOSED"));
+        return HttpResponse.accepted().body(Map.of("status", "ACCOUNT_DELETION_STARTED"));
     }
 }
