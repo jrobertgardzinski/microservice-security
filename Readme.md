@@ -25,14 +25,20 @@ layer. Each one reads like a short story:
 - **[Refreshing a session](./specs/refresh-session.feature)**
   — a user keeps a session alive by refreshing it; an expired or missing session can't be refreshed.
 
+These three are just the highlights — **all 13 executable specs live in [`specs/`](./specs/)**,
+also covering password reset, email change & verification, session management (logout, list,
+revoke everywhere), refresh-token reuse detection and account deletion (GDPR).
+
 **[For more detailed documentation, click here](./Documentation.md)**. It's a document generated from allure reports based on unit tests. It covers the lowest layers: **domain**, **config** and **system**
 
 ---
 
 > **Project scope — what holds today.** The **Domain → Config → System** core is fully tested and
-> self-documenting. The three specs above already run at the **Application** layer. **Infrastructure**
-> and **UI** are designed-in but not built yet. The diagram below is the full target shape; the
-> executable specs are what's actually proven — nothing here is hand-waved.
+> self-documenting, and the specs above already run at the **Application** layer. **Infrastructure**
+> is built too: an HTTP controller per use case, an authorization filter, in-memory adapters, and
+> mail notifiers wired to a separate email microservice. **UI** is designed-in but not built yet.
+> The diagram below is the full target shape; the executable specs are what's actually proven —
+> nothing here is hand-waved.
 
 ---
 
@@ -61,7 +67,10 @@ own way:
 
 Proven by executable specifications (**jqwik** + **Allure**); concepts explained in Javadoc.
 
-- **System** — composes Config + Domain into use cases.
+- **System** — composes Config + Domain into use cases. Within a use-case package the
+  package-private steps carry a `_` prefix (e.g. `_BruteForceGuard`, `_VerifyCredentials`), so the
+  package's public API stands out at a glance — a deliberate convention, see
+  [ADR 0002](https://github.com/jrobertgardzinski/security/blob/main/docs/adr/0002-underscore-prefix-for-use-case-steps.md).
 - **Config** — domain rules made configurable. Where a rule's value lives decides how fast a change
   takes effect: hardcoded needs a new release, properties (or program arguments) need a restart,
   persisted config takes effect instantly.
@@ -79,7 +88,7 @@ Proven by executable specifications (**jqwik** + **Allure**); concepts explained
   security microservice, and separate, relaxed ones for other services (newsletters, notifications,
   RSS feeds).
 
-This repository is part of a larger security of reusable modules — see my other repositories:
+This repository is part of a larger family of reusable modules — see my other repositories:
 **https://github.com/jrobertgardzinski?tab=repositories**
 
 ---
