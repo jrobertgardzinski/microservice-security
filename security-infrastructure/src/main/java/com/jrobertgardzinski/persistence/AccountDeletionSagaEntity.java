@@ -12,6 +12,8 @@ record AccountDeletionSagaEntity(
         @Id UUID id,
         String email,
         String state,
+        boolean memesPurged,
+        boolean commentsPurged,
         Instant createdAt,
         Instant updatedAt) {
 }

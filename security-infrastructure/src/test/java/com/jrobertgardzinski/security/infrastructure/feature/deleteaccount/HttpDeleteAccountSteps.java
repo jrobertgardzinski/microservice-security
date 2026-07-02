@@ -91,7 +91,7 @@ public class HttpDeleteAccountSteps {
     public void thePurgeCommandCarriesTheChoice() {
         InMemoryOutboxAppender outbox = server.getApplicationContext().getBean(InMemoryOutboxAppender.class);
         String command = outbox.appended().stream()
-                .filter(event -> event.topic().equals("memes-commands") && event.key().equals(email))
+                .filter(event -> event.topic().equals("content-commands") && event.key().equals(email))
                 .reduce((first, second) -> second)
                 .orElseThrow(() -> new AssertionError("no purge command in the outbox"))
                 .payload();
@@ -100,10 +100,15 @@ public class HttpDeleteAccountSteps {
                 "expected the wizard's choice in the command, got: " + command);
     }
 
-    @When("the meme service confirms the content purge")
-    public void theMemeServiceConfirmsThePurge() {
+    @When("only the meme service confirmed the content purge")
+    public void onlyTheMemeServiceConfirmed() {
         // the orchestrator method the Kafka listener calls on a USER_CONTENT_PURGED event
-        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).completePurge(email);
+        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).completePurge(email, "memes");
+    }
+
+    @When("the comments service confirms the content purge too")
+    public void theCommentsServiceConfirmsToo() {
+        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).completePurge(email, "comments");
     }
 
     @When("the content purge does not confirm within the time limit")

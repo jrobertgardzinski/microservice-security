@@ -34,7 +34,7 @@ import java.util.UUID;
 @Singleton
 public class AccountDeletionOrchestrator implements AccountDeletionSaga {
 
-    static final String COMMANDS_TOPIC = "memes-commands";
+    static final String COMMANDS_TOPIC = "content-commands";
     static final String MAIL_TOPIC = "mail-requests";
 
     private static final Logger LOG = LoggerFactory.getLogger(AccountDeletionOrchestrator.class);
@@ -77,10 +77,13 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
         outbox.append(COMMANDS_TOPIC, email.value(), write(command));
     }
 
-    /** The meme service confirmed the purge: finish the deletion. Duplicates are no-ops. */
-    public void completePurge(String email) {
-        if (!sagas.complete(email, Instant.now(clock))) {
-            LOG.info("ignoring purge confirmation without a running saga for {}", email);
+    /**
+     * One content service ("memes" or "comments") confirmed its purge; the deletion finishes only
+     * when the LAST missing confirmation arrives. Duplicates and strays are no-ops.
+     */
+    public void completePurge(String email, String participant) {
+        if (!sagas.confirm(email, participant, Instant.now(clock))) {
+            LOG.info("recorded {} purge confirmation for {}; saga not complete yet", participant, email);
             return;
         }
         deleteAccount.execute(Email.of(email));

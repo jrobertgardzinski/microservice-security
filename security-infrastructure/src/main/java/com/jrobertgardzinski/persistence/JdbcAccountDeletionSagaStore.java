@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/** Postgres-backed {@link AccountDeletionSagaStore} (see V6). */
+/** Postgres-backed {@link AccountDeletionSagaStore} (see V6/V7). */
 @Singleton
 @Requires(beans = DataSource.class)
 class JdbcAccountDeletionSagaStore implements AccountDeletionSagaStore {
@@ -22,12 +22,17 @@ class JdbcAccountDeletionSagaStore implements AccountDeletionSagaStore {
 
     @Override
     public void start(UUID sagaId, String email, Instant at) {
-        repository.save(new AccountDeletionSagaEntity(sagaId, email, "STARTED", at, at));
+        repository.save(new AccountDeletionSagaEntity(sagaId, email, "STARTED", false, false, at, at));
     }
 
     @Override
-    public boolean complete(String email, Instant at) {
-        return repository.completeStarted(email, at) > 0;
+    public boolean confirm(String email, String participant, Instant at) {
+        switch (participant) {
+            case "memes" -> repository.confirmMemes(email, at);
+            case "comments" -> repository.confirmComments(email, at);
+            default -> throw new IllegalArgumentException("unknown saga participant: " + participant);
+        }
+        return repository.completeFullyConfirmed(email, at) > 0;
     }
 
     @Override

@@ -2,8 +2,8 @@ Feature: Closing the account
 
   A signed-in USER closes their account. Closure is a SAGA across services: the account locks at
   once (sessions revoked, sign-in refused) and the meme service is asked to purge the USER's
-  content — their memes disappear with whole comment threads, their comments elsewhere lose the
-  author ("deleted account"), their votes are retracted. Only the purge confirmation deletes the
+  content — memes in the meme service, comments in the comments service, each axis under its own
+  rule (delete / anonymise / keep-popular); votes are retracted. Only the purge confirmation deletes the
   USER for good; no confirmation in time rolls the closure back.
 
   Nouns:
@@ -32,12 +32,14 @@ Feature: Closing the account
       When the USER requests account DELETION keeping content with at least 100 votes
       Then the purge command carries that choice
 
-  Rule: The meme service's purge confirmation completes the closure
+  Rule: The closure completes only when EVERY content service confirmed its purge
 
     Example:
       Given the USER has AUTHENTICATED
       And the USER requested account DELETION
-      When the meme service confirms the content purge
+      When only the meme service confirmed the content purge
+      Then the email is not yet free to REGISTER
+      When the comments service confirms the content purge too
       Then the USER can REGISTER again with "StrongPassword1!"
 
   Rule: Without confirmation in time the closure rolls back

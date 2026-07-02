@@ -15,9 +15,17 @@ import java.util.UUID;
 @Requires(beans = DataSource.class)
 interface AccountDeletionSagaJdbcRepository extends CrudRepository<AccountDeletionSagaEntity, UUID> {
 
-    @Query("UPDATE account_deletion_sagas SET state = 'COMPLETED', updated_at = :at "
+    @Query("UPDATE account_deletion_sagas SET memes_purged = true, updated_at = :at "
             + "WHERE email = :email AND state = 'STARTED'")
-    long completeStarted(String email, Instant at);
+    void confirmMemes(String email, Instant at);
+
+    @Query("UPDATE account_deletion_sagas SET comments_purged = true, updated_at = :at "
+            + "WHERE email = :email AND state = 'STARTED'")
+    void confirmComments(String email, Instant at);
+
+    @Query("UPDATE account_deletion_sagas SET state = 'COMPLETED', updated_at = :at "
+            + "WHERE email = :email AND state = 'STARTED' AND memes_purged AND comments_purged")
+    long completeFullyConfirmed(String email, Instant at);
 
     List<AccountDeletionSagaEntity> findByStateAndCreatedAtBefore(String state, Instant cutoff);
 
