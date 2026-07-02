@@ -9,6 +9,7 @@ micronaut:
         ui:
           allowed-origins:
             - http://localhost:8083
+            - http://localhost:8084
 endpoints:
   health:
     enabled: true
