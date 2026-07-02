@@ -16,13 +16,13 @@ when you build the project, so the behaviour they describe is verified, not aspi
 **infrastructure** and **UI** (same behaviour, a different way in); today they run from the application
 layer. Each one reads like a short story:
 
-- **[Registration](./security-application/src/test/resources/com/jrobertgardzinski/security/application/register.feature)**
+- **[Registration](./specs/register.feature)**
   — a new user signs up with an email and a password; sign-up is refused when either is invalid,
   and the answer says *which* one.
-- **[Authentication](./security-application/src/test/resources/com/jrobertgardzinski/security/application/authenticate.feature)**
+- **[Authentication](./specs/authenticate.feature)**
   — correct credentials sign the user in; repeated failures from the same source temporarily
   lock it, to stop password guessing.
-- **[Refreshing a session](./security-application/src/test/resources/com/jrobertgardzinski/security/application/refresh-session.feature)**
+- **[Refreshing a session](./specs/refresh-session.feature)**
   — a user keeps a session alive by refreshing it; an expired or missing session can't be refreshed.
 
 **[For more detailed documentation, click here](./Documentation.md)**. It's a document generated from allure reports based on unit tests. It covers the lowest layers: **domain**, **config** and **system**
