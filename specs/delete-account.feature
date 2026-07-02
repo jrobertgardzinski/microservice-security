@@ -25,6 +25,13 @@ Feature: Closing the account
       And the USER cannot AUTHENTICATE with "StrongPassword1!"
       And the email is not yet free to REGISTER
 
+  Rule: The USER chooses what happens to their content
+
+    Example:
+      Given the USER has AUTHENTICATED
+      When the USER requests account DELETION keeping content with at least 100 votes
+      Then the purge command carries that choice
+
   Rule: The meme service's purge confirmation completes the closure
 
     Example:

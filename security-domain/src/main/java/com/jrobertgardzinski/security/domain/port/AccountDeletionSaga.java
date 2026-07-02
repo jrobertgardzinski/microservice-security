@@ -1,6 +1,7 @@
 package com.jrobertgardzinski.security.domain.port;
 
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.security.domain.vo.PurgeChoices;
 
 /**
  * Outbound port that starts the cross-service part of closing an account: other services purge
@@ -9,5 +10,5 @@ import com.jrobertgardzinski.email.domain.Email;
  */
 public interface AccountDeletionSaga {
 
-    void begin(Email email);
+    void begin(Email email, PurgeChoices purgeChoices);
 }

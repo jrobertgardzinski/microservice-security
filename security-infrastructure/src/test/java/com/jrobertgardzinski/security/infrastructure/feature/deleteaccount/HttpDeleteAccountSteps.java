@@ -2,6 +2,7 @@ package com.jrobertgardzinski.security.infrastructure.feature.deleteaccount;
 
 import com.jrobertgardzinski.AccountDeletionOrchestrator;
 import com.jrobertgardzinski.CapturingEmailVerificationNotifier;
+import com.jrobertgardzinski.persistence.InMemoryOutboxAppender;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
@@ -75,6 +76,28 @@ public class HttpDeleteAccountSteps {
     @Given("the USER requested account DELETION")
     public void theUserRequestedAccountDeletion() {
         theUserRequestsAccountDeletion();
+    }
+
+    @When("the USER requests account DELETION keeping content with at least {int} votes")
+    public void requestsDeletionKeepingPopularContent(int minScore) {
+        String rule = "KEEP_POPULAR_ANONYMIZED:" + minScore;
+        HttpResponse<Map> closed = exchange(HttpRequest.POST("/account/delete",
+                        Map.of("purge", Map.of("memes", rule, "comments", rule)))
+                .header("Authorization", "Bearer " + accessToken));
+        assertEquals(HttpStatus.ACCEPTED, closed.getStatus());
+    }
+
+    @Then("the purge command carries that choice")
+    public void thePurgeCommandCarriesTheChoice() {
+        InMemoryOutboxAppender outbox = server.getApplicationContext().getBean(InMemoryOutboxAppender.class);
+        String command = outbox.appended().stream()
+                .filter(event -> event.topic().equals("memes-commands") && event.key().equals(email))
+                .reduce((first, second) -> second)
+                .orElseThrow(() -> new AssertionError("no purge command in the outbox"))
+                .payload();
+        org.junit.jupiter.api.Assertions.assertTrue(
+                command.contains("KEEP_POPULAR_ANONYMIZED:100"),
+                "expected the wizard's choice in the command, got: " + command);
     }
 
     @When("the meme service confirms the content purge")

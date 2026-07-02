@@ -5,6 +5,7 @@ import com.jrobertgardzinski.persistence.AccountDeletionSagaStore;
 import com.jrobertgardzinski.persistence.OutboxAppender;
 import com.jrobertgardzinski.security.domain.port.AccountDeletionSaga;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
+import com.jrobertgardzinski.security.domain.vo.PurgeChoices;
 import com.jrobertgardzinski.security.system.account.DeleteAccount;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.json.JsonMapper;
@@ -17,6 +18,7 @@ import java.io.UncheckedIOException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -59,14 +61,20 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
     }
 
     @Override
-    public void begin(Email email) {
+    public void begin(Email email, PurgeChoices purgeChoices) {
         UUID sagaId = UUID.randomUUID();
         sagas.start(sagaId, email.value(), Instant.now(clock));
-        outbox.append(COMMANDS_TOPIC, email.value(), write(Map.of(
+        Map<String, Object> command = new LinkedHashMap<>(Map.of(
                 "id", UUID.randomUUID().toString(),
                 "sagaId", sagaId.toString(),
                 "type", "PURGE_USER_CONTENT",
-                "email", email.value())));
+                "email", email.value()));
+        if (purgeChoices.memesRule().isPresent() && purgeChoices.commentsRule().isPresent()) {
+            command.put("policy", Map.of(
+                    "memes", purgeChoices.memesRule().get(),
+                    "comments", purgeChoices.commentsRule().get()));
+        }
+        outbox.append(COMMANDS_TOPIC, email.value(), write(command));
     }
 
     /** The meme service confirmed the purge: finish the deletion. Duplicates are no-ops. */
@@ -91,11 +99,11 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
     }
 
     private void appendMail(String type, String to) {
-        outbox.append(MAIL_TOPIC, to, write(Map.of(
+        outbox.append(MAIL_TOPIC, to, write(Map.<String, Object>of(
                 "id", UUID.randomUUID().toString(), "type", type, "to", to)));
     }
 
-    private String write(Map<String, String> payload) {
+    private String write(Map<String, ?> payload) {
         try {
             return json.writeValueAsString(payload);
         } catch (IOException e) {
