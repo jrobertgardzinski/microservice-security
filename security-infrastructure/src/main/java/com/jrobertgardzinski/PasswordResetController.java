@@ -10,6 +10,8 @@ import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.http.annotation.Post;
 
 import java.util.Map;
@@ -19,6 +21,8 @@ import java.util.Map;
  * {@link ResetPassword} use cases. Public (pre-login): {@code POST /reset-password/request} mails a
  * link, {@code POST /reset-password} sets a new password with the token from that link.
  */
+// controllers do blocking work (JDBC, the mail service's HTTP client) — keep it off the event loop
+@ExecuteOn(TaskExecutors.BLOCKING)
 @Controller("/reset-password")
 final class PasswordResetController {
 

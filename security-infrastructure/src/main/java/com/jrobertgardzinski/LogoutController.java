@@ -6,6 +6,8 @@ import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.http.annotation.Post;
 
 import java.util.Map;
@@ -15,6 +17,8 @@ import java.util.Map;
  * {@link Logout} use case as any other entry point) and clears the cookie. Idempotent: with no
  * cookie there is nothing to end, and the response still succeeds and clears the cookie.
  */
+// controllers do blocking work (JDBC, the mail service's HTTP client) — keep it off the event loop
+@ExecuteOn(TaskExecutors.BLOCKING)
 @Controller("/logout")
 final class LogoutController {
 

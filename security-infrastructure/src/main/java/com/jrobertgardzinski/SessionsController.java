@@ -8,6 +8,8 @@ import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 
@@ -20,6 +22,8 @@ import java.util.Map;
  * lists the active sessions; {@code POST /sessions/revoke-all} logs out everywhere (the presented
  * access token is itself one of the sessions revoked, so it stops working right after).
  */
+// controllers do blocking work (JDBC, the mail service's HTTP client) — keep it off the event loop
+@ExecuteOn(TaskExecutors.BLOCKING)
 @Controller("/sessions")
 final class SessionsController {
 

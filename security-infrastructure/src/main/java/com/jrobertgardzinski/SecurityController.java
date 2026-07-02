@@ -10,6 +10,8 @@ import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.http.annotation.Post;
 
 import java.util.Map;
@@ -27,6 +29,8 @@ import java.util.Map;
  * </ul>
  * 422 (not 400): the JSON is well-formed; the failure is semantic validation of the values.
  */
+// controllers do blocking work (JDBC, the mail service's HTTP client) — keep it off the event loop
+@ExecuteOn(TaskExecutors.BLOCKING)
 @Controller("/register")
 public class SecurityController {
 

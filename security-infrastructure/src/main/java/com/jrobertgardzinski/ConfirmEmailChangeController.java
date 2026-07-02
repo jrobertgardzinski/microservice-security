@@ -7,6 +7,8 @@ import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.http.annotation.Post;
 
 import java.util.Map;
@@ -15,6 +17,8 @@ import java.util.Map;
  * Public HTTP entry point to confirm an email change with the token from the link (the recipient of
  * the link is not signed in yet). Drives the {@link ConfirmEmailChange} use case.
  */
+// controllers do blocking work (JDBC, the mail service's HTTP client) — keep it off the event loop
+@ExecuteOn(TaskExecutors.BLOCKING)
 @Controller("/confirm-email-change")
 final class ConfirmEmailChangeController {
 

@@ -6,6 +6,8 @@ import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.http.annotation.Post;
 
 import java.util.Map;
@@ -15,6 +17,8 @@ import java.util.Map;
  * access token and published the caller's email; here we delete that account and revoke its
  * sessions via the {@link DeleteAccount} use case, so the presented token stops working right after.
  */
+// controllers do blocking work (JDBC, the mail service's HTTP client) — keep it off the event loop
+@ExecuteOn(TaskExecutors.BLOCKING)
 @Controller("/account/delete")
 final class DeleteAccountController {
 

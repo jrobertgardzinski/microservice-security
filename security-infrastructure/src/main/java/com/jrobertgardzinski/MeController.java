@@ -4,6 +4,8 @@ import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.http.annotation.Get;
 
 import java.util.Map;
@@ -13,6 +15,8 @@ import java.util.Map;
  * {@link AuthorizationFilter} already authorized the access token and published the email, so here
  * we just read it back.
  */
+// controllers do blocking work (JDBC, the mail service's HTTP client) — keep it off the event loop
+@ExecuteOn(TaskExecutors.BLOCKING)
 @Controller("/me")
 final class MeController {
 
