@@ -130,8 +130,15 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <!-- production HTTP clients are gone (mail travels over Kafka); tests still drive
+                 the embedded server with it -->
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-http-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
         <!-- real PostgreSQL for the JDBC adapter integration tests (skipped when Docker is absent) -->
         <dependency>
