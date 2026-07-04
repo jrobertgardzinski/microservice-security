@@ -6,6 +6,10 @@ security:
   # designate a bootstrap admin so the roles feature has someone who can grant roles
   bootstrap-admins:
     - admin@example.com
+  # the registration throttle is off for the shared-context feature suites (many users register
+  # from localhost across scenarios); it is exercised in isolation by RegisterThrottleHttpTest
+  registration:
+    max-per-window: 0
 
 # no broker in tests: the outbox publisher is @Requires(notEnv=test); this silences kafka's health check
 kafka:

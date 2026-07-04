@@ -67,6 +67,15 @@ public class BeanFactory {
     }
 
     @Singleton
+    com.jrobertgardzinski.security.system.registration.RegistrationThrottle registrationThrottle(
+            @io.micronaut.context.annotation.Value("${security.registration.max-per-window:5}") int maxPerWindow,
+            @io.micronaut.context.annotation.Value("${security.registration.window-minutes:15}") int windowMinutes,
+            Clock clock) {
+        return new com.jrobertgardzinski.security.system.registration.RegistrationThrottle(
+                maxPerWindow, java.time.Duration.ofMinutes(windowMinutes), clock);
+    }
+
+    @Singleton
     com.jrobertgardzinski.security.system.roles.SetUserRoles setUserRoles(UserRepository userRepository) {
         return new com.jrobertgardzinski.security.system.roles.SetUserRoles(userRepository);
     }

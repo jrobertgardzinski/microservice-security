@@ -39,7 +39,10 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   do domknięcia jest od 2026-07-02: logowanie wymaga zweryfikowanego emaila, więc `/register`
   może odpowiadać jednolicie („wysłaliśmy link") bez otwierania konta atakującemu. Zmiana
   kontraktu → decyzja usera.
-- **Hardening rejestracji** — IP/throttling na register (DoS przez haszowanie, masowe konta);
+- ~~Hardening rejestracji (throttling)~~ — ZROBIONE (2026-07-04): `RegistrationThrottle` (okno
+  stałe per-IP, `security.registration.max-per-window` default 5 / `window-minutes` 15, 0 wyłącza),
+  sprawdzany PRZED kosztowną pracą (Argon2 + insert), 429 + Retry-After; źródło = spoof-odporny IP
+  z `ClientIpResolver`. Unit (3) + HTTP test (429) + live na PG. ZOSTAJE: throttling na inne
   osobna kontrola od guarda uwierzytelniania.
 - **JWT self-contained** — alternatywa/uzupełnienie opaque tokenów (osobny temat: infra
   kluczy/podpisów).
