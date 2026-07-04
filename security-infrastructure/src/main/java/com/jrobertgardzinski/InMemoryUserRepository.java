@@ -4,6 +4,7 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
+import com.jrobertgardzinski.security.domain.vo.Role;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 
@@ -44,11 +45,22 @@ public final class InMemoryUserRepository implements UserRepository {
     }
 
     @Override
+    public void setRoles(Email email, java.util.Set<Role> roles) {
+        User existing = byEmail.get(email.value());
+        if (existing != null) {
+            User updated = new User(existing.id(), existing.email(), existing.passwordHash(),
+                    existing.normalizedEmail(), roles);
+            byEmail.put(email.value(), updated);
+            byNormalizedEmail.put(updated.normalizedEmail().value(), updated);
+        }
+    }
+
+    @Override
     public void updatePassword(com.jrobertgardzinski.email.domain.Email email,
                                com.jrobertgardzinski.password.domain.HashedPassword passwordHash) {
         User existing = byEmail.get(email.value());
         if (existing != null) {
-            User updated = new User(existing.id(), existing.email(), passwordHash, existing.normalizedEmail());
+            User updated = new User(existing.id(), existing.email(), passwordHash, existing.normalizedEmail(), existing.roles());
             byEmail.put(email.value(), updated);
             byNormalizedEmail.put(existing.normalizedEmail().value(), updated);
         }
@@ -59,7 +71,7 @@ public final class InMemoryUserRepository implements UserRepository {
         User existing = byEmail.remove(currentEmail.value());
         if (existing != null) {
             byNormalizedEmail.remove(existing.normalizedEmail().value());
-            User moved = new User(existing.id(), newEmail, existing.passwordHash(), NormalizedEmail.of(newEmail));
+            User moved = new User(existing.id(), newEmail, existing.passwordHash(), NormalizedEmail.of(newEmail), existing.roles());
             byEmail.put(newEmail.value(), moved);
             byNormalizedEmail.put(moved.normalizedEmail().value(), moved);
         }

@@ -67,6 +67,11 @@ public class BeanFactory {
     }
 
     @Singleton
+    com.jrobertgardzinski.security.system.roles.SetUserRoles setUserRoles(UserRepository userRepository) {
+        return new com.jrobertgardzinski.security.system.roles.SetUserRoles(userRepository);
+    }
+
+    @Singleton
     BruteForceConfig bruteForceConfig() {
         return BruteForceConfig.builder().build();
     }

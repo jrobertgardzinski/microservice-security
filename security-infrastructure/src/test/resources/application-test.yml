@@ -3,6 +3,9 @@
 security:
   cookie:
     secure: false
+  # designate a bootstrap admin so the roles feature has someone who can grant roles
+  bootstrap-admins:
+    - admin@example.com
 
 # no broker in tests: the outbox publisher is @Requires(notEnv=test); this silences kafka's health check
 kafka:

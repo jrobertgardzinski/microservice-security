@@ -4,12 +4,17 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.security.domain.entity.User;
+import com.jrobertgardzinski.security.domain.vo.Role;
 
 import java.util.Optional;
+import java.util.Set;
 
 public interface UserRepository {
 
     Optional<User> findBy(Email email);
+
+    /** Replace a user's whole role set (USER is always kept); a no-op if the user is absent. */
+    void setRoles(Email email, Set<Role> roles);
 
     /** Replace an existing user's password hash (e.g. after a password reset); a no-op if absent. */
     void updatePassword(Email email, HashedPassword passwordHash);

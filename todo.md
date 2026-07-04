@@ -27,8 +27,14 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
 - **MFA/TOTP: enroll + verify + recovery codes** — flagowy „wow"; największy otwarty temat.
 - **Step-up auth** — ponowne uwierzytelnienie przy wrażliwej akcji; naturalni kandydaci już są
   (Change password, Delete account).
-- **Role/permissions (RBAC)** — dziś Authorize mówi „token ważny + kto", nie „czy może X";
-  osobny wymiar (model ról).
+- **Role/permissions (RBAC)** — ZROBIONE (2026-07-04, model 1 płaski): enum `Role`
+  (USER/MODERATOR/ADMIN) w domenie; `User` niesie zbiór ról (USER zawsze), port `setRoles`,
+  kolumna `roles` (migracja V8, comma-set, in-memory i JDBC), `/me` zwraca role — źródło prawdy
+  dla innych serwisów. Endpoint admina `PUT /admin/users/{email}/roles` (use case `SetUserRoles`)
+  za drugą bramą: wołający musi być ADMIN — z DB albo z bootstrapu `security.bootstrap-admins`
+  (rozwiązuje jajko-kura pierwszego admina). 4 scenariusze `roles.feature` + weryfikacja live na
+  PG (nadanie MODERATOR utrwalone, 403 dla nie-admina, /me czyta role z PG). ZOSTAJE: strona
+  konsumencka — bramy MODERATOR/ADMIN w memes/comments czytające `roles` z `/me`.
 - **Enumeracja na `/register`** — rejestracja nadal zwraca 409 dla zajętego adresu. Fundament
   do domknięcia jest od 2026-07-02: logowanie wymaga zweryfikowanego emaila, więc `/register`
   może odpowiadać jednolicie („wysłaliśmy link") bez otwierania konta atakującemu. Zmiana

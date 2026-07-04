@@ -6,13 +6,17 @@ import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
+import com.jrobertgardzinski.security.domain.vo.Role;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.data.exceptions.DataAccessException;
 import jakarta.inject.Singleton;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * PostgreSQL-backed {@link UserRepository}: a thin adapter mapping the {@code users} table rows
@@ -74,7 +78,7 @@ final class JdbcUserRepository implements UserRepository {
         try {
             repository.save(new UserEntity(
                     user.id(), user.email().value(), user.normalizedEmail().value(), user.passwordHash().value(),
-                    false));
+                    false, encodeRoles(user.roles())));
             return user;
         } catch (DataAccessException e) {
             if (isUniqueViolation(e)) {
@@ -82,6 +86,33 @@ final class JdbcUserRepository implements UserRepository {
             }
             throw e;
         }
+    }
+
+    @Override
+    public void setRoles(Email email, Set<Role> roles) {
+        EnumSet<Role> withUser = roles.isEmpty() ? EnumSet.of(Role.USER) : EnumSet.copyOf(roles);
+        withUser.add(Role.USER);
+        repository.setRoles(email.value(), encodeRoles(withUser));
+    }
+
+    private static String encodeRoles(Set<Role> roles) {
+        return roles.stream().map(Enum::name).sorted().collect(Collectors.joining(","));
+    }
+
+    private static Set<Role> decodeRoles(String roles) {
+        if (roles == null || roles.isBlank()) {
+            return Set.of(Role.USER);
+        }
+        Set<Role> parsed = EnumSet.noneOf(Role.class);
+        for (String name : roles.split(",")) {
+            try {
+                parsed.add(Role.valueOf(name.trim()));
+            } catch (IllegalArgumentException unknownRole) {
+                // a role dropped from the enum: ignore the stale value rather than fail a login
+            }
+        }
+        parsed.add(Role.USER);
+        return parsed;
     }
 
     /** PostgreSQL SQLSTATE 23505 = unique_violation, here the email / normalized-email constraint. */
@@ -96,6 +127,7 @@ final class JdbcUserRepository implements UserRepository {
 
     private static User toDomain(UserEntity entity) {
         Email email = Email.of(entity.email());
-        return new User(entity.id(), email, new HashedPassword(entity.passwordHash()), NormalizedEmail.of(email));
+        return new User(entity.id(), email, new HashedPassword(entity.passwordHash()),
+                NormalizedEmail.of(email), decodeRoles(entity.roles()));
     }
 }
