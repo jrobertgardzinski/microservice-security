@@ -24,23 +24,27 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
 
 ## Otwarte — use case'y / security
 
-- **OAuth/social login (PRZED MFA — decyzja usera 2026-07-05)** — „po co zakładać konto, jak
-  ktoś ma Google albo Facebooka". Google przez OIDC (Authorization Code + PKCE), port domenowy
-  `IdentityProvider` + adapter w infrze (JDK HttpClient), Facebook jako drugi adapter później.
-  Rejestracja zapada się w pierwsze logowanie: `email_verified` od providera spełnia bramę
-  weryfikacji (bez maila). Tożsamości `(provider, subject) → user` (migracja V10), `User` bez
-  zmian — JEDNO konto, WIELE tożsamości (hasło/Google/FB = równorzędne klucze). ŁĄCZENIE KONT
-  (scenariusz usera: założył konto na Gmailu, zapomniał, wraca OAuth-em na ten sam adres) —
-  trzy warianty: (a) lokalne konto ZWERYFIKOWANE + Google ręczy → auto-link i logowanie (obie
-  strony dowiodły skrzynki); (b) lokalne konto NIEZWERYFIKOWANE (squatter na cudzy adres) →
-  dowód Google bije nieudowodnione hasło: link + verified, ale stare hasło SKASOWANE (reset od
-  nowa) i revoke wszystkich sesji; (c) odwrotnie — konto federacyjne, user próbuje /register →
-  ciche 201, a mail „already registered" podpowiada „to konto loguje się przez Google / ustaw
-  hasło resetem"; reset-password na koncie bez hasła = „ustaw hasło". Sesja na końcu identyczna
-  jak dziś (SessionTokens/JWT/refresh cookie). Do stacku demo: STUB IdP jako kolejny
-  mikroserwis-smak (Python stdlib, własne id_tokeny + JWKS) — smoke przechodzi OAuth na stubie,
-  prod podmienia URL na Google (client-id/secret z env). Kolejność celowa: OAuth zmienia
-  pierwsze ogniwo łańcucha MFA (credentials ALBO dowód providera), więc idzie pierwszy. — flagowy „wow"; największy otwarty temat.
+- ~~OAuth/social login~~ — ZROBIONE (2026-07-05): taniec Authorization Code + PKCE (S256) na
+  brzegu — `/oauth/{provider}/start` + `/oauth/callback` (state jednorazowy, TTL 10 min, nonce,
+  return-URL tylko z allowlisty, access token wraca FRAGMENTEM, refresh jak zwykle w HttpOnly
+  cookie); `OidcClient` (czysty JDK HttpClient) wymienia kod i waliduje id_token: HS256
+  weryfikowany client-secretem (stub), algorytmy asymetryczne (Google RS256) na mocy
+  bezpośredniego kanału TLS wg OIDC Core 3.1.3.7 — iss/aud/exp/nonce twardo zawsze. Provider =
+  czysty config (@EachProperty `security.oauth.providers.*`): w compose „google" wskazuje STUB
+  IdP (`microservice-idp`, Python stdlib, :8091 — 8090 zajęte przez race-sim), prod podmienia
+  URL-e i client-id/secret. Use case `FederatedSignIn` + VO `ProviderIdentity` +
+  `FederatedIdentityRepository` (migracja V10; jedno konto — wiele tożsamości): świeży email →
+  konto od urodzenia zweryfikowane i BEZHASŁOWE (hash odrzuconego losowego sekretu; hasło można
+  nadać resetem); konto ZWERYFIKOWANE → auto-link, hasło nietknięte; NIEZWERYFIKOWANE (squatter)
+  → przejęcie: link + verified + hasło skasowane + revoke wszystkich sesji; email bez poręczenia
+  providera nie tyka niczego; pending-deletion odmawia jak przy haśle.
+  `federated-sign-in.feature` (5 scenariuszy, warstwa application) + `OauthFlowHttpTest` (pełny
+  taniec po drucie z fake'owym providerem: replay state'a, zły nonce, cudzy return-URL) + krok
+  w infra-smoke (PASS live). Mail „already registered" podpowiada logowanie społecznościowe /
+  ustawienie hasła resetem; UI galerii ma przycisk „Sign in with Google". ZOSTAJE na później:
+  adapter Facebooka, realny Google (client-id/secret od usera), odświeżanie linku federacyjnego
+  przy change-email (dziś stały link bezpiecznie odpada i re-linkuje się przy następnym logowaniu).
+- **MFA: credentiale + kod, kanał KONFIGUROWALNY** — flagowy „wow"; największy otwarty temat.
   Wizja usera (2026-07-05): MFA = ŁAŃCUCH czynników przechodzonych JEDEN PO DRUGIM, np.
   credentials → kod e-mail → kod SMS; łańcuch konfigurowalny (port dostarczania kodu, adaptery
   email/SMS — serwisy kanałów już stoją: microservice-email, microservice-sms; dwie osie
