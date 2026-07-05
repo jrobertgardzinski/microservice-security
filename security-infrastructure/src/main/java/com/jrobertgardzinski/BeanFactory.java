@@ -6,6 +6,7 @@ import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
+import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
 import com.jrobertgardzinski.security.domain.port.EmailVerificationNotifier;
 import com.jrobertgardzinski.security.domain.port.PasswordResetNotifier;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
@@ -130,19 +131,21 @@ public class BeanFactory {
             BruteForceConfig bruteForceConfig,
             SessionTokensConfig sessionTokensConfig,
             Clock clock,
-            BlockDurationPolicy blockDurationPolicy) {
+            BlockDurationPolicy blockDurationPolicy,
+            AccessTokenMint accessTokenMint) {
         return AuthenticationFactory.create(
                 userRepository, emailVerificationRepository, rejectedAuthenticationRepository,
                 authenticationBlockRepository, authorizationDataRepository, hashAlgorithm,
-                bruteForceConfig, sessionTokensConfig, clock, blockDurationPolicy);
+                bruteForceConfig, sessionTokensConfig, clock, blockDurationPolicy, accessTokenMint);
     }
 
     @Singleton
     RefreshSession refreshSession(
             AuthorizationDataRepository authorizationDataRepository,
             Clock clock,
-            SessionTokensConfig sessionTokensConfig) {
-        return new RefreshSession(authorizationDataRepository, clock, sessionTokensConfig);
+            SessionTokensConfig sessionTokensConfig,
+            AccessTokenMint accessTokenMint) {
+        return new RefreshSession(authorizationDataRepository, clock, sessionTokensConfig, accessTokenMint);
     }
 
     @Singleton

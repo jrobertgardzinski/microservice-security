@@ -2,6 +2,7 @@ package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
+import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
@@ -33,14 +34,15 @@ public final class AuthenticationFactory {
             BruteForceConfig bruteForceConfig,
             SessionTokensConfig sessionTokensConfig,
             Clock clock,
-            BlockDurationPolicy blockDurationPolicy) {
+            BlockDurationPolicy blockDurationPolicy,
+            AccessTokenMint accessTokenMint) {
 
         var bruteForceGuard = new _BruteForceGuard(
                 rejectedAuthenticationRepository, authenticationBlockRepository,
                 clock, bruteForceConfig, blockDurationPolicy);
         var verifyCredentials = new _VerifyCredentials(userRepository, hashAlgorithmPort);
         var requireVerifiedEmail = new _RequireVerifiedEmail(emailVerificationRepository);
-        var generateSession = new _GenerateSession(authorizationDataRepository, clock, sessionTokensConfig);
+        var generateSession = new _GenerateSession(authorizationDataRepository, clock, sessionTokensConfig, accessTokenMint);
         var cleanBruteForceRecords = new _CleanBruteForceRecords(
                 rejectedAuthenticationRepository, authenticationBlockRepository);
         var updateBruteForceRecords = new _UpdateBruteForceRecords(rejectedAuthenticationRepository, clock);

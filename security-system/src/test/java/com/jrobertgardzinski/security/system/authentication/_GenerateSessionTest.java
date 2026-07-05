@@ -38,7 +38,7 @@ class _GenerateSessionTest {
     @BeforeTry
     void init() {
         authorizationDataRepository = Mockito.mock(AuthorizationDataRepository.class);
-        generateSession = new _GenerateSession(authorizationDataRepository, CLOCK, CONFIG);
+        generateSession = new _GenerateSession(authorizationDataRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
     }
 
     @Example

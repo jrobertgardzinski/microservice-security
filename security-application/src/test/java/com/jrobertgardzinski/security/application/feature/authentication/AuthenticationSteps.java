@@ -180,7 +180,8 @@ public class AuthenticationSteps {
         if (authentication == null) {
             authentication = AuthenticationFactory.create(
                     users, verifications, rejections, blocks, sessions, hashAlgorithm,
-                    config, SESSION_TOKENS_CONFIG, clock, blockDuration);
+                    config, SESSION_TOKENS_CONFIG, clock, blockDuration,
+                    com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
         }
         return authentication;
     }

@@ -59,8 +59,17 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   uwierzytelniania (tamten broni kont przed zgadywaniem haseł, ten serwisu przed wolumenem).
   `RequestThrottleHttpTest` (3), unit throttle bez zmian. Compose podnosi limit rejestracji
   do 100 (smoke rejestruje kilka kont z jednego IP).
-- **JWT self-contained** — alternatywa/uzupełnienie opaque tokenów (osobny temat: infra
-  kluczy/podpisów).
+- ~~JWT self-contained~~ — ZROBIONE (2026-07-05) jako UZUPEŁNIENIE, nie zamiana: wartość access
+  tokena to podpisany JWS (EdDSA/Ed25519, czyste JDK — zero nowych zależności) z iss/sub/roles/
+  iat/exp/jti; port domenowy `AccessTokenMint` (RANDOM w unit testach, `JwtAccessTokenMint` w
+  infra), mintowany przy authenticate I refresh. Security dalej traktuje wartość jako opaque
+  (hash w bazie, introspekcja) ⇒ logout/revoke-all natychmiastowe. Inne serwisy MOGĄ weryfikować
+  offline: `GET /.well-known/jwks.json` (OKP/Ed25519, kid) — kompromis świadomy: offline nie
+  widzi logoutu/zmiany ról do wygaśnięcia; kto chce natychmiastowości, woła `/me` jak dotąd.
+  Klucze: `security.jwt.private-key`/`public-key` (base64 PKCS#8/X.509), brak = efemeryczne
+  (restart psuje TYLKO weryfikację offline — w stronę bezpieczną). `JwtAccessTokenHttpTest`:
+  weryfikacja podpisu przez JWKS + logout zabija ważny podpisowo token. Zweryfikowane live.
+  EWENTUALNY NASTĘPNY KROK: konsument (memes/comments) weryfikujący offline zamiast /me.
 - **`Source` jako podmiot domeny** — guard/`AuthenticationBlock` biorą `Source`, `IpAddress`
   staje się polem. TOŻSAMOŚĆ (klucz bloku, equals/hashCode: IP/podsieć/ASN/konto) vs
   OBSERWOWANE (machineName, browserVersion — forensics, POZA equals, inaczej zmiana

@@ -32,7 +32,7 @@ public class SessionSteps {
 
     private final Clock clock = Clock.fixed(Instant.parse("2026-06-15T10:00:00Z"), ZoneOffset.UTC);
     private final InMemoryAuthorizationDataRepository authorizationData = new InMemoryAuthorizationDataRepository();
-    private final RefreshSession refreshSession = new RefreshSession(authorizationData, clock, CONFIG);
+    private final RefreshSession refreshSession = new RefreshSession(authorizationData, clock, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
 
     private Email email;
     private RefreshSessionResult result;

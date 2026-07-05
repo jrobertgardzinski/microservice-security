@@ -54,7 +54,7 @@ class RefreshSessionTest {
     @BeforeTry
     void init() {
         authorizationDataRepository = Mockito.mock(AuthorizationDataRepository.class);
-        refreshSession = new RefreshSession(authorizationDataRepository, CLOCK, CONFIG);
+        refreshSession = new RefreshSession(authorizationDataRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
     }
 
     @Example

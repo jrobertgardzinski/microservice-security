@@ -1,6 +1,7 @@
 package com.jrobertgardzinski.security.system.session;
 
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
+import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
 import com.jrobertgardzinski.security.domain.vo.SessionStatus;
@@ -13,11 +14,14 @@ public class RefreshSession {
     private final AuthorizationDataRepository authorizationDataRepository;
     private final Clock clock;
     private final SessionTokensConfig config;
+    private final AccessTokenMint accessTokenMint;
 
-    public RefreshSession(AuthorizationDataRepository authorizationDataRepository, Clock clock, SessionTokensConfig config) {
+    public RefreshSession(AuthorizationDataRepository authorizationDataRepository, Clock clock,
+                          SessionTokensConfig config, AccessTokenMint accessTokenMint) {
         this.authorizationDataRepository = authorizationDataRepository;
         this.clock = clock;
         this.config = config;
+        this.accessTokenMint = accessTokenMint;
     }
 
     public RefreshSessionResult execute(SessionRefreshRequest request) {
@@ -37,7 +41,8 @@ public class RefreshSession {
                     authorizationDataRepository.markRotated(refreshToken);
                     return new RefreshSessionResult.Refreshed(
                             authorizationDataRepository.create(
-                                    SessionTokens.createFor(session.email(), config, clock), session.family()));
+                                    SessionTokens.createFor(session.email(), config, clock, accessTokenMint),
+                                    session.family()));
                 })
                 .orElseGet(RefreshSessionResult.NotFound::new);
     }
