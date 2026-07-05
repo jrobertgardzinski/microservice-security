@@ -31,7 +31,10 @@ export function App() {
   const [code, setCode] = useState('');
   // enrolment
   const [factors, setFactors] = useState<Factor[]>([]);
-  const [enrolling, setEnrolling] = useState(false);
+  const [offered, setOffered] = useState<string[]>([]);
+  const [enrollingType, setEnrollingType] = useState('');
+  const [enrollDisplay, setEnrollDisplay] = useState('');
+  const [enrollTarget, setEnrollTarget] = useState('');
   const [enrolCode, setEnrolCode] = useState('');
 
   useEffect(() => {
@@ -134,30 +137,45 @@ export function App() {
     }
   };
 
+  const factorLabel = (type: string) =>
+    ({ EMAIL_CODE: 'e-mail code', SMS_CODE: 'SMS code', TOTP: 'authenticator app' } as Record<string, string>)[type] ?? type;
+
   const loadFactors = async (accessToken: string) => {
     const r = await fetch(`${SECURITY}/account/factors`, { headers: { Authorization: `Bearer ${accessToken}` } });
-    if (r.ok) setFactors((await r.json()).have ?? []);
+    if (r.ok) { const body = await r.json(); setFactors(body.have ?? []); setOffered(body.offered ?? []); }
   };
 
-  const startEnrolEmail = async () => {
+  const startEnrol = async (type: string) => {
     setNotice(null);
-    const r = await fetch(`${SECURITY}/account/factors/EMAIL_CODE/enroll/start`, {
+    const body = type === 'SMS_CODE' ? JSON.stringify({ target: enrollTarget }) : '{}';
+    const r = await fetch(`${SECURITY}/account/factors/${type}/enroll/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: '{}',
+      body,
     });
-    if (r.status === 202) { setEnrolling(true); setEnrolCode(''); }
-    else setNotice('Could not start enrolment.');
+    if (r.status === 202) {
+      const setup: { status: string; display?: string } = await r.json();
+      setEnrollingType(type);
+      setEnrollDisplay(setup.display ?? '');
+      setEnrolCode('');
+    } else {
+      setNotice('Could not start enrolment.');
+    }
   };
 
-  const confirmEnrolEmail = async () => {
-    const r = await fetch(`${SECURITY}/account/factors/EMAIL_CODE/enroll/confirm`, {
+  const confirmEnrol = async () => {
+    const r = await fetch(`${SECURITY}/account/factors/${enrollingType}/enroll/confirm`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ code: enrolCode }),
     });
-    if (r.ok) { setEnrolling(false); setNotice('E-mail factor enrolled — you will use it next sign-in.'); void loadFactors(token); }
-    else setNotice('Wrong code — enrolment not completed.');
+    if (r.ok) {
+      setNotice(`${factorLabel(enrollingType)} enrolled — you will use it next sign-in.`);
+      setEnrollingType(''); setEnrollDisplay(''); setEnrollTarget('');
+      void loadFactors(token);
+    } else {
+      setNotice('Wrong code — enrolment not completed.');
+    }
   };
 
   const signOut = () => {
@@ -180,14 +198,28 @@ export function App() {
             {factors.map((f) => <li key={f.type}>{f.label}</li>)}
             {factors.length === 0 && <li><i>password only</i></li>}
           </ul>
-          {!enrolling && !factors.some((f) => f.type === 'EMAIL_CODE') && (
-            <button data-testid="add-email-factor" onClick={startEnrolEmail}>Add e-mail code factor</button>
-          )}
-          {enrolling && (
+          {!enrollingType && offered.filter((t) => !factors.some((f) => f.type === t)).map((type) => (
+            <div key={type}>
+              {type === 'SMS_CODE' && (
+                <input data-testid="enroll-phone" placeholder="+48…"
+                       value={enrollTarget} onChange={(e) => setEnrollTarget(e.target.value)} />
+              )}
+              <button data-testid={`add-${type}`} onClick={() => void startEnrol(type)}>
+                Add {factorLabel(type)}
+              </button>
+            </div>
+          ))}
+          {enrollingType && (
             <div>
-              <input data-testid="enroll-code" placeholder="code from your e-mail"
+              {enrollDisplay && (
+                <p data-testid="enroll-otpauth" style={{ wordBreak: 'break-all', fontSize: '0.8rem' }}>
+                  Scan this in your authenticator app: <code>{enrollDisplay}</code>
+                </p>
+              )}
+              <input data-testid="enroll-code"
+                     placeholder={enrollDisplay ? 'code from your app' : 'code we sent you'}
                      value={enrolCode} onChange={(e) => setEnrolCode(e.target.value)} />
-              <button data-testid="enroll-submit" onClick={confirmEnrolEmail}>Confirm</button>
+              <button data-testid="enroll-submit" onClick={() => void confirmEnrol()}>Confirm</button>
             </div>
           )}
           <p><button data-testid="sign-out" onClick={signOut}>Sign out</button></p>
