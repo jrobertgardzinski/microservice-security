@@ -52,9 +52,21 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   ogniwie; `MfaPolicy` wymusza minimum per rola (USER 1 / MODERATOR 2 / ADMIN 3, konfig) w TRZECH
   miejscach — brama logowania (sesja `enrolment_only` dla niedopełnionych), grant roli (`/me`
   `mfaCompliant`), usuwanie czynnika (podłoga); bootstrap-admin grace do pierwszego enrollmentu.
-  Fazy A–G w dokumencie (A = port + egzekutor + TOTP; B = kanały email/SMS; C = podłoga per rola;
-  D = recovery codes; E = step-up; F = spięcie z OAuth; G = UI + specs). CZEKA na 4 decyzje usera
-  (koniec dokumentu) — nie ruszać implementacji przed nimi.
+  Fazy A–G w dokumencie. 4 decyzje usera ROZSTRZYGNIĘTE (2026-07-05): floor liczy cały łańcuch
+  z pierwszym; niedopełniony → sesja enrolment-only; federacyjni do PEŁNEGO floora (OAuth się nie
+  liczy); pierwszy factor = e-mail (TOTP w fazie B).
+  - ~~FAZA A~~ — ZROBIONE (2026-07-05): port `AuthenticationFactor` + `FactorRegistry` +
+    egzekutor łańcucha (`PendingAuthentication` + jednorazowy ticket w `PendingAuthenticationStore`)
+    + `EmailCodeFactor` nad portem `CodeChannel` (outbox `AUTH_CODE` prod / capturing test);
+    `Authentication` rozgałęzia po bramie zweryfikowanego maila (brak czynników = sesja jak dawniej;
+    są = 202 `MFA_REQUIRED` + ticket), `ContinueAuthentication` domyka; enrollment `EnrolFactor`
+    (start wysyła kod, confirm pieczętuje). `ChallengeCodeConfig` (TTL/próby/długość, default 5/5/6)
+    w warstwie config; kody SHA-256 hash. Migracja V11 `enrolled_factors`. Endpointy: `/authenticate`
+    (202), `/authenticate/factor`, `/account/factors` (list/enroll/confirm/remove). Mail `AUTH_CODE`
+    w microservice-email. UI: security-ui (dwustopniowe + enrollment) i galeria memów (krok kodu).
+    Testy: `mfa.feature` (application) + `MfaHttpTest` (po drucie) + krok w infra-smoke (live).
+  - ZOSTAJE: faza B (SMS + TOTP), C (podłoga per rola), D (recovery), E (step-up), F (OAuth jako #1),
+    G (UI enrollment manager + specs e2e). Szczegóły w docs/mfa-design.md.
 - **Step-up auth** — WPISANE W PROJEKT MFA (faza E, [docs/mfa-design.md](docs/mfa-design.md)):
   ten sam egzekutor łańcucha odpalony na żywej sesji → jednorazowy znacznik `elevated`; polityka
   per akcja w configu NONE/SECOND_FACTORS/FULL_CHAIN (delete-account=FULL_CHAIN,
