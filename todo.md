@@ -24,7 +24,17 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
 
 ## Otwarte — use case'y / security
 
-- **MFA: credentiale + kod, kanał KONFIGUROWALNY** — flagowy „wow"; największy otwarty temat.
+- **OAuth/social login (PRZED MFA — decyzja usera 2026-07-05)** — „po co zakładać konto, jak
+  ktoś ma Google albo Facebooka". Google przez OIDC (Authorization Code + PKCE), port domenowy
+  `IdentityProvider` + adapter w infrze (JDK HttpClient), Facebook jako drugi adapter później.
+  Rejestracja zapada się w pierwsze logowanie: `email_verified` od providera spełnia bramę
+  weryfikacji (bez maila). Tożsamości `(provider, subject) → user` (migracja V10), `User` bez
+  zmian; linkowanie z istniejącym kontem TYLKO gdy provider ręczy za email (inaczej wektor
+  przejęcia). Konta bez hasła: change-password → „ustaw hasło" (reusing reset). Sesja na końcu
+  identyczna jak dziś (SessionTokens/JWT/refresh cookie). Do stacku demo: STUB IdP jako kolejny
+  mikroserwis-smak (Python stdlib, własne id_tokeny + JWKS) — smoke przechodzi OAuth na stubie,
+  prod podmienia URL na Google (client-id/secret z env). Kolejność celowa: OAuth zmienia
+  pierwsze ogniwo łańcucha MFA (credentials ALBO dowód providera), więc idzie pierwszy. — flagowy „wow"; największy otwarty temat.
   Wizja usera (2026-07-05): MFA = ŁAŃCUCH czynników przechodzonych JEDEN PO DRUGIM, np.
   credentials → kod e-mail → kod SMS; łańcuch konfigurowalny (port dostarczania kodu, adaptery
   email/SMS — serwisy kanałów już stoją: microservice-email, microservice-sms; dwie osie
