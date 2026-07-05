@@ -45,8 +45,13 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   credentials → kod e-mail → kod SMS; łańcuch konfigurowalny (port dostarczania kodu, adaptery
   email/SMS — serwisy kanałów już stoją: microservice-email, microservice-sms; dwie osie
   konfiguracji: deployment = co serwis oferuje, per-user = co user sobie włączył przy
-  enrollmencie). TOTP/recovery codes jako ewentualne kolejne ogniwa. CZEKA na analizę usera —
-  nie ruszać samodzielnie.
+  enrollmencie). TOTP/recovery codes jako ewentualne kolejne ogniwa. SPIĘCIE Z OAUTH
+  (pytanie usera 2026-07-05 — TAK): provider zastępuje TYLKO pierwsze ogniwo (hasło ALBO
+  callback providera = dwa wejścia do wspólnego egzekutora łańcucha; ogon email/SMS wspólny,
+  sesja mintowana dopiero po całym łańcuchu). Polityka „czy dowód providera zwalnia z ogona"
+  = wartość w configu (nie budować na claimach amr/acr — Google raportuje je słabo). Step-up
+  federacyjnych: FULL_CHAIN = re-auth u providera (prompt=login) + ogon. CZEKA na analizę
+  usera — nie ruszać samodzielnie.
 - **Step-up auth** — ponowne uwierzytelnienie przy wrażliwej akcji; naturalni kandydaci już są
   (Change password, Delete account). Sprzężone z MFA; otwarte pytanie usera: step-up wymaga
   credentials + kodu czy samych credentials? (rozstrzygnie jego analiza MFA).
