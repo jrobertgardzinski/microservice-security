@@ -27,18 +27,25 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
 - **MFA/TOTP: enroll + verify + recovery codes** — flagowy „wow"; największy otwarty temat.
 - **Step-up auth** — ponowne uwierzytelnienie przy wrażliwej akcji; naturalni kandydaci już są
   (Change password, Delete account).
-- **Role/permissions (RBAC)** — ZROBIONE (2026-07-04, model 1 płaski): enum `Role`
-  (USER/MODERATOR/ADMIN) w domenie; `User` niesie zbiór ról (USER zawsze), port `setRoles`,
-  kolumna `roles` (migracja V8, comma-set, in-memory i JDBC), `/me` zwraca role — źródło prawdy
-  dla innych serwisów. Endpoint admina `PUT /admin/users/{email}/roles` (use case `SetUserRoles`)
-  za drugą bramą: wołający musi być ADMIN — z DB albo z bootstrapu `security.bootstrap-admins`
-  (rozwiązuje jajko-kura pierwszego admina). 4 scenariusze `roles.feature` + weryfikacja live na
-  PG (nadanie MODERATOR utrwalone, 403 dla nie-admina, /me czyta role z PG). ZOSTAJE: strona
-  konsumencka — bramy MODERATOR/ADMIN w memes/comments czytające `roles` z `/me`.
-- **Enumeracja na `/register`** — rejestracja nadal zwraca 409 dla zajętego adresu. Fundament
-  do domknięcia jest od 2026-07-02: logowanie wymaga zweryfikowanego emaila, więc `/register`
-  może odpowiadać jednolicie („wysłaliśmy link") bez otwierania konta atakującemu. Zmiana
-  kontraktu → decyzja usera.
+- ~~Role/permissions (RBAC)~~ — ZROBIONE W CAŁOŚCI. Serwerowo (2026-07-04, model 1 płaski):
+  enum `Role` (USER/MODERATOR/ADMIN) w domenie; `User` niesie zbiór ról (USER zawsze), port
+  `setRoles`, kolumna `roles` (migracja V8, comma-set, in-memory i JDBC), `/me` zwraca role —
+  źródło prawdy dla innych serwisów. Endpoint admina `PUT /admin/users/{email}/roles` (use case
+  `SetUserRoles`) za drugą bramą: wołający musi być ADMIN — z DB albo z bootstrapu
+  `security.bootstrap-admins`. Strona konsumencka TEŻ ZROBIONA (2026-07-04, w sub-repo):
+  memes (`50557b7`…`5dcdf70`) i comments (`3dcfc2a`) mają `Caller{email,roles}` z `/me`,
+  DELETE mema/komentarza — autor swój, MODERATOR/ADMIN cudzy; testy + Gherkin w obu.
+  Powiązany otwarty temat w memes/todo.md: flaga NSFW (moderator ukrywa/odkrywa treść).
+- ~~Enumeracja na `/register`~~ — ZROBIONE (2026-07-05, decyzja usera): zajęty adres odpowiada
+  IDENTYCZNIE jak świeża rejestracja (201, `{"status":"CHECK_YOUR_MAILBOX"}`, bez `id`); prawda
+  idzie mailem do właściciela adresu — niezweryfikowany dostaje świeży link (pewnie zgubił
+  pierwszy), zweryfikowany notkę „masz już konto" (nowy port `RegistrationNoticeNotifier`,
+  outbox typ `ALREADY_REGISTERED`, szablon w microservice-email). Hash liczony zawsze przed
+  sprawdzeniem zajętości (bez kanału czasowego). Rule 3 register.feature przepisana na „quiet
+  refusal"; kroki delete-account („email nie jest wolny"/„można znów") dowodzą przez kanał
+  mailowy, nie status. `RegisterEnumerationHttpTest` przybija nierozróżnialność.
+  UWAGA: analogiczna enumeracja zostaje na `/account/email` (RequestEmailChange → 409
+  EMAIL_TAKEN?) — endpoint uwierzytelniony, mniejsze ryzyko, ale do rozważenia tym samym wzorcem.
 - ~~Hardening rejestracji (throttling)~~ — ZROBIONE (2026-07-04): `RegistrationThrottle` (okno
   stałe per-IP, `security.registration.max-per-window` default 5 / `window-minutes` 15, 0 wyłącza),
   sprawdzany PRZED kosztowną pracą (Argon2 + insert), 429 + Retry-After; źródło = spoof-odporny IP

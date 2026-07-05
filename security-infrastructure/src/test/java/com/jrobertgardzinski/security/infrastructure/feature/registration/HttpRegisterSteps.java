@@ -32,6 +32,7 @@ public class HttpRegisterSteps {
     private EmbeddedServer server;
     private BlockingHttpClient client;
     private HttpResponse<Map> response;
+    private Map freshRegistrationBody;
 
     @Before
     public void startServer() {
@@ -52,6 +53,7 @@ public class HttpRegisterSteps {
     public void theEmailIsAlreadyRegistered(String email) {
         post(email, "StrongPassword1!"); // seed through the real entry point
         assertEquals(HttpStatus.CREATED, response.getStatus(), "failed to seed the existing user");
+        freshRegistrationBody = response.getBody(Map.class).orElseThrow();
     }
 
     @When("the USER REGISTERS with EMAIL {string} and password {string}")
@@ -69,9 +71,11 @@ public class HttpRegisterSteps {
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatus());
     }
 
-    @Then("REGISTRATION is rejected because the EMAIL is already taken")
-    public void registrationIsRejectedBecauseEmailAlreadyTaken() {
-        assertEquals(HttpStatus.CONFLICT, response.getStatus());
+    @Then("REGISTRATION is quietly refused, indistinguishable from a fresh one")
+    public void registrationIsQuietlyRefused() {
+        assertEquals(HttpStatus.CREATED, response.getStatus());
+        assertEquals(freshRegistrationBody, response.getBody(Map.class).orElseThrow(),
+                "the taken-email reply must be byte-for-byte the fresh-registration reply");
     }
 
     @Then("the EMAIL is flagged as {word}")

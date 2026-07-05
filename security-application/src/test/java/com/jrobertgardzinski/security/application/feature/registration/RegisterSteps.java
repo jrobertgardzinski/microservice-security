@@ -55,8 +55,13 @@ public class RegisterSteps {
         assertInstanceOf(RegisterResult.Rejected.class, result);
     }
 
-    @Then("REGISTRATION is rejected because the EMAIL is already taken")
-    public void registrationIsRejectedBecauseEmailAlreadyTaken() {
+    /**
+     * At the use-case level the two outcomes ARE distinct — the boundary needs the difference to
+     * notify the address owner. Indistinguishability is an HTTP-contract property, asserted by the
+     * HTTP glue for this very sentence.
+     */
+    @Then("REGISTRATION is quietly refused, indistinguishable from a fresh one")
+    public void registrationIsQuietlyRefused() {
         assertInstanceOf(RegisterResult.EmailAlreadyTaken.class, result);
     }
 

@@ -4,6 +4,7 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.persistence.OutboxAppender;
 import com.jrobertgardzinski.security.domain.port.EmailVerificationNotifier;
 import com.jrobertgardzinski.security.domain.port.PasswordResetNotifier;
+import com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier;
 import com.jrobertgardzinski.security.domain.vo.token.AbstractToken;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Requires;
@@ -50,13 +51,25 @@ class OutboxMailNotifiers {
         return (email, token) -> append("PASSWORD_RESET", email, resetLinkBase, token);
     }
 
+    @Singleton
+    RegistrationNoticeNotifier registrationNoticeNotifier() {
+        return email -> append(Map.of(
+                "id", UUID.randomUUID().toString(),
+                "type", "ALREADY_REGISTERED",
+                "to", email.value()));
+    }
+
     private void append(String type, Email email, String linkBase, AbstractToken token) {
+        append(Map.of(
+                "id", UUID.randomUUID().toString(),
+                "type", type,
+                "to", email.value(),
+                "link", linkBase + token.value()));
+    }
+
+    private void append(Map<String, String> event) {
         try {
-            outbox.append(TOPIC, email.value(), json.writeValueAsString(Map.of(
-                    "id", UUID.randomUUID().toString(),
-                    "type", type,
-                    "to", email.value(),
-                    "link", linkBase + token.value())));
+            outbox.append(TOPIC, event.get("to"), json.writeValueAsString(event));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

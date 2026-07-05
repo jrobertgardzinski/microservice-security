@@ -119,9 +119,14 @@ public class HttpDeleteAccountSteps {
 
     @Then("the email is not yet free to REGISTER")
     public void theEmailIsNotYetFree() {
-        HttpResponse<Map> refused = exchange(
+        // the wire is quiet on purpose (anti-enumeration): a taken email answers 201 like a fresh
+        // one — what proves the account still exists is the already-registered notice mailed to it
+        int noticesBefore = noticeMails().noticedEmails().size();
+        HttpResponse<Map> quiet = exchange(
                 HttpRequest.POST("/register", Map.of("email", email, "password", "StrongPassword1!")));
-        assertEquals(HttpStatus.CONFLICT, refused.getStatus());
+        assertEquals(HttpStatus.CREATED, quiet.getStatus());
+        assertEquals(noticesBefore + 1, noticeMails().noticedEmails().size(),
+                "a taken email gets the already-registered notice, not a new account");
     }
 
     @Then("the USER can AUTHENTICATE again with {string}")
@@ -142,8 +147,22 @@ public class HttpDeleteAccountSteps {
 
     @Then("the USER can REGISTER again with {string}")
     public void canRegisterAgainWith(String password) {
+        // 201 alone proves nothing now (a taken email answers the same); a fresh account is told
+        // apart by its side effect — a NEW verification link. The old account was verified, so a
+        // still-taken email would mail a notice instead of a link.
+        String tokenBefore = verificationMails().lastTokenFor(email);
         HttpResponse<Map> registered = exchange(HttpRequest.POST("/register", Map.of("email", email, "password", password)));
         assertEquals(HttpStatus.CREATED, registered.getStatus());
+        org.junit.jupiter.api.Assertions.assertNotEquals(tokenBefore, verificationMails().lastTokenFor(email),
+                "a freed email starts a brand-new verification");
+    }
+
+    private CapturingEmailVerificationNotifier verificationMails() {
+        return server.getApplicationContext().getBean(CapturingEmailVerificationNotifier.class);
+    }
+
+    private com.jrobertgardzinski.CapturingRegistrationNoticeNotifier noticeMails() {
+        return server.getApplicationContext().getBean(com.jrobertgardzinski.CapturingRegistrationNoticeNotifier.class);
     }
 
     private HttpResponse<Map> authenticate(String password) {
