@@ -214,7 +214,13 @@ POST /account/step-up/start / factor
 
 ## Phased implementation order
 
-**Status (2026-07-05): phases A, B, C and F are DONE and live-smoked; D, E, G remain.** One deliberate
+**Status (2026-07-05): phases A, B, C, E, F and D's admin-reset are DONE and tested/live-smoked.**
+Deferred with reason: **recovery codes** — they do NOT fit the sequential chain as a *mandatory*
+link (you would type one every sign-in). They are an *alternative* factor: "use a recovery code
+INSTEAD of a link you cannot reach." That needs the executor to accept an alternative proof for the
+current step (a small, separate design change), not a chain link — so it is deliberately not
+bolted on. **G** (MFA scenarios in the security-ui e2e) is optional polish: MFA is already proven
+by MfaHttpTest / StepUpHttpTest / MfaRoleFloorHttpTest / AdminFactorResetHttpTest and the live smoke. One deliberate
 deviation in C: the sign-in gate is a LIVE compliance check in the authorization filter rather than
 a persisted `enrolment_only` flag on the session — simpler (no session-schema change) and more
 correct (compliance updates the instant a factor is enrolled, without re-login).

@@ -20,4 +20,7 @@ public interface EnrolledFactorRepository {
 
     /** Remove one factor; a no-op if it was not enrolled. */
     void remove(Email userEmail, FactorType type);
+
+    /** Remove every factor a user has — an admin reset when someone is locked out of all of them. */
+    void removeAll(Email userEmail);
 }

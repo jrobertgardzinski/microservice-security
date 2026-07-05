@@ -88,8 +88,22 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
     sprawdza czynniki: brak → sesja, są → `MfaRequired` + ticket w tym samym store; callback OAuth
     zwraca `#mfaTicket`, galeria dokańcza przez `/authenticate/factor`. Zamyka dziurę z fazy C
     (federacyjny admin z czynnikami był wpuszczany bez nich). Scenariusz w federated-sign-in.feature.
-  - ZOSTAJE: faza D (recovery codes + admin reset), E (step-up — elevation + per-action policy,
-    wpięcie delete/change-password), G (specs e2e MFA w UI). Szczegóły w docs/mfa-design.md.
+  - ~~FAZA E~~ — ZROBIONE (2026-07-05): step-up. `StepUpPolicy` (per akcja NONE/SECOND_FACTORS/
+    FULL_CHAIN; delete=FULL_CHAIN, change-password=SECOND_FACTORS, config). `StepUp` odpala łańcuch na
+    żywej sesji (FULL_CHAIN = najpierw hasło, potem czynniki przez wspólny `MfaChain`), po ostatnim
+    czynniku mintuje jednorazowy `SessionElevation` na access-tokenie. `DeleteAccountController` konsumuje
+    elewację przez `StepUpGuard` (403 `STEP_UP_REQUIRED` bez niej — skradziona sesja nie usunie konta).
+    Endpointy `/account/step-up` (+`/factor`). `StepUpHttpTest` (ścieżka hasłowa i czynnikowa), dialog
+    delete w galerii robi step-up, saga w smoke poprzedzona step-upem. Live PASS.
+  - ~~FAZA D — admin reset~~ — ZROBIONE (2026-07-05): `PUT /admin/users/{email}/factors/reset`
+    (ADMIN + step-up), `EnrolledFactorRepository.removeAll`; użytkownik po resecie spada pod podłogę.
+    `AdminFactorResetHttpTest`.
+  - ZOSTAJE: **recovery codes** — ODŁOŻONE ŚWIADOMIE: nie pasują do modelu sekwencyjnego łańcucha jako
+    OBOWIĄZKOWE ogniwo (user musiałby wpisywać recovery code przy każdym logowaniu). Poprawnie to
+    „czynnik ALTERNATYWNY" — użyj recovery code ZAMIAST ogniwa, którego nie masz. Wymaga rozszerzenia
+    egzekutora o alternatywy (mała, ale osobna zmiana projektowa) — nie doklejać jako ogniwo. Faza G
+    (specs e2e MFA w security-ui) — opcjonalny szlif; MFA pokryte HTTP-testami + live smoke. Szczegóły
+    w docs/mfa-design.md.
 - **Step-up auth** — WPISANE W PROJEKT MFA (faza E, [docs/mfa-design.md](docs/mfa-design.md)):
   ten sam egzekutor łańcucha odpalony na żywej sesji → jednorazowy znacznik `elevated`; polityka
   per akcja w configu NONE/SECOND_FACTORS/FULL_CHAIN (delete-account=FULL_CHAIN,

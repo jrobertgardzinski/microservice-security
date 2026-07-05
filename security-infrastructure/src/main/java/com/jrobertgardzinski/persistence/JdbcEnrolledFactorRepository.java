@@ -44,4 +44,10 @@ final class JdbcEnrolledFactorRepository implements EnrolledFactorRepository {
     public void remove(Email userEmail, FactorType type) {
         repository.deleteById(EnrolledFactorEntity.keyOf(userEmail.value(), type.value()));
     }
+
+    @Override
+    public void removeAll(Email userEmail) {
+        repository.findByUserEmailOrderByFactorOrder(userEmail.value())
+                .forEach(e -> repository.deleteById(e.id()));
+    }
 }

@@ -38,4 +38,9 @@ public final class InMemoryEnrolledFactorRepository implements EnrolledFactorRep
             list.removeIf(f -> f.type().equals(type));
         }
     }
+
+    @Override
+    public void removeAll(Email userEmail) {
+        byUser.remove(userEmail.value());
+    }
 }
