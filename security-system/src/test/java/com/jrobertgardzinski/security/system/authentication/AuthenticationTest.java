@@ -10,6 +10,7 @@ import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import io.qameta.allure.Epic;
@@ -32,11 +33,11 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 @Feature("Authentication")
 class AuthenticationTest {
 
-    record Given(IpAddress ipAddress, Email email, PlaintextPassword password,
+    record Given(Source ipAddress, Email email, PlaintextPassword password,
                  AuthenticationRequest request, Credentials credentials) {}
     private static final Given GIVEN = given();
     private static Given given() {
-        IpAddress ipAddress = new IpAddress("192.168.0.1");
+        Source ipAddress = Source.of(new IpAddress("192.168.0.1"));
         Email email = Email.of("user@example.com");
         PlaintextPassword password = PlaintextPassword.of("plaintext");
         return new Given(ipAddress, email, password,

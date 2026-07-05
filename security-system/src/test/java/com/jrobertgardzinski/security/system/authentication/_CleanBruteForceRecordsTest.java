@@ -3,6 +3,7 @@ package com.jrobertgardzinski.security.system.authentication;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
@@ -18,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 @Story("Clean brute-force records")
 class _CleanBruteForceRecordsTest {
 
-    private static final IpAddress IP = new IpAddress("192.168.0.1");
+    private static final Source IP = Source.of(new IpAddress("192.168.0.1"));
 
     private RejectedAuthenticationRepository rejectedAuthenticationRepository;
     private AuthenticationBlockRepository authenticationBlockRepository;

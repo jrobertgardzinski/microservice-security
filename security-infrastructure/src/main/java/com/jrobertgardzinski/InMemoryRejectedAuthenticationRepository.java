@@ -3,7 +3,7 @@ package com.jrobertgardzinski;
 import com.jrobertgardzinski.security.domain.entity.RejectedAuthentication;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.FailuresCount;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationId;
 import io.micronaut.context.annotation.Requires;
@@ -35,16 +35,16 @@ public final class InMemoryRejectedAuthenticationRepository implements RejectedA
     }
 
     @Override
-    public FailuresCount countFailuresBy(IpAddress ipAddress, LocalDateTime since) {
+    public FailuresCount countFailuresBy(Source source, LocalDateTime since) {
         long count = records.stream()
                 .map(RejectedAuthentication::details)
-                .filter(details -> details.ipAddress().equals(ipAddress) && details.time().isAfter(since))
+                .filter(details -> details.source().equals(source) && details.time().isAfter(since))
                 .count();
         return new FailuresCount((int) count);
     }
 
     @Override
-    public void removeAllFor(IpAddress ipAddress) {
-        records.removeIf(record -> record.details().ipAddress().equals(ipAddress));
+    public void removeAllFor(Source source) {
+        records.removeIf(record -> record.details().source().equals(source));
     }
 }

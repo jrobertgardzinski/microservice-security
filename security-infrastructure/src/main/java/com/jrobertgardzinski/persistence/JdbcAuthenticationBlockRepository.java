@@ -3,6 +3,7 @@ package com.jrobertgardzinski.persistence;
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 
@@ -25,20 +26,22 @@ final class JdbcAuthenticationBlockRepository implements AuthenticationBlockRepo
 
     @Override
     public AuthenticationBlock create(AuthenticationBlock authenticationBlock) {
-        String ip = authenticationBlock.ipAddress().value();
+        String ip = authenticationBlock.source().ipAddress().value();
         repository.deleteById(ip); // upsert: drop any prior block for this source first
         repository.save(new AuthenticationBlockEntity(ip, authenticationBlock.expiryDate()));
         return authenticationBlock;
     }
 
     @Override
-    public void removeAllFor(IpAddress ipAddress) {
-        repository.deleteById(ipAddress.value());
+    public void removeAllFor(Source source) {
+        repository.deleteById(source.ipAddress().value());
     }
 
     @Override
-    public Optional<AuthenticationBlock> findBy(IpAddress ipAddress) {
-        return repository.findById(ipAddress.value())
-                .map(entity -> new AuthenticationBlock(new IpAddress(entity.ipAddress()), entity.expiryDate()));
+    public Optional<AuthenticationBlock> findBy(Source source) {
+        // only the identity is stored for blocks; the reloaded Source carries no observed context
+        return repository.findById(source.ipAddress().value())
+                .map(entity -> new AuthenticationBlock(
+                        Source.of(new IpAddress(entity.ipAddress())), entity.expiryDate()));
     }
 }

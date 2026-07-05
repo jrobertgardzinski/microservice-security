@@ -7,7 +7,7 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
  * A user's attempt to authenticate and gain access to the system.
  */
 public record AuthenticationRequest (
-        IpAddress ipAddress,
+        Source source,
         Email email,
         PlaintextPassword plaintextPassword
 ) {

@@ -70,10 +70,15 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   (restart psuje TYLKO weryfikację offline — w stronę bezpieczną). `JwtAccessTokenHttpTest`:
   weryfikacja podpisu przez JWKS + logout zabija ważny podpisowo token. Zweryfikowane live.
   EWENTUALNY NASTĘPNY KROK: konsument (memes/comments) weryfikujący offline zamiast /me.
-- **`Source` jako podmiot domeny** — guard/`AuthenticationBlock` biorą `Source`, `IpAddress`
-  staje się polem. TOŻSAMOŚĆ (klucz bloku, equals/hashCode: IP/podsieć/ASN/konto) vs
-  OBSERWOWANE (machineName, browserVersion — forensics, POZA equals, inaczej zmiana
-  user-agenta omija lockout). Rozważyć `DeviceFingerprint`/`RequestContext`. Uwaga RODO.
+- ~~`Source` jako podmiot domeny~~ — ZROBIONE (2026-07-05): VO `Source(ipAddress, userAgent)`;
+  TOŻSAMOŚĆ = samo IP (jedyne pole w equals/hashCode — klucz bloków i liczników; podsieć/ASN
+  mogą kiedyś doostrzyć tę oś), OBSERWOWANE = userAgent (forensyka, celowo POZA equals — pin
+  w `_BruteForceGuardTest`: rotacja user-agenta trafia w TEN SAM blok). `AuthenticationRequest`/
+  `AuthenticationBlock`/guard/repozytoria biorą `Source`; kontroler dokłada nagłówek User-Agent
+  z brzegu. Persystencja: `rejected_authentications.user_agent` (V9) — RODO: żyje dokładnie tak
+  długo jak rekordy porażek (czyszczone razem); bloki trzymają samo IP (odtworzony `Source` bez
+  kontekstu obserwowanego). Zweryfikowane live (V9 + kolumna wypełniana). Rozważane kiedyś:
+  `DeviceFingerprint`/`RequestContext`, gdy obserwowanych atrybutów przybędzie.
 
 ## Otwarte — wejścia i dokumentacja
 

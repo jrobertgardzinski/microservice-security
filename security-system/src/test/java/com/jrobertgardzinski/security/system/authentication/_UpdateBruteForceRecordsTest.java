@@ -3,6 +3,7 @@ package com.jrobertgardzinski.security.system.authentication;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
@@ -21,7 +22,7 @@ import java.time.ZoneOffset;
 @Story("Update brute-force records")
 class _UpdateBruteForceRecordsTest {
 
-    private static final IpAddress IP = new IpAddress("192.168.0.1");
+    private static final Source IP = Source.of(new IpAddress("192.168.0.1"));
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
 
     private RejectedAuthenticationRepository rejectedAuthenticationRepository;

@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -16,8 +16,8 @@ class _UpdateBruteForceRecords {
         this.clock = clock;
     }
 
-    public void execute(IpAddress ipAddress) {
+    public void execute(Source source) {
         rejectedAuthenticationRepository.create(
-                new RejectedAuthenticationDetails(ipAddress, LocalDateTime.now(clock)));
+                new RejectedAuthenticationDetails(source, LocalDateTime.now(clock)));
     }
 }

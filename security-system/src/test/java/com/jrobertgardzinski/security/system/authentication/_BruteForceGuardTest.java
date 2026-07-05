@@ -7,6 +7,7 @@ import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepos
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.FailuresCount;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
@@ -31,8 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 @Story("Brute-force guard")
 class _BruteForceGuardTest {
 
-    record Given(IpAddress ip) {}
-    private static final Given GIVEN = new Given(new IpAddress("192.168.0.1"));
+    record Given(Source ip) {}
+    private static final Given GIVEN = new Given(Source.of(new IpAddress("192.168.0.1")));
 
     private static final BruteForceConfig CONFIG = BruteForceConfig.builder()
             .failureWindowMinutes(15)
@@ -71,6 +72,23 @@ class _BruteForceGuardTest {
                 () -> Mockito.verify(rejectedAuthenticationRepository, Mockito.never())
                         .countFailuresBy(Mockito.any(), Mockito.any()),
                 () -> Mockito.verify(authenticationBlockRepository, Mockito.never()).create(Mockito.any())
+        );
+    }
+
+    @Example
+    @Label("A rotated user-agent does not dodge the block: identity is the IP, observed context is not")
+    void rotated_user_agent_hits_the_same_block() {
+        AuthenticationBlock active = new AuthenticationBlock(GIVEN.ip, LocalDateTime.now(CLOCK).plusMinutes(5));
+        Mockito.when(authenticationBlockRepository.findBy(GIVEN.ip)).thenReturn(Optional.of(active));
+
+        Source sameIpOtherBrowser = new Source(GIVEN.ip.ipAddress(), "Fancy-New-Agent/99.0");
+        BruteForceProtectionEvent event = bruteForceGuard.execute(sameIpOtherBrowser);
+
+        assertInstanceOf(BruteForceProtectionEvent.Blocked.class, event);
+        assertAll(
+                () -> assertEquals(GIVEN.ip, sameIpOtherBrowser,
+                        "sources with one IP are ONE subject regardless of what was observed"),
+                () -> assertEquals(GIVEN.ip.hashCode(), sameIpOtherBrowser.hashCode())
         );
     }
 

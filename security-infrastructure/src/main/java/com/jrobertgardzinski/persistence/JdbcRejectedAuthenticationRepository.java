@@ -3,7 +3,7 @@ package com.jrobertgardzinski.persistence;
 import com.jrobertgardzinski.security.domain.entity.RejectedAuthentication;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.FailuresCount;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationId;
 import io.micronaut.context.annotation.Requires;
@@ -29,17 +29,18 @@ final class JdbcRejectedAuthenticationRepository implements RejectedAuthenticati
     @Override
     public RejectedAuthentication create(RejectedAuthenticationDetails details) {
         RejectedAuthenticationEntity saved = repository.save(
-                new RejectedAuthenticationEntity(null, details.ipAddress().value(), details.time()));
+                new RejectedAuthenticationEntity(null, details.source().ipAddress().value(),
+                        details.source().userAgent(), details.time()));
         return new RejectedAuthentication(details, new RejectedAuthenticationId(saved.id()));
     }
 
     @Override
-    public FailuresCount countFailuresBy(IpAddress ipAddress, LocalDateTime since) {
-        return new FailuresCount((int) repository.countByIpAddressAndOccurredAtAfter(ipAddress.value(), since));
+    public FailuresCount countFailuresBy(Source source, LocalDateTime since) {
+        return new FailuresCount((int) repository.countByIpAddressAndOccurredAtAfter(source.ipAddress().value(), since));
     }
 
     @Override
-    public void removeAllFor(IpAddress ipAddress) {
-        repository.deleteByIpAddress(ipAddress.value());
+    public void removeAllFor(Source source) {
+        repository.deleteByIpAddress(source.ipAddress().value());
     }
 }

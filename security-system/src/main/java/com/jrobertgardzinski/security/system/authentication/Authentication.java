@@ -5,7 +5,7 @@ import com.jrobertgardzinski.security.domain.event.AuthenticationEvent;
 import com.jrobertgardzinski.security.domain.event.BruteForceProtectionEvent;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 
 public class Authentication {
     private final _BruteForceGuard bruteForceGuard;
@@ -30,10 +30,10 @@ public class Authentication {
     }
 
     public AuthenticationResult execute(AuthenticationRequest request) {
-        IpAddress ip = request.ipAddress();
+        Source source = request.source();
         Credentials credentials = new Credentials(request.email(), request.plaintextPassword());
 
-        return switch (bruteForceGuard.execute(ip)) {
+        return switch (bruteForceGuard.execute(source)) {
             case BruteForceProtectionEvent.Blocked blocked -> new AuthenticationResult.Blocked(blocked.authenticationBlock());
             case BruteForceProtectionEvent.Allowed _ -> switch (verifyCredentials.execute(credentials)) {
                 case AuthenticationEvent.Valid valid -> {
@@ -41,12 +41,12 @@ public class Authentication {
                     if (!requireVerifiedEmail.isVerified(valid.email())) {
                         yield new AuthenticationResult.EmailNotVerified();
                     }
-                    cleanBruteForceRecords.execute(ip);
+                    cleanBruteForceRecords.execute(source);
                     SessionTokens sessionTokens = generateSession.create(valid.email());
                     yield new AuthenticationResult.Authenticated(sessionTokens);
                 }
                 case AuthenticationEvent.Invalid _ -> {
-                    updateBruteForceRecords.execute(ip);
+                    updateBruteForceRecords.execute(source);
                     yield new AuthenticationResult.Rejected();
                 }
             };

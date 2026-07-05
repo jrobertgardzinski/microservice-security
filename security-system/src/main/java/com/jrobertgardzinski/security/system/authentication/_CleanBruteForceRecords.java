@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 
 class _CleanBruteForceRecords {
 
@@ -14,8 +14,8 @@ class _CleanBruteForceRecords {
         this.authenticationBlockRepository = authenticationBlockRepository;
     }
 
-    public void execute(IpAddress ipAddress) {
-        rejectedAuthenticationRepository.removeAllFor(ipAddress);
-        authenticationBlockRepository.removeAllFor(ipAddress);
+    public void execute(Source source) {
+        rejectedAuthenticationRepository.removeAllFor(source);
+        authenticationBlockRepository.removeAllFor(source);
     }
 }

@@ -3,7 +3,7 @@ package com.jrobertgardzinski;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 import com.jrobertgardzinski.security.system.authentication.Authentication;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
 import io.micronaut.http.HttpRequest;
@@ -26,6 +26,7 @@ import java.util.Map;
  * application-level Cucumber glue drives directly — "same behaviour, different entry point". The
  * source IP that brute-force protection keys on is resolved from the connection (see
  * {@link ClientIpResolver}), not from the request body, so a caller cannot pick its own source.
+ * The User-Agent header rides along as observed context — forensics only, never part of the key.
  *
  * <p>The HTTP contract:
  * <ul>
@@ -59,7 +60,8 @@ public class AuthenticationController {
 
     @Post(consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public HttpResponse<Map<String, Object>> authenticate(@Body Map<String, String> body, HttpRequest<?> request) {
-        IpAddress source = ipResolver.resolve(request);
+        Source source = new Source(ipResolver.resolve(request),
+                request.getHeaders().findFirst("User-Agent").orElse(""));
         AuthenticationRequest authenticationRequest = new AuthenticationRequest(
                 source, Email.of(body.get("email")), PlaintextPassword.of(body.get("password")));
         AuthenticationResult result = transactionBoundary.execute(() -> authentication.execute(authenticationRequest));

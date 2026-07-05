@@ -14,6 +14,7 @@ import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.AccessGrant;
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.SessionFamily;
@@ -90,7 +91,7 @@ class JdbcAdaptersTest {
     @Test
     void rejected_attempts_are_counted_within_a_window_and_cleared() {
         RejectedAuthenticationRepository rejected = context.getBean(RejectedAuthenticationRepository.class);
-        IpAddress ip = new IpAddress("203.0.113.10");
+        Source ip = new Source(new IpAddress("203.0.113.10"), "smoke-agent/1.0");
         LocalDateTime at = LocalDateTime.now();
         rejected.create(new RejectedAuthenticationDetails(ip, at));
         rejected.create(new RejectedAuthenticationDetails(ip, at));
@@ -105,7 +106,7 @@ class JdbcAdaptersTest {
     @Test
     void a_block_is_upserted_found_and_removed() {
         AuthenticationBlockRepository blocks = context.getBean(AuthenticationBlockRepository.class);
-        IpAddress ip = new IpAddress("203.0.113.11");
+        Source ip = Source.of(new IpAddress("203.0.113.11"));
         blocks.create(new AuthenticationBlock(ip, LocalDateTime.now().plusMinutes(5)));
         blocks.create(new AuthenticationBlock(ip, LocalDateTime.now().plusMinutes(10))); // upsert, must not collide
 

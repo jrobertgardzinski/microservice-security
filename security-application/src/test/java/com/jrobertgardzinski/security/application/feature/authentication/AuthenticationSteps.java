@@ -15,6 +15,7 @@ import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
@@ -40,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 public class AuthenticationSteps {
 
-    private static final IpAddress SOURCE = new IpAddress("192.168.0.1");
+    private static final Source SOURCE = Source.of(new IpAddress("192.168.0.1"));
     private static final Email UNKNOWN_EMAIL = Email.of("other@example.com");
     private static final PlaintextPassword WRONG_PASSWORD = PlaintextPassword.of("WrongButStrongPassword1!");
     private static final int FIXED_BLOCK_MINUTES = 5;

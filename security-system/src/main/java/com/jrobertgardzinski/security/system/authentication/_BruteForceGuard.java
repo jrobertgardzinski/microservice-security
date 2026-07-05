@@ -5,7 +5,7 @@ import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.event.BruteForceProtectionEvent;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.Source;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -30,28 +30,28 @@ class _BruteForceGuard {
         this.blockDurationPolicy = blockDurationPolicy;
     }
 
-    public BruteForceProtectionEvent execute(IpAddress ipAddress) {
-        return existingActiveBlockFor(ipAddress)
+    public BruteForceProtectionEvent execute(Source source) {
+        return existingActiveBlockFor(source)
                 .<BruteForceProtectionEvent>map(BruteForceProtectionEvent.Blocked::new)
-                .orElseGet(() -> failureLimitReachedFor(ipAddress)
-                        ? new BruteForceProtectionEvent.Blocked(createNewBlockFor(ipAddress))
+                .orElseGet(() -> failureLimitReachedFor(source)
+                        ? new BruteForceProtectionEvent.Blocked(createNewBlockFor(source))
                         : new BruteForceProtectionEvent.Allowed());
     }
 
-    private Optional<AuthenticationBlock> existingActiveBlockFor(IpAddress ipAddress) {
-        return authenticationBlockRepository.findBy(ipAddress)
+    private Optional<AuthenticationBlock> existingActiveBlockFor(Source source) {
+        return authenticationBlockRepository.findBy(source)
                 .filter(block -> block.isStillActive(clock));
     }
 
-    private boolean failureLimitReachedFor(IpAddress ipAddress) {
+    private boolean failureLimitReachedFor(Source source) {
         LocalDateTime since = LocalDateTime.now(clock).minusMinutes(config.failureWindowMinutes().value());
-        return rejectedAuthenticationRepository.countFailuresBy(ipAddress, since)
+        return rejectedAuthenticationRepository.countFailuresBy(source, since)
                 .hasReachedTheLimit(config.maxFailures().value());
     }
 
-    private AuthenticationBlock createNewBlockFor(IpAddress ipAddress) {
-        rejectedAuthenticationRepository.removeAllFor(ipAddress);
+    private AuthenticationBlock createNewBlockFor(Source source) {
+        rejectedAuthenticationRepository.removeAllFor(source);
         LocalDateTime until = LocalDateTime.now(clock).plusMinutes(blockDurationPolicy.blockMinutes());
-        return authenticationBlockRepository.create(new AuthenticationBlock(ipAddress, until));
+        return authenticationBlockRepository.create(new AuthenticationBlock(source, until));
     }
 }
