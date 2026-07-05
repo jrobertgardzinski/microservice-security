@@ -24,9 +24,14 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
 
 ## Otwarte — use case'y / security
 
-- **MFA/TOTP: enroll + verify + recovery codes** — flagowy „wow"; największy otwarty temat.
+- **MFA: credentiale + kod, kanał KONFIGUROWALNY** — flagowy „wow"; największy otwarty temat.
+  Wizja usera (2026-07-05): podstawowe MFA = credentiale, potem kod — dostarczany e-mailem,
+  SMS-em albo OBOMA kanałami naraz; system konfigurowalny (port dostarczania kodu, adaptery
+  email/SMS — serwisy kanałów już stoją: microservice-email, microservice-sms). TOTP/recovery
+  codes jako ewentualne kolejne kanały. CZEKA na analizę usera — nie ruszać samodzielnie.
 - **Step-up auth** — ponowne uwierzytelnienie przy wrażliwej akcji; naturalni kandydaci już są
-  (Change password, Delete account).
+  (Change password, Delete account). Sprzężone z MFA; otwarte pytanie usera: step-up wymaga
+  credentials + kodu czy samych credentials? (rozstrzygnie jego analiza MFA).
 - ~~Role/permissions (RBAC)~~ — ZROBIONE W CAŁOŚCI. Serwerowo (2026-07-04, model 1 płaski):
   enum `Role` (USER/MODERATOR/ADMIN) w domenie; `User` niesie zbiór ról (USER zawsze), port
   `setRoles`, kolumna `roles` (migracja V8, comma-set, in-memory i JDBC), `/me` zwraca role —
