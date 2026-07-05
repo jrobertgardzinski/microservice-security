@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Epic("Use case")
-@Feature("MFA — e-mail code factor")
-class EmailCodeFactorTest {
+@Feature("MFA — code factor")
+class CodeFactorTest {
 
     private final AtomicReference<Instant> now = new AtomicReference<>(Instant.parse("2026-07-05T10:00:00Z"));
     private final Clock clock = new Clock() {
@@ -40,7 +40,7 @@ class EmailCodeFactorTest {
     };
     // a transparent hasher so the test can reason about codes; production uses SHA-256
     private final CodeHasher hasher = raw -> "H(" + raw + ")";
-    private final EmailCodeFactor factor = new EmailCodeFactor(
+    private final CodeFactor factor = new CodeFactor(
             channel, hasher, new ChallengeCodeConfig(5, 5, 6), clock);
 
     private final EnrolledFactor enrolment =

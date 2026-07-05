@@ -85,8 +85,13 @@ final class FactorsController {
 
     private static HttpResponse<Map<String, Object>> respond(EnrolFactor.Result result) {
         return switch (result) {
-            case EnrolFactor.Result.ChallengeSent sent ->
-                    HttpResponse.accepted().body(Map.of("status", "ENROLL_CODE_SENT"));
+            case EnrolFactor.Result.Started started -> {
+                // a code factor sent a code (no display); a possession factor returns what to show (TOTP URI)
+                Map<String, Object> body = started.display() == null
+                        ? Map.of("status", "ENROLL_CODE_SENT")
+                        : Map.of("status", "ENROLL_SETUP", "display", started.display());
+                yield HttpResponse.accepted().body(body);
+            }
             case EnrolFactor.Result.Enrolled enrolled ->
                     HttpResponse.ok(Map.of("status", "ENROLLED", "type", enrolled.type().value()));
             case EnrolFactor.Result.WrongProof wrong ->

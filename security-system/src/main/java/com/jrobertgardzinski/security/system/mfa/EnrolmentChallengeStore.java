@@ -12,7 +12,9 @@ import java.util.Optional;
  */
 public interface EnrolmentChallengeStore {
 
-    record PendingEnrolment(String target, Challenge challenge) {}
+    /** What a half-finished enrolment must remember: the factor's secret material and (for a
+     *  challenge factor) the issued challenge to check the proof against. */
+    record PendingEnrolment(String secretMaterial, Challenge challenge) {}
 
     void put(Email user, FactorType type, PendingEnrolment enrolment);
 

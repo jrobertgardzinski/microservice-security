@@ -9,14 +9,16 @@ import java.util.Optional;
 
 /**
  * Enrol a new factor for a signed-in user, in two steps that prove they control what they are
- * adding: {@link #start} issues the factor's challenge (a code to the address/number they gave),
- * {@link #confirm} accepts one correct proof and persists the factor. A factor cannot be added by
- * merely claiming an address — the same challenge-response that guards sign-in guards enrolment.
+ * adding: {@link #start} begins the factor (a code factor sends a code to the target; a possession
+ * factor generates a secret and returns what to show — a TOTP {@code otpauth://} URI), {@link
+ * #confirm} accepts one correct proof and persists the factor. A factor cannot be added by merely
+ * claiming a target — the same verification that guards sign-in guards enrolment.
  */
 public class EnrolFactor {
 
     public sealed interface Result {
-        record ChallengeSent() implements Result {}
+        /** Enrolment begun; {@code display} is shown to the user (a TOTP otpauth URI) or empty (a code was sent). */
+        record Started(String display) implements Result {}
         record Enrolled(FactorType type) implements Result {}
         record WrongProof() implements Result {}
         record NoPendingEnrolment() implements Result {}
@@ -38,10 +40,9 @@ public class EnrolFactor {
         if (factor.isEmpty()) {
             return new Result.UnsupportedFactor();
         }
-        EnrolledFactor candidate = candidate(user, type, target);
-        Challenge challenge = factor.get().issueChallenge(candidate).orElse(null);
-        pending.put(user, type, new EnrolmentChallengeStore.PendingEnrolment(target, challenge));
-        return new Result.ChallengeSent();
+        EnrolmentSetup setup = factor.get().beginEnrolment(target);
+        pending.put(user, type, new EnrolmentChallengeStore.PendingEnrolment(setup.secretMaterial(), setup.challenge()));
+        return new Result.Started(setup.display());
     }
 
     public Result confirm(Email user, FactorType type, String proof) {
@@ -50,7 +51,7 @@ public class EnrolFactor {
         if (factor.isEmpty() || enrolment.isEmpty()) {
             return new Result.NoPendingEnrolment();
         }
-        EnrolledFactor candidate = candidate(user, type, enrolment.get().target());
+        EnrolledFactor candidate = candidate(user, type, enrolment.get().secretMaterial());
         if (!factor.get().verify(candidate, Optional.ofNullable(enrolment.get().challenge()), proof)) {
             return new Result.WrongProof();
         }
@@ -59,8 +60,8 @@ public class EnrolFactor {
         return new Result.Enrolled(type);
     }
 
-    private EnrolledFactor candidate(Email user, FactorType type, String target) {
+    private EnrolledFactor candidate(Email user, FactorType type, String secretMaterial) {
         // new factors go to the end of the chain, in enrolment order
-        return new EnrolledFactor(user, type, FactorLabels.of(type), factors.findByUser(user).size(), target);
+        return new EnrolledFactor(user, type, FactorLabels.of(type), factors.findByUser(user).size(), secretMaterial);
     }
 }

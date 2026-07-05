@@ -128,25 +128,35 @@ public class BeanFactory {
         return new com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig(ttlMinutes, maxAttempts, length);
     }
 
-    /** The e-mail code factor, wired to whichever {@link com.jrobertgardzinski.security.domain.port.CodeChannel}
-     *  serves e-mail in this environment (outbox in prod, capturing in test). */
+    /** One {@link com.jrobertgardzinski.security.system.mfa.CodeFactor} per configured code channel
+     *  (e-mail, SMS): the channel decides the factor type, so a new channel bean is a new factor. */
     @Singleton
-    com.jrobertgardzinski.security.system.mfa.EmailCodeFactor emailCodeFactor(
+    java.util.List<com.jrobertgardzinski.security.system.mfa.CodeFactor> codeFactors(
             java.util.List<com.jrobertgardzinski.security.domain.port.CodeChannel> channels,
             com.jrobertgardzinski.security.system.mfa.CodeHasher codeHasher,
             com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig challengeCodeConfig,
             Clock clock) {
-        com.jrobertgardzinski.security.domain.port.CodeChannel emailChannel = channels.stream()
-                .filter(c -> c.servesFactor().equals(com.jrobertgardzinski.security.domain.vo.FactorType.EMAIL_CODE))
-                .findFirst().orElseThrow(() -> new IllegalStateException("no e-mail CodeChannel configured"));
-        return new com.jrobertgardzinski.security.system.mfa.EmailCodeFactor(
-                emailChannel, codeHasher, challengeCodeConfig, clock);
+        return channels.stream()
+                .map(channel -> new com.jrobertgardzinski.security.system.mfa.CodeFactor(
+                        channel, codeHasher, challengeCodeConfig, clock))
+                .toList();
+    }
+
+    /** The authenticator-app (TOTP) factor: self-contained, no channel. */
+    @Singleton
+    com.jrobertgardzinski.security.system.mfa.TotpFactor totpFactor(
+            Clock clock, @io.micronaut.context.annotation.Value("${security.mfa.totp.issuer:security}") String issuer) {
+        return new com.jrobertgardzinski.security.system.mfa.TotpFactor(clock, issuer);
     }
 
     /** Which factor methods this deployment offers = which factor beans are wired. */
     @Singleton
     com.jrobertgardzinski.security.system.mfa.FactorRegistry factorRegistry(
-            java.util.List<com.jrobertgardzinski.security.system.mfa.AuthenticationFactor> factors) {
+            java.util.List<com.jrobertgardzinski.security.system.mfa.CodeFactor> codeFactors,
+            com.jrobertgardzinski.security.system.mfa.TotpFactor totpFactor) {
+        java.util.List<com.jrobertgardzinski.security.system.mfa.AuthenticationFactor> factors =
+                new java.util.ArrayList<>(codeFactors);
+        factors.add(totpFactor);
         return new com.jrobertgardzinski.security.system.mfa.FactorRegistry(factors);
     }
 

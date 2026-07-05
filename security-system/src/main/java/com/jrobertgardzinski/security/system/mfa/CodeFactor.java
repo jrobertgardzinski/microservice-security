@@ -3,7 +3,6 @@ package com.jrobertgardzinski.security.system.mfa;
 import com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig;
 import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
 import com.jrobertgardzinski.security.domain.port.CodeChannel;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
 
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -11,15 +10,14 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
- * The e-mail second factor: on {@link #issueChallenge} it mints a random numeric code, sends it
- * through the {@link CodeChannel} (an outbox mail event in production, a capturing double in
- * tests), and remembers only its hash and expiry. On {@link #verify} it checks the presented code
- * against that hash, refusing an expired one. Code length and TTL come from the config layer.
- *
- * <p>This is the reference challenge-response factor — SMS is the same shape over a different
- * channel, and both prove the registry is genuinely plug-and-play.
+ * A one-time-code factor over a {@link CodeChannel} — the same factor for every channel that
+ * delivers a short code (e-mail, SMS, …). It mints a random numeric code, sends it through the
+ * channel, and remembers only its hash and expiry; verification checks the presented code against
+ * that hash, refusing an expired one. The channel decides the medium and which {@code FactorType}
+ * this instance is; everything else is shared. Two channels, two factors, one class — the
+ * plug-and-play win: a new code channel is a new bean, not a new factor class.
  */
-public class EmailCodeFactor implements AuthenticationFactor {
+public class CodeFactor implements AuthenticationFactor {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -28,7 +26,7 @@ public class EmailCodeFactor implements AuthenticationFactor {
     private final ChallengeCodeConfig config;
     private final Clock clock;
 
-    public EmailCodeFactor(CodeChannel channel, CodeHasher hasher, ChallengeCodeConfig config, Clock clock) {
+    public CodeFactor(CodeChannel channel, CodeHasher hasher, ChallengeCodeConfig config, Clock clock) {
         this.channel = channel;
         this.hasher = hasher;
         this.config = config;
@@ -36,8 +34,8 @@ public class EmailCodeFactor implements AuthenticationFactor {
     }
 
     @Override
-    public FactorType type() {
-        return FactorType.EMAIL_CODE;
+    public com.jrobertgardzinski.security.domain.vo.FactorType type() {
+        return channel.servesFactor();
     }
 
     @Override
@@ -46,12 +44,14 @@ public class EmailCodeFactor implements AuthenticationFactor {
     }
 
     @Override
+    public EnrolmentSetup beginEnrolment(String requestedTarget) {
+        // the secret IS the target (where to send the code); a code goes out now to prove control
+        return new EnrolmentSetup(requestedTarget, null, sendCodeTo(requestedTarget));
+    }
+
+    @Override
     public Optional<Challenge> issueChallenge(EnrolledFactor enrolment) {
-        String code = randomCode();
-        channel.sendCode(enrolment.secretMaterial(), code);
-        return Optional.of(new Challenge(
-                hasher.hash(code),
-                LocalDateTime.now(clock).plusMinutes(config.codeTtlMinutes())));
+        return Optional.of(sendCodeTo(enrolment.secretMaterial()));
     }
 
     @Override
@@ -60,6 +60,12 @@ public class EmailCodeFactor implements AuthenticationFactor {
                 .filter(c -> !c.isExpired(clock))
                 .map(c -> c.codeHash().equals(hasher.hash(proof)))
                 .orElse(false);
+    }
+
+    private Challenge sendCodeTo(String target) {
+        String code = randomCode();
+        channel.sendCode(target, code);
+        return new Challenge(hasher.hash(code), LocalDateTime.now(clock).plusMinutes(config.codeTtlMinutes()));
     }
 
     private String randomCode() {

@@ -22,8 +22,15 @@ public interface AuthenticationFactor {
     boolean needsChallenge();
 
     /**
-     * Begin this factor: send the code / mint the nonce, returning what must be remembered until
-     * the proof arrives. Empty for possession factors, which need nothing remembered.
+     * Begin ENROLLING this factor for a user: challenge factors send a code to the requested target
+     * and store it as their secret; possession factors generate a secret and hand back what the
+     * user must see (e.g. a TOTP {@code otpauth://} URI). See {@link EnrolmentSetup}.
+     */
+    EnrolmentSetup beginEnrolment(String requestedTarget);
+
+    /**
+     * Begin this factor during SIGN-IN: send the code / mint the nonce, returning what must be
+     * remembered until the proof arrives. Empty for possession factors, which need nothing sent.
      */
     Optional<Challenge> issueChallenge(EnrolledFactor enrolment);
 

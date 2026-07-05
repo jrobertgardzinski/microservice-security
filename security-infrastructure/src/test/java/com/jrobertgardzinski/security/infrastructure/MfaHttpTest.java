@@ -82,6 +82,73 @@ class MfaHttpTest {
         assertEquals(email, me.getBody(Map.class).orElseThrow().get("email"));
     }
 
+    @Test
+    @DisplayName("TOTP (authenticator app) enrols with an otpauth secret and signs in with a computed code")
+    void totp_enrols_and_signs_in() {
+        String email = "totp-user@example.com";
+        String token = registerVerifyAuthenticate(email);
+
+        // enrol: start returns the secret to scan (no code sent), confirm seals it with a live code
+        HttpResponse<Map> start = exchange(HttpRequest.POST("/account/factors/TOTP/enroll/start", Map.of())
+                .header("Authorization", "Bearer " + token));
+        assertEquals(HttpStatus.ACCEPTED, start.getStatus());
+        Map<?, ?> startBody = start.getBody(Map.class).orElseThrow();
+        assertEquals("ENROLL_SETUP", startBody.get("status"));
+        String secret = secretFromOtpauth((String) startBody.get("display"));
+
+        HttpResponse<Map> confirmed = exchange(HttpRequest.POST("/account/factors/TOTP/enroll/confirm",
+                Map.of("code", totp(secret))).header("Authorization", "Bearer " + token));
+        assertEquals(HttpStatus.OK, confirmed.getStatus());
+
+        // sign in: password → ticket → a fresh TOTP code → session
+        Map<?, ?> first = exchange(HttpRequest.POST("/authenticate",
+                Map.of("email", email, "password", PASSWORD))).getBody(Map.class).orElseThrow();
+        assertEquals("TOTP", first.get("nextFactor"));
+        HttpResponse<Map> done = exchange(HttpRequest.POST("/authenticate/factor",
+                Map.of("mfaTicket", first.get("mfaTicket"), "proof", totp(secret))));
+        assertEquals(HttpStatus.OK, done.getStatus());
+        assertEquals(email, exchange(HttpRequest.GET("/me")
+                .header("Authorization", "Bearer " + done.getBody(Map.class).orElseThrow().get("accessToken")))
+                .getBody(Map.class).orElseThrow().get("email"));
+    }
+
+    private static String secretFromOtpauth(String uri) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("secret=([A-Z2-7]+)").matcher(uri);
+        assertEquals(true, m.find(), "no secret in otpauth URI: " + uri);
+        return m.group(1);
+    }
+
+    /** A TOTP code for the current second — the server runs a frozen test clock, so "now" agrees. */
+    private String totp(String base32) {
+        try {
+            long step = server.getApplicationContext().getBean(java.time.Clock.class).instant().getEpochSecond() / 30;
+            byte[] key = base32Decode(base32);
+            byte[] data = new byte[8];
+            for (int i = 7; i >= 0; i--) { data[i] = (byte) (step & 0xff); step >>= 8; }
+            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA1");
+            mac.init(new javax.crypto.spec.SecretKeySpec(key, "HmacSHA1"));
+            byte[] h = mac.doFinal(data);
+            int o = h[h.length - 1] & 0x0f;
+            int bin = ((h[o] & 0x7f) << 24) | ((h[o + 1] & 0xff) << 16) | ((h[o + 2] & 0xff) << 8) | (h[o + 3] & 0xff);
+            return String.format("%06d", bin % 1_000_000);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static byte[] base32Decode(String s) {
+        String base32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+        int buffer = 0, bits = 0;
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        for (char ch : s.replace("=", "").toUpperCase().toCharArray()) {
+            int v = base32.indexOf(ch);
+            if (v < 0) continue;
+            buffer = (buffer << 5) | v; bits += 5;
+            if (bits >= 8) { out.write((buffer >> (bits - 8)) & 0xff); bits -= 8; }
+        }
+        return out.toByteArray();
+    }
+
     // --- Helpers --------------------------------------------------------------
 
     private String registerVerifyAuthenticate(String email) {

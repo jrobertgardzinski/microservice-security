@@ -29,7 +29,7 @@ import com.jrobertgardzinski.security.system.authentication.AuthenticationFactor
 import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
 import com.jrobertgardzinski.security.system.authentication.ContinueAuthentication;
 import com.jrobertgardzinski.security.system.authentication.ContinueAuthenticationResult;
-import com.jrobertgardzinski.security.system.mfa.EmailCodeFactor;
+import com.jrobertgardzinski.security.system.mfa.CodeFactor;
 import com.jrobertgardzinski.security.system.mfa.EnrolFactor;
 import com.jrobertgardzinski.security.system.mfa.FactorRegistry;
 import io.cucumber.java.en.Given;
@@ -70,7 +70,7 @@ public class MfaSteps {
     private final CapturingCodeChannel emailChannel = new CapturingCodeChannel(FactorType.EMAIL_CODE);
 
     private final FactorRegistry registry = new FactorRegistry(List.of(
-            new EmailCodeFactor(emailChannel, raw -> "hash:" + raw, ChallengeCodeConfig.withDefaults(), clock)));
+            new CodeFactor(emailChannel, raw -> "hash:" + raw, ChallengeCodeConfig.withDefaults(), clock)));
     private final EnrolFactor enrolFactor = new EnrolFactor(registry, enrolledFactors, enrolmentStore);
 
     private final AuthenticationFactory.AuthenticationUseCases useCases = AuthenticationFactory.assemble(
