@@ -1,18 +1,16 @@
 {
   "compilerOptions": {
-    "strict": true,
     "target": "ES2022",
-    "module": "preserve",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
     "moduleResolution": "bundler",
-    "experimentalDecorators": true,
-    "useDefineForClassFields": false,
-    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noEmit": true,
     "skipLibCheck": true,
-    "isolatedModules": true,
-    "types": []
+    "types": ["vite/client"]
   },
-  "include": ["src/**/*.ts"],
-  "angularCompilerOptions": {
-    "strictTemplates": true
-  }
+  "include": ["src"]
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 # The third entry point, end to end: start the security service in the `test` environment
-# (in-memory stores, steerable clock, captured mailbox), start the Angular dev server, then run
+# (in-memory stores, steerable clock, captured mailbox), start the Vite dev server, then run
 # cucumber-js + Playwright over the SAME feature files the JVM runners select.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -25,8 +25,8 @@ MICRONAUT_ENVIRONMENTS=test MICRONAUT_SERVER_PORT=8180 \
     >/tmp/security-ui-e2e-service.log 2>&1 &
 SEC_PID=$!
 
-echo "== starting the Angular dev server"
-npx ng serve --port 4200 >/tmp/security-ui-e2e-ui.log 2>&1 &
+echo "== starting the Vite dev server"
+npx vite --port 4200 >/tmp/security-ui-e2e-ui.log 2>&1 &
 UI_PID=$!
 
 for url in http://localhost:8180/health http://localhost:4200; do

@@ -7,3 +7,64 @@ body {
   min-height: 100vh;
   padding-top: 8vh;
 }
+
+.card {
+  background: #fff;
+  border: 1px solid #e3e5e8;
+  border-radius: 10px;
+  padding: 28px;
+  width: 22rem;
+}
+
+nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+nav button {
+  background: none;
+  border: none;
+  padding: 0.3rem 0.1rem;
+  cursor: pointer;
+  color: #6a737d;
+}
+
+nav button.active {
+  color: #1a7fff;
+  border-bottom: 2px solid #1a7fff;
+}
+
+form {
+  display: grid;
+  gap: 0.6rem;
+}
+
+input {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+form button,
+.card > button {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #1a7fff;
+  background: #1a7fff;
+  color: #fff;
+  cursor: pointer;
+}
+
+.notice {
+  color: #9a3412;
+  background: #fff7ed;
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  margin-top: 1rem;
+}
+
+ul {
+  margin: 0.3rem 0 0;
+  padding-left: 1.2rem;
+}
