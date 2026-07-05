@@ -214,6 +214,11 @@ POST /account/step-up/start / factor
 
 ## Phased implementation order
 
+**Status (2026-07-05): phases A, B and C are DONE and live-smoked; D–G remain.** One deliberate
+deviation in C: the sign-in gate is a LIVE compliance check in the authorization filter rather than
+a persisted `enrolment_only` flag on the session — simpler (no session-schema change) and more
+correct (compliance updates the instant a factor is enrolled, without re-login).
+
 Each phase is a green, self-contained slice (build + tests pass), à la the rest of the portfolio.
 
 - **A — the spine + the first factor (E-MAIL CODE, decision 4).** `AuthenticationFactor` port +

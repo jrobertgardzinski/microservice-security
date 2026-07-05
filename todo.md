@@ -65,8 +65,26 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
     (202), `/authenticate/factor`, `/account/factors` (list/enroll/confirm/remove). Mail `AUTH_CODE`
     w microservice-email. UI: security-ui (dwustopniowe + enrollment) i galeria memów (krok kodu).
     Testy: `mfa.feature` (application) + `MfaHttpTest` (po drucie) + krok w infra-smoke (live).
-  - ZOSTAJE: faza B (SMS + TOTP), C (podłoga per rola), D (recovery), E (step-up), F (OAuth jako #1),
-    G (UI enrollment manager + specs e2e). Szczegóły w docs/mfa-design.md.
+  - ~~FAZA B~~ — ZROBIONE (2026-07-05): `EmailCodeFactor` → generyczny `CodeFactor(kanał)` — email i
+    SMS to dwie instancje jednej klasy (nowy kanał = nowy bean, nie nowy factor); `HttpSmsCodeChannel`
+    → microservice-sms; `TotpFactor` (RFC 6238/HMAC-SHA1, Google Authenticator) — factor posiadania,
+    enrollment mintuje sekret + otpauth URI, nic nie wysyła. Port zyskał `beginEnrolment`
+    (`EnrolmentSetup`: secret, co pokazać, opcjonalny challenge). Testy: `TotpFactorTest` (wektor RFC),
+    `MfaHttpTest` (TOTP po drucie), smoke (TOTP live). UI: manager enrollmentu (wszystkie oferowane
+    metody). SMS: unit+HTTP (stub nie ma czytelnej skrzynki na live).
+  - ~~FAZA C~~ — ZROBIONE (2026-07-05, drugi twardy wymóg usera): `MfaPolicy` (min per rola USER 1/
+    MOD 2/ADMIN 3, konfig); `MfaCompliance` liczy cały łańcuch (hasło jako #1 + czynniki; konta
+    federacyjne PASSWORDLESS — nowa tabela V12, ustawiana przy federated create/takeover, czyszczona
+    przy resecie hasła → OAuth NIE liczy się do floora). Egzekwowanie w 3 miejscach: brama
+    (`AuthorizationFilter` wpuszcza niedopełnionego tylko do /me i /account/factors, reszta 403
+    `MFA_ENROLMENT_REQUIRED` — sesja realna, „zabudowana"), grant (`/me` niesie
+    mfaCompliant/requiredFactors/haveFactors), usuwanie (409 `WOULD_BREAK_MFA_FLOOR`). Bootstrap-admin
+    grace do pierwszego enrollmentu. UI nudge. `MfaRoleFloorHttpTest` (pełny łuk) + `MfaPolicyRulesTest`.
+    ODSTĘPSTWO od doc: żywe sprawdzanie compliance w filtrze zamiast trwałej flagi `enrolment_only`
+    na wierszu sesji — prościej (bez zmian schematu sesji) i poprawniej (aktualizuje się natychmiast
+    po enrollmencie, bez re-logowania).
+  - ZOSTAJE: faza D (recovery codes + admin reset), E (step-up), F (OAuth jako ogniwo #1 łańcucha),
+    G (specs e2e MFA w UI). Szczegóły w docs/mfa-design.md.
 - **Step-up auth** — WPISANE W PROJEKT MFA (faza E, [docs/mfa-design.md](docs/mfa-design.md)):
   ten sam egzekutor łańcucha odpalony na żywej sesji → jednorazowy znacznik `elevated`; polityka
   per akcja w configu NONE/SECOND_FACTORS/FULL_CHAIN (delete-account=FULL_CHAIN,
