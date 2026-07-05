@@ -50,6 +50,11 @@ interface FactorEnrolment {                            // the plug for REGISTERI
 - `Challenge` is a value object carrying *only what the boundary needs to remember* between issue
   and verify: an opaque handle plus the hashed secret / nonce, a TTL, single-use. Never the raw
   code. (Same discipline as verification/reset tokens: hashed, TTL, one-shot, throttled.)
+- **The code lifecycle lives in the config layer**, like everything tunable here (`BruteForceConfig`,
+  the `SourceThrottle` windows): a `ChallengeCodeConfig` (in `security-config`) holds the code TTL,
+  the max wrong proofs per ticket, and the code length — all overridable per deployment
+  (`security.mfa.code.*`), with sane defaults baked into the config VO (proposed: TTL 5 min,
+  5 attempts, 6 digits — defaults, not constants). No magic numbers in the domain or the boundary.
 - Challenge-response factors (e-mail, SMS) send something and then check it. Possession factors
   (TOTP, WebAuthn) issue nothing outbound — TOTP verifies the current time-window code against the
   shared secret; WebAuthn signs a nonce. Password is the degenerate case: `needsChallenge=false`,
