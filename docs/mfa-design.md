@@ -1,0 +1,238 @@
+# MFA — design plan
+
+- Status: Proposed (awaiting the user's go on the open decisions at the end)
+- Date: 2026-07-05
+- Scope: `microservice-security` (domain / system / config / infrastructure), the React
+  `security-ui`, and the compose smoke test. Channel services (`microservice-email`,
+  `microservice-sms`) are reused, not rebuilt.
+
+## What this must deliver
+
+1. **MFA as a sequential chain of factors.** Authentication is no longer "verify credentials →
+   session". It is "pass factor #1, then #2, then #3 … → session". The session is minted only
+   after the last enrolled factor. (User: the factors go one after another, e.g.
+   credentials → e-mail code → SMS code — not in parallel.)
+2. **Plug-and-play factor methods.** Adding a new method (TOTP / Google Authenticator, WebAuthn
+   passkeys, a hardware token, …) must be *a new adapter bean plus an enrollment*, touching no
+   core code. E-mail and SMS are just two adapters among many.
+3. **Role-driven minimum.** A plain USER may run on one factor (password). Anyone holding a role
+   above USER must have a configured minimum — MODERATOR ≥ 2 factors, ADMIN ≥ 3 (deployment-
+   configurable). The system *enforces* this: it will not let a privileged account operate under-
+   protected, and it will not let a user drop below their role's floor.
+
+Two orthogonal configuration axes, exactly as agreed:
+- **Deployment** — which factor types the service *offers* (which adapters are enabled).
+- **Per-user** — which factors a user has *enrolled*, and in what order.
+
+## The core abstraction — a factor is a plug
+
+Everything hangs off one port. A factor knows three things about itself and does two things.
+
+```
+FactorType            a stable string id ("PASSWORD", "EMAIL_CODE", "SMS_CODE", "TOTP", "WEBAUTHN",
+                      "RECOVERY_CODE"). A string, not a domain enum, so a new adapter never edits
+                      a central enum — that is the plug-and-play seam.
+
+interface AuthenticationFactor {                       // the PLUG (system/mfa)
+    FactorType type();
+    boolean needsChallenge();                          // email/sms: yes; TOTP/password/webauthn: no
+    Challenge issueChallenge(EnrolledFactor enrolment); // send the code / mint a nonce; no-op if !needsChallenge
+    boolean verify(EnrolledFactor enrolment, Challenge challenge, Proof proof);
+}
+
+interface FactorEnrolment {                            // the plug for REGISTERING a factor
+    FactorType type();
+    EnrolmentStart begin(User user, EnrolmentRequest req);   // TOTP → secret+otpauth URI; email → send code; …
+    EnrolledFactor confirm(User user, EnrolmentStart start, Proof proof);  // one proof seals it
+}
+```
+
+- `Challenge` is a value object carrying *only what the boundary needs to remember* between issue
+  and verify: an opaque handle plus the hashed secret / nonce, a TTL, single-use. Never the raw
+  code. (Same discipline as verification/reset tokens: hashed, TTL, one-shot, throttled.)
+- Challenge-response factors (e-mail, SMS) send something and then check it. Possession factors
+  (TOTP, WebAuthn) issue nothing outbound — TOTP verifies the current time-window code against the
+  shared secret; WebAuthn signs a nonce. Password is the degenerate case: `needsChallenge=false`,
+  `verify` is the existing Argon2 check. Modelling password *as a factor* keeps the chain uniform.
+
+**FactorRegistry** = `Map<FactorType, AuthenticationFactor>` assembled from the enabled adapter
+beans. "Which factors does this deployment offer" is "which adapters are on the classpath and
+enabled by config" — nothing more. Dropping in Google Authenticator is: write `TotpFactor`
+(a ~50-line adapter over a TOTP lib or hand-rolled HMAC-SHA1), register it, done.
+
+### Where each adapter lives
+
+- `PasswordFactor`, `TotpFactor` — pure, self-contained, in `system/mfa` (no external I/O; TOTP is
+  just HMAC over a counter). Testable without any stack.
+- `EmailCodeFactor`, `SmsCodeFactor` — issue a code through a **`CodeChannel` port** (send a short
+  code to an address/number). Adapters: e-mail rides the existing outbox→Kafka→microservice-email
+  (a new mail type `AUTH_CODE`); SMS rides microservice-sms's `/send`. The code lifecycle (hash,
+  TTL, one-shot, throttle) is shared, not reimplemented per channel.
+- `WebAuthnFactor`, `RecoveryCodeFactor` — later, same shape.
+
+## The chain executor — a resumable state machine
+
+A sign-in that needs more than one factor cannot complete in a single request, so the server holds
+the half-finished authentication (exactly like the OAuth `OauthFlowStore`): a short-lived,
+single-use **MFA ticket**.
+
+```
+PendingAuthentication {
+    user, remainingFactors (ordered), passedFactors, currentChallenge, expiresAt
+}
+PendingAuthenticationStore   // in memory, TTL ~5 min, keyed by an opaque ticket
+```
+
+Flow over HTTP:
+
+1. `POST /authenticate {email, password}` → password (factor #1) verified. If the user has no
+   further enrolled factors → mint `SessionTokens` as today (unchanged happy path for plain USERs).
+   Otherwise → **202** `{ mfaTicket, next: { type, needsChallenge } }`; if the next factor needs a
+   challenge, it has already been issued (the code is on its way).
+2. `POST /authenticate/factor { mfaTicket, proof }` → verify the current factor. Advance:
+   - more factors remain → issue the next challenge, return the next `{type}`;
+   - none remain → mint `SessionTokens`, return the session (access token + refresh cookie).
+3. The ticket is one-shot and TTL-bounded; a wrong proof consumes an attempt (throttled per source
+   via the existing `SourceThrottle`, and folded into brute-force accounting so guessing a code is
+   as costly as guessing a password).
+
+**Ordering**: link #1 is always password *or* an OAuth provider callback (see composition below).
+The tail order comes from the user's enrolment order (they pick it; a sensible default is
+"strongest first" — TOTP/WebAuthn before channel codes).
+
+Internally this generalises the current `Authentication` use case: `_VerifyCredentials` becomes
+"verify factor #1"; a new `_AdvanceChain` drives the rest; `_GenerateSession` stays exactly where
+it is — reached only when the chain is empty. The brute-force guard and the verified-email gate are
+unchanged and still run before factor #1.
+
+## The role-driven minimum — the enforcing part
+
+```
+MfaPolicy (config)   requiredFactorCount(Set<Role>) = max over the roles, from
+                     security.mfa.min-factors-by-role  (USER:1, MODERATOR:2, ADMIN:3 by default;
+                     "factor" counts the WHOLE chain incl. the first, so 2FA = password + 1 more).
+```
+
+Enforced at three moments — this is what makes it a guarantee, not a suggestion:
+
+1. **At sign-in (the gate).** After the user passes the factors they *have*, compare their enrolled
+   count to `requiredFactorCount(theirRoles)`. If short, do **not** mint a full session — mint an
+   **enrolment-scoped session**: a session flagged `enrolment_only` that `AuthorizationFilter` lets
+   through to `/account/factors/**` and `/me` and nothing else. The user is forced to enrol up to
+   their floor before they can do anything privileged. (A React screen walks them through it.)
+2. **At role grant.** `SetUserRoles` granting e.g. MODERATOR to a password-only account succeeds
+   (an admin should not be blocked on the target's device), but the target is now under-enrolled →
+   caught by moment 1 on their next sign-in. `/me` also reports `mfaCompliant: false` so consumers
+   and the UI can nudge. (Alternative — refuse the grant until enrolled — rejected: it strands the
+   admin on the user's action.)
+3. **At factor removal.** `DELETE /account/factors/{type}` is refused (409 `WOULD_BREAK_MFA_FLOOR`)
+   if it would drop the user below their role's minimum. You can swap a factor (enrol the new,
+   then drop the old), never fall through the floor.
+
+**Bootstrap admin grace.** The first admin (`security.bootstrap-admins`) has no pre-enrolled
+factors and cannot be blocked out of the box, or nobody can ever configure anything. A bootstrap
+admin is exempt from the gate **only until they enrol once**, and the UI pushes enrolment hard on
+first sign-in. (Documented loudly; it is the one deliberate hole and it self-closes.)
+
+## Enrolment
+
+- `GET  /account/factors` → what I have (type + label + order), what this deployment offers, and
+  `required` / `have` / `compliant` for my roles.
+- `POST /account/factors/{type}/enroll/start` → begins: TOTP returns the secret + an `otpauth://`
+  URI (the UI renders a QR); e-mail/SMS send a code to the (given, then to-be-proven) address.
+- `POST /account/factors/{type}/enroll/confirm { proof }` → one correct proof seals the enrolment.
+- `DELETE /account/factors/{type}` → remove (subject to the floor above).
+
+Enrolling itself is a sensitive action → it should sit behind **step-up** (below), so a stolen live
+session cannot quietly add an attacker-controlled factor.
+
+## Recovery & lockout
+
+Losing your phone must not brick the account. **Recovery codes are just another factor**
+(`RecoveryCodeFactor`): a set of one-time codes minted at enrolment, shown once, stored hashed;
+presenting one satisfies a possession factor in the chain. Optionally an ADMIN can reset another
+user's factors — itself a privileged, step-up-gated action, and a good audit-log candidate.
+
+## Step-up — the same executor, reused
+
+Step-up for a sensitive action (delete account, change password, enrol/remove a factor, admin
+reset) is *the chain executor run again* against the live session, producing a short-lived,
+**one-shot `elevated` marker** on the session row. Policy per action, in config:
+
+```
+security.step-up.<action> = NONE | SECOND_FACTORS | FULL_CHAIN
+   delete-account   → FULL_CHAIN     (re-pass everything incl. password/OAuth — defends a stolen session)
+   change-password  → SECOND_FACTORS (the old password is already required inline)
+   enrol/remove factor, admin-reset → SECOND_FACTORS (or FULL_CHAIN for admin-reset)
+```
+
+`POST /account/step-up/start` (+ `/factor`) drives it; the endpoint for the sensitive action then
+requires a fresh `elevated` marker or answers `403 STEP_UP_REQUIRED` with what remains. Federated
+users step up by re-authenticating at the provider (`prompt=login`) plus their tail.
+
+## OAuth composition
+
+The provider callback is simply **link #1 instead of the password** — the same chain runs after it.
+Whether a provider's assertion satisfies more of the chain (some providers do their own MFA) is one
+config value `security.mfa.provider-satisfies` (`NONE` = provider only ever covers link #1;
+`FIRST_ONLY` default). We deliberately do **not** infer from `amr`/`acr` claims — Google reports
+them poorly. A federated privileged user still owes their role's factor floor, enrolment-gated the
+same way.
+
+## Storage
+
+- `V11 enrolled_factors(user_email, type, label, factor_order, secret_material, enrolled_at)` —
+  `secret_material` is factor-specific and protected per factor: TOTP secret **encrypted at rest**
+  (new `security.mfa.secret-key`), recovery codes **hashed**, phone/e-mail stored as the address.
+  In-memory adapter for the no-datasource test profile, as everywhere.
+- `V12 mfa_recovery_codes` only if recovery codes want their own table rather than rows in
+  `enrolled_factors`.
+- The `sessions` row gains `enrolment_only` and a one-shot `elevated_until` (step-up).
+
+## Endpoints (summary)
+
+```
+POST /authenticate                       → 200 session | 202 {mfaTicket, next}
+POST /authenticate/factor {ticket,proof} → advance | 200 session
+GET  /account/factors                    → have / offered / required / compliant
+POST /account/factors/{type}/enroll/start
+POST /account/factors/{type}/enroll/confirm {proof}
+DELETE /account/factors/{type}           → 409 WOULD_BREAK_MFA_FLOOR if under floor
+POST /account/step-up/start / factor
+```
+
+## Phased implementation order
+
+Each phase is a green, self-contained slice (build + tests pass), à la the rest of the portfolio.
+
+- **A — the spine + first pluggable factor.** `AuthenticationFactor` port + `FactorRegistry` +
+  `PendingAuthentication` chain executor + `PasswordFactor` (wrapping today's check, chain of one =
+  unchanged behaviour) + **`TotpFactor`** as the first real second factor (self-contained, no
+  channel dependency → easiest to prove end-to-end). Enrol TOTP, sign in password→TOTP. Feature +
+  HTTP test + a UI enrol/sign-in screen. `mfa.feature`, `V11`.
+- **B — channel factors.** `CodeChannel` port + `EmailCodeFactor` (outbox mail type `AUTH_CODE`) +
+  `SmsCodeFactor` (microservice-sms). Shared code lifecycle (hash/TTL/one-shot/throttle).
+- **C — the role floor.** `MfaPolicy` + the three enforcement moments (sign-in enrolment-gate,
+  grant-time `mfaCompliant` on `/me`, removal floor) + bootstrap grace. This is the headline of the
+  user's ask.
+- **D — recovery + admin reset.** `RecoveryCodeFactor`, admin factor reset (audited, step-up).
+- **E — step-up.** Session `elevated` marker + per-action policy; wire delete-account &
+  change-password & enrol/remove.
+- **F — OAuth composition.** Provider callback as link #1; `provider-satisfies`; federated floor.
+- **G — UI polish + specs.** React enrolment manager + multi-step sign-in; e2e over the new specs
+  as the third entry point; compose smoke walks a password→TOTP sign-in and a role-floor gate.
+
+## Open decisions (need the user's call before phase A locks the contracts)
+
+1. **Factor counting.** Recommend "total chain incl. the first": 2FA = password + 1, 3FA =
+   password + 2. (The alternative — count only *additional* factors — makes "MODERATOR: 2" mean
+   three prompts, which surprises.)
+2. **Under-enrolled privileged sign-in.** Recommend the **enrolment-scoped session** (sign in,
+   but boxed to enrolment until compliant) over refusing the sign-in outright. Gentler, and it
+   gives the user a way to actually become compliant.
+3. **Does an OAuth-only (passwordless) account count OAuth as factor #1?** Recommend **yes** — for a
+   federated account the provider *is* link #1, and their role floor is met by enrolling
+   (floor − 1) additional factors. (So an ADMIN who signs in with Google needs 2 more factors.)
+4. **TOTP first, or e-mail/SMS first?** Recommend **TOTP first** (phase A): no external service to
+   stand up, fully deterministic in tests, and it is the canonical "Google Authenticator" the user
+   named.

@@ -44,21 +44,22 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   ustawienie hasła resetem; UI galerii ma przycisk „Sign in with Google". ZOSTAJE na później:
   adapter Facebooka, realny Google (client-id/secret od usera), odświeżanie linku federacyjnego
   przy change-email (dziś stały link bezpiecznie odpada i re-linkuje się przy następnym logowaniu).
-- **MFA: credentiale + kod, kanał KONFIGUROWALNY** — flagowy „wow"; największy otwarty temat.
-  Wizja usera (2026-07-05): MFA = ŁAŃCUCH czynników przechodzonych JEDEN PO DRUGIM, np.
-  credentials → kod e-mail → kod SMS; łańcuch konfigurowalny (port dostarczania kodu, adaptery
-  email/SMS — serwisy kanałów już stoją: microservice-email, microservice-sms; dwie osie
-  konfiguracji: deployment = co serwis oferuje, per-user = co user sobie włączył przy
-  enrollmencie). TOTP/recovery codes jako ewentualne kolejne ogniwa. SPIĘCIE Z OAUTH
-  (pytanie usera 2026-07-05 — TAK): provider zastępuje TYLKO pierwsze ogniwo (hasło ALBO
-  callback providera = dwa wejścia do wspólnego egzekutora łańcucha; ogon email/SMS wspólny,
-  sesja mintowana dopiero po całym łańcuchu). Polityka „czy dowód providera zwalnia z ogona"
-  = wartość w configu (nie budować na claimach amr/acr — Google raportuje je słabo). Step-up
-  federacyjnych: FULL_CHAIN = re-auth u providera (prompt=login) + ogon. CZEKA na analizę
-  usera — nie ruszać samodzielnie.
-- **Step-up auth** — ponowne uwierzytelnienie przy wrażliwej akcji; naturalni kandydaci już są
-  (Change password, Delete account). Sprzężone z MFA; otwarte pytanie usera: step-up wymaga
-  credentials + kodu czy samych credentials? (rozstrzygnie jego analiza MFA).
+- **MFA: łańcuch czynników, metody PLUG-AND-PLAY, minimum per rola** — flagowy „wow"; największy
+  otwarty temat. PEŁNY PROJEKT: [docs/mfa-design.md](docs/mfa-design.md) (2026-07-05). Skrót:
+  port `AuthenticationFactor` + `FactorRegistry` = dodanie metody (TOTP/Google Authenticator,
+  WebAuthn…) to nowy adapter-bean, zero zmian w rdzeniu (email/SMS to tylko dwa adaptery); egzekutor
+  łańcucha (`PendingAuthentication` + ticket, jak OauthFlowStore) mintuje sesję dopiero po ostatnim
+  ogniwie; `MfaPolicy` wymusza minimum per rola (USER 1 / MODERATOR 2 / ADMIN 3, konfig) w TRZECH
+  miejscach — brama logowania (sesja `enrolment_only` dla niedopełnionych), grant roli (`/me`
+  `mfaCompliant`), usuwanie czynnika (podłoga); bootstrap-admin grace do pierwszego enrollmentu.
+  Fazy A–G w dokumencie (A = port + egzekutor + TOTP; B = kanały email/SMS; C = podłoga per rola;
+  D = recovery codes; E = step-up; F = spięcie z OAuth; G = UI + specs). CZEKA na 4 decyzje usera
+  (koniec dokumentu) — nie ruszać implementacji przed nimi.
+- **Step-up auth** — WPISANE W PROJEKT MFA (faza E, [docs/mfa-design.md](docs/mfa-design.md)):
+  ten sam egzekutor łańcucha odpalony na żywej sesji → jednorazowy znacznik `elevated`; polityka
+  per akcja w configu NONE/SECOND_FACTORS/FULL_CHAIN (delete-account=FULL_CHAIN,
+  change-password=SECOND_FACTORS, enrol/remove i admin-reset=SECOND_FACTORS). Odpowiedź na dawne
+  pytanie usera (credentials vs credentials+kod): to WARTOŚĆ W CONFIGU per akcja, nie jedno-lub-drugie.
 - ~~Role/permissions (RBAC)~~ — ZROBIONE W CAŁOŚCI. Serwerowo (2026-07-04, model 1 płaski):
   enum `Role` (USER/MODERATOR/ADMIN) w domenie; `User` niesie zbiór ról (USER zawsze), port
   `setRoles`, kolumna `roles` (migracja V8, comma-set, in-memory i JDBC), `/me` zwraca role —
