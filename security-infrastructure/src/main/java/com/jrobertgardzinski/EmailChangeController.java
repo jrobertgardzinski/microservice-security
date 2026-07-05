@@ -18,6 +18,10 @@ import java.util.Map;
  * HTTP entry point to start an email change. Protected: {@link AuthorizationFilter} has authorized
  * the access token and published the caller's current email; here we request a change to the new
  * address, which e-mails a verification link there (confirmed separately, pre-login).
+ *
+ * <p>Same anti-enumeration stance as {@code /register}: a taken address answers exactly like a
+ * fresh request, and the OWNER of that address learns by mail that someone tried to use it. A
+ * signed-in caller probing addresses gets nothing the anonymous one would not.
  */
 // controllers do blocking work (JDBC, the mail service's HTTP client) — keep it off the event loop
 @ExecuteOn(TaskExecutors.BLOCKING)
@@ -26,10 +30,13 @@ final class EmailChangeController {
 
     private final RequestEmailChange requestEmailChange;
     private final TransactionBoundary transactionBoundary;
+    private final com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier noticeNotifier;
 
-    EmailChangeController(RequestEmailChange requestEmailChange, TransactionBoundary transactionBoundary) {
+    EmailChangeController(RequestEmailChange requestEmailChange, TransactionBoundary transactionBoundary,
+                          com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier noticeNotifier) {
         this.requestEmailChange = requestEmailChange;
         this.transactionBoundary = transactionBoundary;
+        this.noticeNotifier = noticeNotifier;
     }
 
     @Post(value = "/request", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
@@ -47,8 +54,14 @@ final class EmailChangeController {
         return switch (result) {
             case RequestEmailChangeResult.Requested ignored ->
                     HttpResponse.accepted().body(Map.of("status", "EMAIL_CHANGE_LINK_SENT"));
-            case RequestEmailChangeResult.EmailTaken ignored ->
-                    HttpResponse.status(io.micronaut.http.HttpStatus.CONFLICT).body(Map.of("status", "EMAIL_TAKEN"));
+            case RequestEmailChangeResult.EmailTaken ignored -> {
+                // quiet refusal: the wire looks like a fresh request; the address owner is told by mail
+                transactionBoundary.execute(() -> {
+                    noticeNotifier.sendAlreadyRegistered(newEmail);
+                    return null;
+                });
+                yield HttpResponse.accepted().body(Map.of("status", "EMAIL_CHANGE_LINK_SENT"));
+            }
         };
     }
 }

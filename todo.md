@@ -76,8 +76,9 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   sprawdzeniem zajętości (bez kanału czasowego). Rule 3 register.feature przepisana na „quiet
   refusal"; kroki delete-account („email nie jest wolny"/„można znów") dowodzą przez kanał
   mailowy, nie status. `RegisterEnumerationHttpTest` przybija nierozróżnialność.
-  UWAGA: analogiczna enumeracja zostaje na `/account/email` (RequestEmailChange → 409
-  EMAIL_TAKEN?) — endpoint uwierzytelniony, mniejsze ryzyko, ale do rozważenia tym samym wzorcem.
+  Analogiczna enumeracja na `/account/email` — TEŻ ZAMKNIĘTA (2026-07-05): zajęty adres
+  odpowiada jak świeży request (202 EMAIL_CHANGE_LINK_SENT), właściciel dostaje notkę mailem
+  (ten sam port `RegistrationNoticeNotifier`); reguła + scenariusz w change-email.feature.
 - ~~Hardening rejestracji (throttling)~~ — ZROBIONE (2026-07-04): throttle okna stałego per-IP
   (`security.registration.max-per-window` default 5 / `window-minutes` 15, 0 wyłącza),
   sprawdzany PRZED kosztowną pracą (Argon2 + insert), 429 + Retry-After; źródło = spoof-odporny IP

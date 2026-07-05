@@ -29,3 +29,12 @@ Feature: Changing the email address
     Example:
       When the USER CONFIRMS the EMAIL CHANGE with a garbage token
       Then the EMAIL CHANGE is rejected
+
+  Rule: A taken EMAIL cannot be probed through the change — the reply is quiet, the owner is told by mail
+
+    Example:
+      Given another ACCOUNT already holds "occupied@example.com"
+      And the USER has AUTHENTICATED
+      When the USER requests to CHANGE the EMAIL to "occupied@example.com"
+      Then the CHANGE request is quietly refused, indistinguishable from a fresh one
+      And the owner of "occupied@example.com" is notified by mail
