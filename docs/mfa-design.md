@@ -1,6 +1,6 @@
 # MFA — design plan
 
-- Status: Proposed (awaiting the user's go on the open decisions at the end)
+- Status: Accepted (the four open decisions were settled 2026-07-05 — see the end)
 - Date: 2026-07-05
 - Scope: `microservice-security` (domain / system / config / infrastructure), the React
   `security-ui`, and the compose smoke test. Channel services (`microservice-email`,
@@ -173,11 +173,17 @@ users step up by re-authenticating at the provider (`prompt=login`) plus their t
 ## OAuth composition
 
 The provider callback is simply **link #1 instead of the password** — the same chain runs after it.
-Whether a provider's assertion satisfies more of the chain (some providers do their own MFA) is one
-config value `security.mfa.provider-satisfies` (`NONE` = provider only ever covers link #1;
-`FIRST_ONLY` default). We deliberately do **not** infer from `amr`/`acr` claims — Google reports
-them poorly. A federated privileged user still owes their role's factor floor, enrolment-gated the
-same way.
+We deliberately do **not** infer additional assurance from `amr`/`acr` claims — Google reports them
+poorly.
+
+**Decision 3 (settled): a federated privileged account is held to the FULL floor, and OAuth does
+NOT count toward it.** A provider login proves link #1 to *start* a session, but it does not buy a
+factor slot — a compromised Google account must not, by itself, satisfy part of an admin's MFA. So
+where a password ADMIN needs `password + 2` (password counts, decision 1), a **Google** ADMIN needs
+**3 enrolled factors on top of the OAuth login**. Concretely: the sign-in gate compares
+`enrolledFactors.count` (excluding the OAuth link) against `requiredFactorCount(roles)` for
+federated accounts, versus `enrolledFactors.count` *including* the password for password accounts.
+The asymmetry is intentional — the "free" provider link is never one of your factors.
 
 ## Storage
 
@@ -205,13 +211,17 @@ POST /account/step-up/start / factor
 
 Each phase is a green, self-contained slice (build + tests pass), à la the rest of the portfolio.
 
-- **A — the spine + first pluggable factor.** `AuthenticationFactor` port + `FactorRegistry` +
-  `PendingAuthentication` chain executor + `PasswordFactor` (wrapping today's check, chain of one =
-  unchanged behaviour) + **`TotpFactor`** as the first real second factor (self-contained, no
-  channel dependency → easiest to prove end-to-end). Enrol TOTP, sign in password→TOTP. Feature +
-  HTTP test + a UI enrol/sign-in screen. `mfa.feature`, `V11`.
-- **B — channel factors.** `CodeChannel` port + `EmailCodeFactor` (outbox mail type `AUTH_CODE`) +
-  `SmsCodeFactor` (microservice-sms). Shared code lifecycle (hash/TTL/one-shot/throttle).
+- **A — the spine + the first factor (E-MAIL CODE, decision 4).** `AuthenticationFactor` port +
+  `FactorRegistry` + `PendingAuthentication` chain executor + `PasswordFactor` (wrapping today's
+  check, chain of one = unchanged behaviour) + the `CodeChannel` port + **`EmailCodeFactor`** as the
+  first real second factor (rides the existing outbox→Kafka→microservice-email, new mail type
+  `AUTH_CODE`; a capturing code notifier for in-process tests + Mailpit for the live smoke, exactly
+  like verification codes today). Enrol e-mail, sign in password→e-mail-code. Feature + HTTP test +
+  a UI enrol/sign-in screen. `mfa.feature`, `V11`. The shared code lifecycle (hash / TTL / one-shot
+  / `SourceThrottle`) lands here since e-mail is challenge-response.
+- **B — more factors.** `SmsCodeFactor` (microservice-sms, same `CodeChannel` shape) and
+  **`TotpFactor`** (self-contained HMAC, no channel — proves the registry really is plug-and-play by
+  adding a possession factor with no outbound I/O). This is where "Google Authenticator" lands.
 - **C — the role floor.** `MfaPolicy` + the three enforcement moments (sign-in enrolment-gate,
   grant-time `mfaCompliant` on `/me`, removal floor) + bootstrap grace. This is the headline of the
   user's ask.
@@ -222,17 +232,16 @@ Each phase is a green, self-contained slice (build + tests pass), à la the rest
 - **G — UI polish + specs.** React enrolment manager + multi-step sign-in; e2e over the new specs
   as the third entry point; compose smoke walks a password→TOTP sign-in and a role-floor gate.
 
-## Open decisions (need the user's call before phase A locks the contracts)
+## Decisions (settled 2026-07-05)
 
-1. **Factor counting.** Recommend "total chain incl. the first": 2FA = password + 1, 3FA =
-   password + 2. (The alternative — count only *additional* factors — makes "MODERATOR: 2" mean
-   three prompts, which surprises.)
-2. **Under-enrolled privileged sign-in.** Recommend the **enrolment-scoped session** (sign in,
-   but boxed to enrolment until compliant) over refusing the sign-in outright. Gentler, and it
-   gives the user a way to actually become compliant.
-3. **Does an OAuth-only (passwordless) account count OAuth as factor #1?** Recommend **yes** — for a
-   federated account the provider *is* link #1, and their role floor is met by enrolling
-   (floor − 1) additional factors. (So an ADMIN who signs in with Google needs 2 more factors.)
-4. **TOTP first, or e-mail/SMS first?** Recommend **TOTP first** (phase A): no external service to
-   stand up, fully deterministic in tests, and it is the canonical "Google Authenticator" the user
-   named.
+1. **Factor counting → total chain incl. the first.** 2FA = password + 1, 3FA = password + 2.
+   `min-factors-by-role` counts the whole chain.
+2. **Under-enrolled privileged sign-in → enrolment-scoped session.** Sign in, but boxed to
+   `/account/factors` + `/me` until the floor is met. (Not a hard refusal — the user gets a path to
+   compliance.)
+3. **Federated (passwordless) accounts → held to the FULL floor; OAuth does NOT count.** A Google
+   ADMIN needs the full factor count *on top of* the provider login (see OAuth composition above).
+   The provider link starts a session but is never one of your factors.
+4. **First factor → E-MAIL CODE (phase A), TOTP in phase B.** E-mail exercises the challenge-
+   response path and the code lifecycle against real infra the portfolio already runs; TOTP follows
+   as the proof that a no-I/O possession factor plugs in with zero core change.
