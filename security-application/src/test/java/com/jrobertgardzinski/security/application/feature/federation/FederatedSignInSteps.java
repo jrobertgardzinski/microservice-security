@@ -55,10 +55,12 @@ public class FederatedSignInSteps {
             links.put(provider + "|" + subject, userEmail.value());
         }
     };
+    private final com.jrobertgardzinski.security.application.feature.support.InMemoryPasswordlessAccountRepository passwordless =
+            new com.jrobertgardzinski.security.application.feature.support.InMemoryPasswordlessAccountRepository();
     private final FederatedSignIn federatedSignIn = new FederatedSignIn(
             identities, users, verifications, sessions, hashAlgorithm,
             new SessionTokensConfig(new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1)),
-            Clock.systemUTC(), AccessTokenMint.RANDOM);
+            Clock.systemUTC(), AccessTokenMint.RANDOM, passwordless);
 
     private FederatedSignInResult result;
 

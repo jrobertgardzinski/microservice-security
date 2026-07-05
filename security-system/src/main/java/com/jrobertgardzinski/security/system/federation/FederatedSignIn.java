@@ -50,11 +50,13 @@ public class FederatedSignIn {
     private final SessionTokensConfig config;
     private final Clock clock;
     private final AccessTokenMint accessTokenMint;
+    private final com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless;
 
     public FederatedSignIn(FederatedIdentityRepository identities, UserRepository users,
                            EmailVerificationRepository verifications, AuthorizationDataRepository sessions,
                            HashAlgorithmPort hashAlgorithm, SessionTokensConfig config, Clock clock,
-                           AccessTokenMint accessTokenMint) {
+                           AccessTokenMint accessTokenMint,
+                           com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless) {
         this.identities = identities;
         this.users = users;
         this.verifications = verifications;
@@ -63,6 +65,7 @@ public class FederatedSignIn {
         this.config = config;
         this.clock = clock;
         this.accessTokenMint = accessTokenMint;
+        this.passwordless = passwordless;
     }
 
     public FederatedSignInResult execute(ProviderIdentity identity) {
@@ -87,12 +90,15 @@ public class FederatedSignIn {
         if (existing.isEmpty()) {
             users.save(new User(email, unusablePassword()));
             verifications.markVerified(email);
+            passwordless.setPasswordless(email, true);   // born through the provider, no password of its own
         } else if (!verifications.isVerified(email)) {
             // the squatter case: the provider's proof of the inbox beats the unproven password
             users.updatePassword(email, unusablePassword());
             sessions.revokeAllSessions(email);
             verifications.markVerified(email);
+            passwordless.setPasswordless(email, true);   // the wiped password no longer counts
         }
+        // the auto-link case (existing, verified) keeps its password — it stays a password account
         identities.link(identity.provider(), identity.subject(), email);
         return email;
     }

@@ -36,13 +36,19 @@ final class FactorsController {
     private final EnrolledFactorRepository enrolledFactors;
     private final FactorRegistry registry;
     private final TransactionBoundary transactionBoundary;
+    private final com.jrobertgardzinski.security.domain.repository.UserRepository users;
+    private final com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance;
 
     FactorsController(EnrolFactor enrolFactor, EnrolledFactorRepository enrolledFactors,
-                      FactorRegistry registry, TransactionBoundary transactionBoundary) {
+                      FactorRegistry registry, TransactionBoundary transactionBoundary,
+                      com.jrobertgardzinski.security.domain.repository.UserRepository users,
+                      com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance) {
         this.enrolFactor = enrolFactor;
         this.enrolledFactors = enrolledFactors;
         this.registry = registry;
         this.transactionBoundary = transactionBoundary;
+        this.users = users;
+        this.compliance = compliance;
     }
 
     @Get(produces = MediaType.APPLICATION_JSON)
@@ -76,6 +82,13 @@ final class FactorsController {
     @Delete(value = "/{type}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map<String, Object>> remove(HttpRequest<?> request, @PathVariable String type) {
         Email caller = caller(request);
+        java.util.Set<com.jrobertgardzinski.security.domain.vo.Role> roles = users.findBy(caller)
+                .map(u -> u.roles()).orElse(java.util.Set.of(com.jrobertgardzinski.security.domain.vo.Role.USER));
+        // you can swap a factor (enrol the new, then drop the old), never fall through the floor
+        if (compliance.removalWouldBreakFloor(caller, roles)) {
+            return HttpResponse.<Map<String, Object>>status(io.micronaut.http.HttpStatus.CONFLICT)
+                    .body(Map.of("status", "WOULD_BREAK_MFA_FLOOR"));
+        }
         transactionBoundary.execute(() -> {
             enrolledFactors.remove(caller, FactorType.of(type));
             return null;

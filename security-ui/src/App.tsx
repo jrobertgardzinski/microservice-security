@@ -22,6 +22,8 @@ export function App() {
   const [me, setMe] = useState('');
   const [token, setToken] = useState('');
   const [roles, setRoles] = useState<string[]>([]);
+  const [compliant, setCompliant] = useState(true);
+  const [floor, setFloor] = useState({ required: 1, have: 1 });
   const [notice, setNotice] = useState<string | null>(null);
   const [emailErrors, setEmailErrors] = useState<string[]>([]);
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
@@ -65,10 +67,13 @@ export function App() {
 
   const enterSession = async (accessToken: string) => {
     const meResponse = await fetch(`${SECURITY}/me`, { headers: { Authorization: `Bearer ${accessToken}` } });
-    const meBody: { email: string; roles?: string[] } = await meResponse.json();
+    const meBody: { email: string; roles?: string[]; mfaCompliant?: boolean; requiredFactors?: number; haveFactors?: number } =
+      await meResponse.json();
     setToken(accessToken);
     setMe(meBody.email);
     setRoles(meBody.roles ?? []);
+    setCompliant(meBody.mfaCompliant ?? true);
+    setFloor({ required: meBody.requiredFactors ?? 1, have: meBody.haveFactors ?? 1 });
     setMode('me');
     void loadFactors(accessToken);
   };
@@ -192,6 +197,13 @@ export function App() {
         <>
           <h3>Signed in</h3>
           <p>You are <b data-testid="signed-in-email">{me}</b> ({roles.join(', ')}).</p>
+
+          {!compliant && (
+            <p data-testid="mfa-required" className="notice">
+              Your role needs {floor.required} sign-in factors — you have {floor.have}. Add another
+              below to unlock everything.
+            </p>
+          )}
 
           <h4>Sign-in factors</h4>
           <ul data-testid="factor-list">

@@ -52,7 +52,11 @@ class ResetPasswordTest {
         passwordResetRepository = Mockito.mock(PasswordResetRepository.class);
         userRepository = Mockito.mock(UserRepository.class);
         resetPassword = new ResetPassword(passwordResetRepository, userRepository,
-                new CreatePasswordHash(FAKE_ALGORITHM, PasswordPolicy.withDefaults()));
+                new CreatePasswordHash(FAKE_ALGORITHM, PasswordPolicy.withDefaults()),
+                new com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository() {
+                    public boolean isPasswordless(com.jrobertgardzinski.email.domain.Email e) { return false; }
+                    public void setPasswordless(com.jrobertgardzinski.email.domain.Email e, boolean v) {}
+                });
     }
 
     @Example

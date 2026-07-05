@@ -255,9 +255,29 @@ public class BeanFactory {
 
     @Singleton
     ResetPassword resetPassword(PasswordResetRepository passwordResetRepository, UserRepository userRepository,
-                                HashAlgorithmPort hashAlgorithm) {
+                                HashAlgorithmPort hashAlgorithm,
+                                com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless) {
         return new ResetPassword(passwordResetRepository, userRepository,
-                new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()));
+                new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()), passwordless);
+    }
+
+    @Singleton
+    com.jrobertgardzinski.security.config.mfa.MfaPolicy mfaPolicy(
+            @io.micronaut.context.annotation.Value("${security.mfa.min-factors.user:1}") int user,
+            @io.micronaut.context.annotation.Value("${security.mfa.min-factors.moderator:2}") int moderator,
+            @io.micronaut.context.annotation.Value("${security.mfa.min-factors.admin:3}") int admin) {
+        return new com.jrobertgardzinski.security.config.mfa.MfaPolicy(
+                java.util.Map.of("USER", user, "MODERATOR", moderator, "ADMIN", admin));
+    }
+
+    @Singleton
+    com.jrobertgardzinski.security.system.mfa.MfaCompliance mfaCompliance(
+            com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
+            com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,
+            com.jrobertgardzinski.security.config.mfa.MfaPolicy mfaPolicy,
+            @io.micronaut.context.annotation.Value("${security.bootstrap-admins:}") java.util.List<String> bootstrapAdmins) {
+        return new com.jrobertgardzinski.security.system.mfa.MfaCompliance(
+                enrolledFactors, passwordless, mfaPolicy, java.util.Set.copyOf(bootstrapAdmins));
     }
 
     @Singleton
@@ -293,10 +313,11 @@ public class BeanFactory {
             HashAlgorithmPort hashAlgorithm,
             SessionTokensConfig sessionTokensConfig,
             Clock clock,
-            AccessTokenMint accessTokenMint) {
+            AccessTokenMint accessTokenMint,
+            com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless) {
         return new com.jrobertgardzinski.security.system.federation.FederatedSignIn(
                 federatedIdentities, userRepository, emailVerificationRepository,
-                authorizationDataRepository, hashAlgorithm, sessionTokensConfig, clock, accessTokenMint);
+                authorizationDataRepository, hashAlgorithm, sessionTokensConfig, clock, accessTokenMint, passwordless);
     }
 
     @Singleton

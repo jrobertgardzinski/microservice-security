@@ -26,17 +26,24 @@ import java.util.Map;
 final class MeController {
 
     private final UserRepository users;
+    private final com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance;
 
-    MeController(UserRepository users) {
+    MeController(UserRepository users, com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance) {
         this.users = users;
+        this.compliance = compliance;
     }
 
     @Get(produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map<String, Object>> me(HttpRequest<?> request) {
-        String email = request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow();
-        List<String> roles = users.findBy(Email.of(email))
-                .map(user -> user.roles().stream().map(Role::name).sorted().toList())
-                .orElse(List.of(Role.USER.name()));
-        return HttpResponse.ok(Map.of("email", email, "roles", roles));
+        Email email = Email.of(request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow());
+        java.util.Set<Role> roleSet = users.findBy(email).map(user -> user.roles()).orElse(java.util.Set.of(Role.USER));
+        List<String> roles = roleSet.stream().map(Role::name).sorted().toList();
+        // the MFA role floor, so consumers and the UI can nudge an under-protected privileged account
+        return HttpResponse.ok(Map.of(
+                "email", email.value(),
+                "roles", roles,
+                "mfaCompliant", compliance.isCompliant(email, roleSet),
+                "requiredFactors", compliance.requiredFactors(roleSet),
+                "haveFactors", compliance.effectiveFactorCount(email)));
     }
 }

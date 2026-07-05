@@ -14,6 +14,11 @@ import io.micronaut.http.annotation.ServerFilter;
  * {@link Authorize} use case, and either lets the request through (publishing the authenticated
  * email as a request attribute for the resource to read) or rejects it with 401 — for a missing,
  * malformed, unknown or expired token alike.
+ *
+ * <p>It also enforces the MFA role floor: a caller whose roles demand more factors than they have
+ * (see {@link com.jrobertgardzinski.security.system.mfa.MfaCompliance}) is let through only to the
+ * enrolment endpoints and {@code /me} — everything else answers 403 {@code MFA_ENROLMENT_REQUIRED}
+ * until they comply. The session is real; it is just boxed to becoming compliant.
  */
 @ServerFilter({"/me", "/sessions", "/sessions/**", "/account/**", "/admin/**"})
 final class AuthorizationFilter {
@@ -21,9 +26,15 @@ final class AuthorizationFilter {
     static final String AUTHENTICATED_EMAIL = "authenticatedEmail";
 
     private final Authorize authorize;
+    private final com.jrobertgardzinski.security.domain.repository.UserRepository users;
+    private final com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance;
 
-    AuthorizationFilter(Authorize authorize) {
+    AuthorizationFilter(Authorize authorize,
+                        com.jrobertgardzinski.security.domain.repository.UserRepository users,
+                        com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance) {
         this.authorize = authorize;
+        this.users = users;
+        this.compliance = compliance;
     }
 
     @RequestFilter
@@ -33,11 +44,27 @@ final class AuthorizationFilter {
         if (token == null) {
             return HttpResponse.unauthorized();
         }
-        if (authorize.execute(new AccessToken(token)) instanceof AuthorizationResult.Authorized authorized) {
-            request.setAttribute(AUTHENTICATED_EMAIL, authorized.email().value());
-            return null; // proceed to the resource
+        if (!(authorize.execute(new AccessToken(token)) instanceof AuthorizationResult.Authorized authorized)) {
+            return HttpResponse.unauthorized();
         }
-        return HttpResponse.unauthorized();
+        request.setAttribute(AUTHENTICATED_EMAIL, authorized.email().value());
+        if (!enrolmentExempt(request.getPath()) && !isCompliant(authorized.email())) {
+            return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN)
+                    .body(java.util.Map.of("error", "MFA_ENROLMENT_REQUIRED"));
+        }
+        return null; // proceed to the resource
+    }
+
+    /** /me and the factor-enrolment endpoints stay open so an under-enrolled user can become compliant. */
+    private static boolean enrolmentExempt(String path) {
+        return path.equals("/me") || path.startsWith("/account/factors");
+    }
+
+    private boolean isCompliant(com.jrobertgardzinski.email.domain.Email email) {
+        java.util.Set<com.jrobertgardzinski.security.domain.vo.Role> roles = users.findBy(email)
+                .map(com.jrobertgardzinski.security.domain.entity.User::roles)
+                .orElse(java.util.Set.of(com.jrobertgardzinski.security.domain.vo.Role.USER));
+        return compliance.isCompliant(email, roles);
     }
 
     private static String bearerToken(HttpRequest<?> request) {
