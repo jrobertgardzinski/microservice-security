@@ -1,0 +1,29 @@
+{
+  "name": "security-ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The auth service's own face — and the specs' third entry point: cucumber-js + Playwright drive the same Gherkin the JVM runners do, through this Angular UI.",
+  "scripts": {
+    "start": "ng serve --port 4200",
+    "build": "ng build",
+    "e2e": "cucumber-js --config e2e/cucumber.mjs",
+    "e2e:full": "./run-e2e.sh"
+  },
+  "dependencies": {
+    "@angular/common": "^20.3.0",
+    "@angular/compiler": "^20.3.0",
+    "@angular/core": "^20.3.0",
+    "@angular/forms": "^20.3.0",
+    "@angular/platform-browser": "^20.3.0",
+    "rxjs": "^7.8.0",
+    "tslib": "^2.8.0",
+    "zone.js": "^0.15.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^20.3.0",
+    "@angular/cli": "^20.3.0",
+    "@cucumber/cucumber": "^11.2.0",
+    "playwright": "^1.50.0",
+    "typescript": "~5.8.0"
+  }
+}

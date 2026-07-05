@@ -5,11 +5,13 @@ micronaut:
     cors:
       enabled: true
       configurations:
-        # the meme gallery UI (served by microservice-memes) signs users in against this service
+        # the meme gallery UI (served by microservice-memes) signs users in against this service;
+        # 4200 is security's own Angular UI on its dev server (the specs' third entry point)
         ui:
           allowed-origins:
             - http://localhost:8083
             - http://localhost:8084
+            - http://localhost:4200
 endpoints:
   health:
     enabled: true

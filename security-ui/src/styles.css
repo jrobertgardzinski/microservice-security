@@ -1,0 +1,9 @@
+body {
+  font-family: system-ui, sans-serif;
+  background: #f4f5f7;
+  margin: 0;
+  display: grid;
+  place-items: start center;
+  min-height: 100vh;
+  padding-top: 8vh;
+}
