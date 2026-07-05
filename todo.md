@@ -29,9 +29,15 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   `IdentityProvider` + adapter w infrze (JDK HttpClient), Facebook jako drugi adapter później.
   Rejestracja zapada się w pierwsze logowanie: `email_verified` od providera spełnia bramę
   weryfikacji (bez maila). Tożsamości `(provider, subject) → user` (migracja V10), `User` bez
-  zmian; linkowanie z istniejącym kontem TYLKO gdy provider ręczy za email (inaczej wektor
-  przejęcia). Konta bez hasła: change-password → „ustaw hasło" (reusing reset). Sesja na końcu
-  identyczna jak dziś (SessionTokens/JWT/refresh cookie). Do stacku demo: STUB IdP jako kolejny
+  zmian — JEDNO konto, WIELE tożsamości (hasło/Google/FB = równorzędne klucze). ŁĄCZENIE KONT
+  (scenariusz usera: założył konto na Gmailu, zapomniał, wraca OAuth-em na ten sam adres) —
+  trzy warianty: (a) lokalne konto ZWERYFIKOWANE + Google ręczy → auto-link i logowanie (obie
+  strony dowiodły skrzynki); (b) lokalne konto NIEZWERYFIKOWANE (squatter na cudzy adres) →
+  dowód Google bije nieudowodnione hasło: link + verified, ale stare hasło SKASOWANE (reset od
+  nowa) i revoke wszystkich sesji; (c) odwrotnie — konto federacyjne, user próbuje /register →
+  ciche 201, a mail „already registered" podpowiada „to konto loguje się przez Google / ustaw
+  hasło resetem"; reset-password na koncie bez hasła = „ustaw hasło". Sesja na końcu identyczna
+  jak dziś (SessionTokens/JWT/refresh cookie). Do stacku demo: STUB IdP jako kolejny
   mikroserwis-smak (Python stdlib, własne id_tokeny + JWKS) — smoke przechodzi OAuth na stubie,
   prod podmienia URL na Google (client-id/secret z env). Kolejność celowa: OAuth zmienia
   pierwsze ogniwo łańcucha MFA (credentials ALBO dowód providera), więc idzie pierwszy. — flagowy „wow"; największy otwarty temat.
