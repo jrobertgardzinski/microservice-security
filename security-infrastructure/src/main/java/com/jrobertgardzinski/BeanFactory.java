@@ -217,6 +217,21 @@ public class BeanFactory {
     }
 
     @Singleton
+    com.jrobertgardzinski.security.system.federation.FederatedSignIn federatedSignIn(
+            com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository federatedIdentities,
+            UserRepository userRepository,
+            EmailVerificationRepository emailVerificationRepository,
+            AuthorizationDataRepository authorizationDataRepository,
+            HashAlgorithmPort hashAlgorithm,
+            SessionTokensConfig sessionTokensConfig,
+            Clock clock,
+            AccessTokenMint accessTokenMint) {
+        return new com.jrobertgardzinski.security.system.federation.FederatedSignIn(
+                federatedIdentities, userRepository, emailVerificationRepository,
+                authorizationDataRepository, hashAlgorithm, sessionTokensConfig, clock, accessTokenMint);
+    }
+
+    @Singleton
     StartAccountDeletion startAccountDeletion(UserRepository userRepository,
                                               AuthorizationDataRepository authorizationDataRepository,
                                               AccountDeletionSaga saga) {
