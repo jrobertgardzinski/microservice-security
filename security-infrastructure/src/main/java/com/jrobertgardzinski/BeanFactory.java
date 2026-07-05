@@ -279,6 +279,29 @@ public class BeanFactory {
     }
 
     @Singleton
+    com.jrobertgardzinski.security.config.mfa.StepUpPolicy stepUpPolicy(
+            @io.micronaut.context.annotation.Value("${security.step-up.delete-account:FULL_CHAIN}") String deleteAccount,
+            @io.micronaut.context.annotation.Value("${security.step-up.change-password:SECOND_FACTORS}") String changePassword) {
+        return new com.jrobertgardzinski.security.config.mfa.StepUpPolicy(
+                java.util.Map.of("delete-account", deleteAccount, "change-password", changePassword));
+    }
+
+    @Singleton
+    com.jrobertgardzinski.security.system.mfa.StepUp stepUp(
+            com.jrobertgardzinski.security.config.mfa.StepUpPolicy stepUpPolicy,
+            UserRepository userRepository,
+            HashAlgorithmPort hashAlgorithm,
+            com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,
+            com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
+            com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
+            com.jrobertgardzinski.security.system.mfa.StepUpStore stepUpStore,
+            com.jrobertgardzinski.security.system.mfa.SessionElevation sessionElevation) {
+        return new com.jrobertgardzinski.security.system.mfa.StepUp(
+                stepUpPolicy, userRepository, hashAlgorithm, passwordless, enrolledFactors,
+                mfaChain, stepUpStore, sessionElevation);
+    }
+
+    @Singleton
     com.jrobertgardzinski.security.system.mfa.MfaCompliance mfaCompliance(
             com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
             com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,

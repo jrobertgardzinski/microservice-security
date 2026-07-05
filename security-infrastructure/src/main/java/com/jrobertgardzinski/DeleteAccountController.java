@@ -30,14 +30,23 @@ final class DeleteAccountController {
 
     private final StartAccountDeletion startAccountDeletion;
     private final TransactionBoundary transactionBoundary;
+    private final StepUpGuard stepUpGuard;
 
-    DeleteAccountController(StartAccountDeletion startAccountDeletion, TransactionBoundary transactionBoundary) {
+    DeleteAccountController(StartAccountDeletion startAccountDeletion, TransactionBoundary transactionBoundary,
+                           StepUpGuard stepUpGuard) {
         this.startAccountDeletion = startAccountDeletion;
         this.transactionBoundary = transactionBoundary;
+        this.stepUpGuard = stepUpGuard;
     }
 
     @Post(consumes = MediaType.ALL, produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map<String, Object>> delete(HttpRequest<?> request, @Body @Nullable Map<String, Map<String, String>> body) {
+        // deleting an account is irreversible: a live session is not enough, the caller must have
+        // just stepped up (the thief of a live session would have to pass the chain too)
+        Optional<HttpResponse<Map<String, Object>>> stepUp = stepUpGuard.requireElevation(request, "delete-account");
+        if (stepUp.isPresent()) {
+            return stepUp.get();
+        }
         Email email = Email.of(request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow());
         PurgeChoices choices = purgeChoices(body);
         transactionBoundary.execute(() -> {

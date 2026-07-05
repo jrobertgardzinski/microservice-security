@@ -68,6 +68,7 @@ public class HttpDeleteAccountSteps {
 
     @When("the USER requests account DELETION")
     public void theUserRequestsAccountDeletion() {
+        stepUpForDeletion();
         HttpResponse<Map> closed = exchange(HttpRequest.POST("/account/delete", null)
                 .header("Authorization", "Bearer " + accessToken));
         assertEquals(HttpStatus.ACCEPTED, closed.getStatus());
@@ -80,11 +81,22 @@ public class HttpDeleteAccountSteps {
 
     @When("the USER requests account DELETION keeping content with at least {int} votes")
     public void requestsDeletionKeepingPopularContent(int minScore) {
+        stepUpForDeletion();
         String rule = "KEEP_POPULAR_ANONYMIZED:" + minScore;
         HttpResponse<Map> closed = exchange(HttpRequest.POST("/account/delete",
                         Map.of("purge", Map.of("memes", rule, "comments", rule)))
                 .header("Authorization", "Bearer " + accessToken));
         assertEquals(HttpStatus.ACCEPTED, closed.getStatus());
+    }
+
+    /** Deleting is FULL_CHAIN step-up: this user has a password and no factors, so re-entering the
+     *  password elevates the session at once. */
+    private void stepUpForDeletion() {
+        HttpResponse<Map> elevated = exchange(HttpRequest.POST("/account/step-up",
+                        Map.of("action", "delete-account", "password", "StrongPassword1!"))
+                .header("Authorization", "Bearer " + accessToken));
+        assertEquals(HttpStatus.OK, elevated.getStatus());
+        assertEquals("ELEVATED", elevated.getBody(Map.class).orElseThrow().get("status"));
     }
 
     @Then("the purge command carries that choice")
