@@ -24,6 +24,7 @@ import com.jrobertgardzinski.security.system.authentication.BlockDurationPolicy;
 import com.jrobertgardzinski.security.system.authentication.RandomBlockDurationPolicy;
 import com.jrobertgardzinski.security.system.authorization.Authorize;
 import com.jrobertgardzinski.security.system.registration.Register;
+import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
 import com.jrobertgardzinski.security.system.session.ListActiveSessions;
 import com.jrobertgardzinski.security.system.session.Logout;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
@@ -39,6 +40,7 @@ import com.jrobertgardzinski.security.system.passwordreset.ResetPassword;
 import com.jrobertgardzinski.security.system.verification.RequestEmailVerification;
 import com.jrobertgardzinski.security.system.verification.VerifyEmail;
 import io.micronaut.context.annotation.Factory;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 
 import java.time.Clock;
@@ -66,13 +68,35 @@ public class BeanFactory {
                 new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()));
     }
 
+    /**
+     * One {@link SourceThrottle} per expensive anonymous endpoint — separate windows, so a burst
+     * against one endpoint cannot starve another. Zero disables an instance.
+     */
     @Singleton
-    com.jrobertgardzinski.security.system.registration.RegistrationThrottle registrationThrottle(
+    @Named("registration")
+    SourceThrottle registrationThrottle(
             @io.micronaut.context.annotation.Value("${security.registration.max-per-window:5}") int maxPerWindow,
             @io.micronaut.context.annotation.Value("${security.registration.window-minutes:15}") int windowMinutes,
             Clock clock) {
-        return new com.jrobertgardzinski.security.system.registration.RegistrationThrottle(
-                maxPerWindow, java.time.Duration.ofMinutes(windowMinutes), clock);
+        return new SourceThrottle(maxPerWindow, java.time.Duration.ofMinutes(windowMinutes), clock);
+    }
+
+    @Singleton
+    @Named("password-reset")
+    SourceThrottle passwordResetThrottle(
+            @io.micronaut.context.annotation.Value("${security.password-reset.max-per-window:5}") int maxPerWindow,
+            @io.micronaut.context.annotation.Value("${security.password-reset.window-minutes:15}") int windowMinutes,
+            Clock clock) {
+        return new SourceThrottle(maxPerWindow, java.time.Duration.ofMinutes(windowMinutes), clock);
+    }
+
+    @Singleton
+    @Named("verification")
+    SourceThrottle verificationThrottle(
+            @io.micronaut.context.annotation.Value("${security.verification.max-per-window:5}") int maxPerWindow,
+            @io.micronaut.context.annotation.Value("${security.verification.window-minutes:15}") int windowMinutes,
+            Clock clock) {
+        return new SourceThrottle(maxPerWindow, java.time.Duration.ofMinutes(windowMinutes), clock);
     }
 
     @Singleton

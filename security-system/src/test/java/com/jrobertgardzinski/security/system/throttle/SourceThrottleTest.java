@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.registration;
+package com.jrobertgardzinski.security.system.throttle;
 
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import io.qameta.allure.Epic;
@@ -15,9 +15,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Epic("Registration")
+@Epic("Throttling")
 @Feature("Per-source throttle")
-class RegistrationThrottleTest {
+class SourceThrottleTest {
 
     private final AtomicReference<Instant> now = new AtomicReference<>(Instant.parse("2026-07-04T10:00:00Z"));
     private final Clock clock = new Clock() {
@@ -32,11 +32,11 @@ class RegistrationThrottleTest {
     @Test
     @DisplayName("attempts within the cap pass; the one over the cap is refused with a retry-after")
     void caps_per_source() {
-        RegistrationThrottle throttle = new RegistrationThrottle(3, Duration.ofMinutes(15), clock);
+        SourceThrottle throttle = new SourceThrottle(3, Duration.ofMinutes(15), clock);
         for (int i = 0; i < 3; i++) {
             assertTrue(throttle.check(ip).allowed(), "attempt " + i + " should pass");
         }
-        RegistrationThrottle.Decision blocked = throttle.check(ip);
+        SourceThrottle.Decision blocked = throttle.check(ip);
         assertFalse(blocked.allowed(), "the fourth in the window is refused");
         assertTrue(blocked.retryAfterSeconds() > 0, "a refusal says when to come back");
         assertTrue(throttle.check(other).allowed(), "a different source is unaffected");
@@ -45,7 +45,7 @@ class RegistrationThrottleTest {
     @Test
     @DisplayName("the window rolls: once it passes, the source is clear again")
     void window_rolls() {
-        RegistrationThrottle throttle = new RegistrationThrottle(1, Duration.ofMinutes(15), clock);
+        SourceThrottle throttle = new SourceThrottle(1, Duration.ofMinutes(15), clock);
         assertTrue(throttle.check(ip).allowed());
         assertFalse(throttle.check(ip).allowed());
         now.set(now.get().plus(Duration.ofMinutes(16)));
@@ -55,7 +55,7 @@ class RegistrationThrottleTest {
     @Test
     @DisplayName("zero disables the throttle")
     void zero_disables() {
-        RegistrationThrottle throttle = new RegistrationThrottle(0, Duration.ofMinutes(15), clock);
+        SourceThrottle throttle = new SourceThrottle(0, Duration.ofMinutes(15), clock);
         for (int i = 0; i < 100; i++) {
             assertTrue(throttle.check(ip).allowed());
         }

@@ -5,8 +5,9 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.system.registration.Register;
 import com.jrobertgardzinski.security.system.registration.RegisterResult;
-import com.jrobertgardzinski.security.system.registration.RegistrationThrottle;
+import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
 import com.jrobertgardzinski.security.system.verification.RequestEmailVerification;
+import jakarta.inject.Named;
 import com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier;
 import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
 import io.micronaut.http.HttpRequest;
@@ -50,14 +51,14 @@ public class SecurityController {
     private final Register register;
     private final RequestEmailVerification requestEmailVerification;
     private final TransactionBoundary transactionBoundary;
-    private final RegistrationThrottle registrationThrottle;
+    private final SourceThrottle registrationThrottle;
     private final ClientIpResolver clientIpResolver;
     private final EmailVerificationRepository emailVerifications;
     private final RegistrationNoticeNotifier registrationNoticeNotifier;
 
     public SecurityController(Register register, RequestEmailVerification requestEmailVerification,
                               TransactionBoundary transactionBoundary,
-                              RegistrationThrottle registrationThrottle,
+                              @Named("registration") SourceThrottle registrationThrottle,
                               ClientIpResolver clientIpResolver,
                               EmailVerificationRepository emailVerifications,
                               RegistrationNoticeNotifier registrationNoticeNotifier) {
@@ -74,7 +75,7 @@ public class SecurityController {
     public HttpResponse<Map<String, Object>> register(HttpRequest<?> request, @Body Map<String, String> body) {
         // guard before the expensive work: registration hashes a password and creates an account
         IpAddress source = clientIpResolver.resolve(request);
-        RegistrationThrottle.Decision decision = registrationThrottle.check(source);
+        SourceThrottle.Decision decision = registrationThrottle.check(source);
         if (!decision.allowed()) {
             return HttpResponse.<Map<String, Object>>status(HttpStatus.TOO_MANY_REQUESTS)
                     .header("Retry-After", String.valueOf(decision.retryAfterSeconds()))

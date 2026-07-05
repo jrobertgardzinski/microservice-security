@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.registration;
+package com.jrobertgardzinski.security.system.throttle;
 
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 
@@ -9,13 +9,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Per-source rate limit on registration: at most {@code maxPerWindow} attempts from one
- * {@link IpAddress} in a rolling {@code window}. Registration is expensive (it hashes a password
- * with Argon2) and creates accounts, so an unthrottled endpoint is both a CPU-exhaustion vector
- * and a mass-signup vector — this caps both without touching the legitimate one-off user. A fixed
- * window in memory; the source is the spoof-resistant IP the resolver already trusts.
+ * Per-source rate limit for the expensive anonymous endpoints: at most {@code maxPerWindow}
+ * attempts from one {@link IpAddress} in a rolling {@code window}. Registration hashes a password
+ * with Argon2 and creates accounts; the reset-password and verify-email requests mint tokens and
+ * send mails — unthrottled, each is a CPU-exhaustion, mass-signup or mail-bomb vector. One
+ * instance guards one endpoint (each gets its own window and cap), so a burst against one cannot
+ * starve another. A fixed window in memory; the source is the spoof-resistant IP the resolver
+ * already trusts. Deliberately separate from the authentication guard: that one defends accounts
+ * against password guessing, this one defends the service against volume.
  */
-public class RegistrationThrottle {
+public class SourceThrottle {
 
     /** Whether the attempt is allowed, and if not, how long until the window frees up. */
     public record Decision(boolean allowed, long retryAfterSeconds) {}
@@ -27,13 +30,13 @@ public class RegistrationThrottle {
     private final Clock clock;
     private final Map<String, Window> windows = new ConcurrentHashMap<>();
 
-    public RegistrationThrottle(int maxPerWindow, Duration window, Clock clock) {
+    public SourceThrottle(int maxPerWindow, Duration window, Clock clock) {
         this.maxPerWindow = maxPerWindow;
         this.window = window;
         this.clock = clock;
     }
 
-    /** Record one registration attempt from this source and decide whether it may proceed. */
+    /** Record one attempt from this source and decide whether it may proceed. */
     public Decision check(IpAddress source) {
         if (maxPerWindow <= 0) {
             return new Decision(true, 0);   // disabled

@@ -46,11 +46,19 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   mailowy, nie status. `RegisterEnumerationHttpTest` przybija nierozróżnialność.
   UWAGA: analogiczna enumeracja zostaje na `/account/email` (RequestEmailChange → 409
   EMAIL_TAKEN?) — endpoint uwierzytelniony, mniejsze ryzyko, ale do rozważenia tym samym wzorcem.
-- ~~Hardening rejestracji (throttling)~~ — ZROBIONE (2026-07-04): `RegistrationThrottle` (okno
-  stałe per-IP, `security.registration.max-per-window` default 5 / `window-minutes` 15, 0 wyłącza),
+- ~~Hardening rejestracji (throttling)~~ — ZROBIONE (2026-07-04): throttle okna stałego per-IP
+  (`security.registration.max-per-window` default 5 / `window-minutes` 15, 0 wyłącza),
   sprawdzany PRZED kosztowną pracą (Argon2 + insert), 429 + Retry-After; źródło = spoof-odporny IP
-  z `ClientIpResolver`. Unit (3) + HTTP test (429) + live na PG. ZOSTAJE: throttling na inne
-  osobna kontrola od guarda uwierzytelniania.
+  z `ClientIpResolver`. Unit (3) + HTTP test (429) + live na PG.
+- ~~Throttling na pozostałe kosztowne wejścia~~ — ZROBIONE (2026-07-05): `RegistrationThrottle`
+  uogólniony do `SourceThrottle` (pakiet `system/throttle`); osobne instancje (@Named, osobne
+  okna — burst na jeden endpoint nie zjada drugiego) dla `/register`,
+  `/reset-password/request` (`security.password-reset.*`) i `/verify-email/request`
+  (`security.verification.*`), oba defaulty 5/15 min, 0 wyłącza; 429 + Retry-After
+  (TOO_MANY_RESET_REQUESTS / TOO_MANY_VERIFICATION_REQUESTS). Celowo OSOBNO od guarda
+  uwierzytelniania (tamten broni kont przed zgadywaniem haseł, ten serwisu przed wolumenem).
+  `RequestThrottleHttpTest` (3), unit throttle bez zmian. Compose podnosi limit rejestracji
+  do 100 (smoke rejestruje kilka kont z jednego IP).
 - **JWT self-contained** — alternatywa/uzupełnienie opaque tokenów (osobny temat: infra
   kluczy/podpisów).
 - **`Source` jako podmiot domeny** — guard/`AuthenticationBlock` biorą `Source`, `IpAddress`
