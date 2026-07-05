@@ -57,12 +57,41 @@ public class FederatedSignInSteps {
     };
     private final com.jrobertgardzinski.security.application.feature.support.InMemoryPasswordlessAccountRepository passwordless =
             new com.jrobertgardzinski.security.application.feature.support.InMemoryPasswordlessAccountRepository();
+    // a real e-mail factor over a capturing channel, so a scenario can enrol one and prove the
+    // federated sign-in then owes it
+    private final com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolledFactorRepository enrolledFactors =
+            new com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolledFactorRepository();
+    private final com.jrobertgardzinski.security.application.feature.support.CapturingCodeChannel emailChannel =
+            new com.jrobertgardzinski.security.application.feature.support.CapturingCodeChannel(
+                    com.jrobertgardzinski.security.domain.vo.FactorType.EMAIL_CODE);
+    private final com.jrobertgardzinski.security.system.mfa.FactorRegistry registry =
+            new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of(
+                    new com.jrobertgardzinski.security.system.mfa.CodeFactor(emailChannel, raw -> "h:" + raw,
+                            com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(), Clock.systemUTC())));
+    private final com.jrobertgardzinski.security.system.mfa.EnrolFactor enrolFactor =
+            new com.jrobertgardzinski.security.system.mfa.EnrolFactor(registry, enrolledFactors,
+                    new com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolmentChallengeStore());
     private final FederatedSignIn federatedSignIn = new FederatedSignIn(
             identities, users, verifications, sessions, hashAlgorithm,
             new SessionTokensConfig(new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1)),
-            Clock.systemUTC(), AccessTokenMint.RANDOM, passwordless);
+            Clock.systemUTC(), AccessTokenMint.RANDOM, passwordless, enrolledFactors,
+            new com.jrobertgardzinski.security.system.mfa.MfaChain(registry,
+                    com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(), Clock.systemUTC(), 10),
+            new com.jrobertgardzinski.security.application.feature.support.InMemoryPendingAuthenticationStore());
 
     private FederatedSignInResult result;
+
+    @io.cucumber.java.en.Given("the ACCOUNT {string} has enrolled an e-mail FACTOR")
+    public void hasEnrolledFactor(String email) {
+        enrolFactor.start(Email.of(email), com.jrobertgardzinski.security.domain.vo.FactorType.EMAIL_CODE, email);
+        enrolFactor.confirm(Email.of(email), com.jrobertgardzinski.security.domain.vo.FactorType.EMAIL_CODE,
+                emailChannel.lastCodeFor(email));
+    }
+
+    @io.cucumber.java.en.Then("the SIGN IN needs a further FACTOR")
+    public void needsAFurtherFactor() {
+        assertInstanceOf(FederatedSignInResult.MfaRequired.class, result);
+    }
 
     @Given("a local ACCOUNT {string} with a verified email and the password {string}")
     public void aVerifiedLocalAccount(String email, String password) {

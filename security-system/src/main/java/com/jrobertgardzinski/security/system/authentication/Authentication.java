@@ -19,7 +19,7 @@ public class Authentication {
     private final _CleanBruteForceRecords cleanBruteForceRecords;
     private final _UpdateBruteForceRecords updateBruteForceRecords;
     private final EnrolledFactorRepository enrolledFactorRepository;
-    private final _MfaChain mfaChain;
+    private final com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain;
     private final PendingAuthenticationStore pendingStore;
 
     Authentication(_BruteForceGuard bruteForceGuard,
@@ -29,7 +29,7 @@ public class Authentication {
                    _CleanBruteForceRecords cleanBruteForceRecords,
                    _UpdateBruteForceRecords updateBruteForceRecords,
                    EnrolledFactorRepository enrolledFactorRepository,
-                   _MfaChain mfaChain,
+                   com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
                    PendingAuthenticationStore pendingStore) {
         this.bruteForceGuard = bruteForceGuard;
         this.verifyCredentials = verifyCredentials;

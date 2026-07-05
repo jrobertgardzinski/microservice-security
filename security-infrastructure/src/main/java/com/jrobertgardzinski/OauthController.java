@@ -110,6 +110,10 @@ final class OauthController {
             case FederatedSignInResult.SignedIn signedIn -> backTo(flow.returnUrl(),
                     "#accessToken=" + encode(signedIn.session().plainAccessToken()))
                     .cookie(refreshCookies.issue(signedIn.session().plainRefreshToken()));
+            // the account has enrolled factors: hand the ticket back so the UI can finish the chain
+            // through /authenticate/factor, exactly like a password sign-in
+            case FederatedSignInResult.MfaRequired mfa -> backTo(flow.returnUrl(),
+                    "#mfaTicket=" + encode(mfa.ticket()) + "&nextFactor=" + encode(mfa.nextFactor().value()));
             case FederatedSignInResult.Refused refused ->
                     backTo(flow.returnUrl(), "#oauthError=" + encode(refused.reason()));
         };

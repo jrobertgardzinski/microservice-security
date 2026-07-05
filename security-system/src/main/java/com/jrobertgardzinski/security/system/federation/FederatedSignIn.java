@@ -51,12 +51,18 @@ public class FederatedSignIn {
     private final Clock clock;
     private final AccessTokenMint accessTokenMint;
     private final com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless;
+    private final com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors;
+    private final com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain;
+    private final com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore pendingStore;
 
     public FederatedSignIn(FederatedIdentityRepository identities, UserRepository users,
                            EmailVerificationRepository verifications, AuthorizationDataRepository sessions,
                            HashAlgorithmPort hashAlgorithm, SessionTokensConfig config, Clock clock,
                            AccessTokenMint accessTokenMint,
-                           com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless) {
+                           com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,
+                           com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
+                           com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
+                           com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore pendingStore) {
         this.identities = identities;
         this.users = users;
         this.verifications = verifications;
@@ -66,6 +72,9 @@ public class FederatedSignIn {
         this.clock = clock;
         this.accessTokenMint = accessTokenMint;
         this.passwordless = passwordless;
+        this.enrolledFactors = enrolledFactors;
+        this.mfaChain = mfaChain;
+        this.pendingStore = pendingStore;
     }
 
     public FederatedSignInResult execute(ProviderIdentity identity) {
@@ -80,8 +89,16 @@ public class FederatedSignIn {
         if (users.isPendingDeletion(account)) {
             return new FederatedSignInResult.Refused("ACCOUNT_CLOSING");
         }
-        return new FederatedSignInResult.SignedIn(sessions.create(
-                SessionTokens.createFor(account, config, clock, accessTokenMint), SessionFamily.start()));
+        // the provider login is link #1; if the account has enrolled factors, they must be passed
+        // too before a session — the same chain the password sign-in walks
+        java.util.List<com.jrobertgardzinski.security.domain.entity.EnrolledFactor> factors =
+                enrolledFactors.findByUser(account);
+        if (factors.isEmpty()) {
+            return new FederatedSignInResult.SignedIn(sessions.create(
+                    SessionTokens.createFor(account, config, clock, accessTokenMint), SessionFamily.start()));
+        }
+        String ticket = pendingStore.open(mfaChain.begin(account, factors));
+        return new FederatedSignInResult.MfaRequired(ticket, factors.get(0).type());
     }
 
     private Email claimByEmail(ProviderIdentity identity) {

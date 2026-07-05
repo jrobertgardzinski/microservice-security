@@ -18,11 +18,11 @@ import java.util.Optional;
 public class ContinueAuthentication {
 
     private final PendingAuthenticationStore store;
-    private final _MfaChain chain;
+    private final com.jrobertgardzinski.security.system.mfa.MfaChain chain;
     private final _GenerateSession generateSession;
     private final Clock clock;
 
-    ContinueAuthentication(PendingAuthenticationStore store, _MfaChain chain,
+    ContinueAuthentication(PendingAuthenticationStore store, com.jrobertgardzinski.security.system.mfa.MfaChain chain,
                            _GenerateSession generateSession, Clock clock) {
         this.store = store;
         this.chain = chain;

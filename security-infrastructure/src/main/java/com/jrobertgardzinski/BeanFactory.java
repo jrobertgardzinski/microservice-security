@@ -169,6 +169,17 @@ public class BeanFactory {
                 factorRegistry, enrolledFactorRepository, enrolmentChallengeStore);
     }
 
+    /** The factor chain, shared by password sign-in, federated sign-in and the continuation. */
+    @Singleton
+    com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain(
+            com.jrobertgardzinski.security.system.mfa.FactorRegistry factorRegistry,
+            com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig challengeCodeConfig,
+            Clock clock,
+            @io.micronaut.context.annotation.Value("${security.mfa.ticket-ttl-minutes:10}") int ticketTtlMinutes) {
+        return new com.jrobertgardzinski.security.system.mfa.MfaChain(
+                factorRegistry, challengeCodeConfig, clock, ticketTtlMinutes);
+    }
+
     /** Start and continue: assembled together so a sign-in begun by one is completed by the other. */
     @Singleton
     AuthenticationFactory.AuthenticationUseCases authenticationUseCases(
@@ -184,16 +195,13 @@ public class BeanFactory {
             BlockDurationPolicy blockDurationPolicy,
             AccessTokenMint accessTokenMint,
             com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactorRepository,
-            com.jrobertgardzinski.security.system.mfa.FactorRegistry factorRegistry,
-            com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig challengeCodeConfig,
-            com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore pendingAuthenticationStore,
-            @io.micronaut.context.annotation.Value("${security.mfa.ticket-ttl-minutes:10}") int ticketTtlMinutes) {
+            com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
+            com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore pendingAuthenticationStore) {
         return AuthenticationFactory.assemble(
                 userRepository, emailVerificationRepository, rejectedAuthenticationRepository,
                 authenticationBlockRepository, authorizationDataRepository, hashAlgorithm,
                 bruteForceConfig, sessionTokensConfig, clock, blockDurationPolicy, accessTokenMint,
-                enrolledFactorRepository, factorRegistry, challengeCodeConfig, pendingAuthenticationStore,
-                ticketTtlMinutes);
+                enrolledFactorRepository, mfaChain, pendingAuthenticationStore);
     }
 
     @Singleton
@@ -314,10 +322,14 @@ public class BeanFactory {
             SessionTokensConfig sessionTokensConfig,
             Clock clock,
             AccessTokenMint accessTokenMint,
-            com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless) {
+            com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,
+            com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
+            com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
+            com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore pendingStore) {
         return new com.jrobertgardzinski.security.system.federation.FederatedSignIn(
                 federatedIdentities, userRepository, emailVerificationRepository,
-                authorizationDataRepository, hashAlgorithm, sessionTokensConfig, clock, accessTokenMint, passwordless);
+                authorizationDataRepository, hashAlgorithm, sessionTokensConfig, clock, accessTokenMint,
+                passwordless, enrolledFactors, mfaChain, pendingStore);
     }
 
     @Singleton

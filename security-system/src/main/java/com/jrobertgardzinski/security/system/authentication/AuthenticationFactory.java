@@ -46,10 +46,8 @@ public final class AuthenticationFactory {
             BlockDurationPolicy blockDurationPolicy,
             AccessTokenMint accessTokenMint,
             EnrolledFactorRepository enrolledFactorRepository,
-            FactorRegistry factorRegistry,
-            ChallengeCodeConfig challengeCodeConfig,
-            PendingAuthenticationStore pendingAuthenticationStore,
-            int mfaTicketTtlMinutes) {
+            com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
+            PendingAuthenticationStore pendingAuthenticationStore) {
 
         var bruteForceGuard = new _BruteForceGuard(
                 rejectedAuthenticationRepository, authenticationBlockRepository,
@@ -60,7 +58,6 @@ public final class AuthenticationFactory {
         var cleanBruteForceRecords = new _CleanBruteForceRecords(
                 rejectedAuthenticationRepository, authenticationBlockRepository);
         var updateBruteForceRecords = new _UpdateBruteForceRecords(rejectedAuthenticationRepository, clock);
-        var mfaChain = new _MfaChain(factorRegistry, challengeCodeConfig, clock, mfaTicketTtlMinutes);
 
         var authentication = new Authentication(
                 bruteForceGuard, verifyCredentials, requireVerifiedEmail, generateSession,

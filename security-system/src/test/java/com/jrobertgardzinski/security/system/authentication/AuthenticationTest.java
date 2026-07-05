@@ -72,7 +72,7 @@ class AuthenticationTest {
         // no factors enrolled in these examples → the chain is empty and sign-in is single-factor
         enrolledFactors = Mockito.mock(com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository.class);
         Mockito.when(enrolledFactors.findByUser(Mockito.any())).thenReturn(java.util.List.of());
-        var mfaChain = new _MfaChain(
+        var mfaChain = new com.jrobertgardzinski.security.system.mfa.MfaChain(
                 new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of()),
                 com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(), CLOCK, 10);
         var pendingStore = Mockito.mock(com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore.class);

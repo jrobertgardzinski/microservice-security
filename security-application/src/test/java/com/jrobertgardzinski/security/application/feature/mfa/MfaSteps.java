@@ -77,7 +77,9 @@ public class MfaSteps {
             users, verifications, rejections, blocks, sessions, hashAlgorithm,
             BruteForceConfig.builder().build(), SESSION_TOKENS_CONFIG, clock,
             () -> 5, AccessTokenMint.RANDOM,
-            enrolledFactors, registry, ChallengeCodeConfig.withDefaults(), pendingStore, 10);
+            enrolledFactors,
+            new com.jrobertgardzinski.security.system.mfa.MfaChain(registry, ChallengeCodeConfig.withDefaults(), clock, 10),
+            pendingStore);
     private final Authentication authentication = useCases.authentication();
     private final ContinueAuthentication continueAuthentication = useCases.continueAuthentication();
 

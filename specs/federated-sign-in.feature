@@ -41,6 +41,14 @@ Feature: Federated sign-in
       And the password "SquatterPass1!" no longer opens the ACCOUNT "victim@example.com"
       And every previous session of "victim@example.com" is revoked
 
+  Rule: 3b. A provider login is only link #1 — enrolled factors must still be passed
+
+    Example: a federated account that turned on a second factor
+      Given a local ACCOUNT "guarded@example.com" with a verified email and the password "StrongPassword1!"
+      And the ACCOUNT "guarded@example.com" has enrolled an e-mail FACTOR
+      When the USER SIGNS IN with a PROVIDER identity vouching for "guarded@example.com"
+      Then the SIGN IN needs a further FACTOR
+
   Rule: 4. An identity the PROVIDER does not vouch for touches nothing
 
     Example: the provider did not verify the email

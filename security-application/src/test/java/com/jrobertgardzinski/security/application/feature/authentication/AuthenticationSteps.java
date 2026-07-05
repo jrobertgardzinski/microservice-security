@@ -185,10 +185,11 @@ public class AuthenticationSteps {
                     config, SESSION_TOKENS_CONFIG, clock, blockDuration,
                     com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM,
                     new com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolledFactorRepository(),
-                    new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of()),
-                    com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
-                    new com.jrobertgardzinski.security.application.feature.support.InMemoryPendingAuthenticationStore(),
-                    10).authentication();
+                    new com.jrobertgardzinski.security.system.mfa.MfaChain(
+                            new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of()),
+                            com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(), clock, 10),
+                    new com.jrobertgardzinski.security.application.feature.support.InMemoryPendingAuthenticationStore()
+                    ).authentication();
         }
         return authentication;
     }
