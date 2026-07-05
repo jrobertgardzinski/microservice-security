@@ -83,8 +83,13 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
     ODSTĘPSTWO od doc: żywe sprawdzanie compliance w filtrze zamiast trwałej flagi `enrolment_only`
     na wierszu sesji — prościej (bez zmian schematu sesji) i poprawniej (aktualizuje się natychmiast
     po enrollmencie, bez re-logowania).
-  - ZOSTAJE: faza D (recovery codes + admin reset), E (step-up), F (OAuth jako ogniwo #1 łańcucha),
-    G (specs e2e MFA w UI). Szczegóły w docs/mfa-design.md.
+  - ~~FAZA F~~ — ZROBIONE (2026-07-05): OAuth to tylko ogniwo #1. `_MfaChain` → publiczny `MfaChain`
+    (jeden bean: logowanie hasłem, federacyjne, kontynuacja). `FederatedSignIn` po rozwiązaniu konta
+    sprawdza czynniki: brak → sesja, są → `MfaRequired` + ticket w tym samym store; callback OAuth
+    zwraca `#mfaTicket`, galeria dokańcza przez `/authenticate/factor`. Zamyka dziurę z fazy C
+    (federacyjny admin z czynnikami był wpuszczany bez nich). Scenariusz w federated-sign-in.feature.
+  - ZOSTAJE: faza D (recovery codes + admin reset), E (step-up — elevation + per-action policy,
+    wpięcie delete/change-password), G (specs e2e MFA w UI). Szczegóły w docs/mfa-design.md.
 - **Step-up auth** — WPISANE W PROJEKT MFA (faza E, [docs/mfa-design.md](docs/mfa-design.md)):
   ten sam egzekutor łańcucha odpalony na żywej sesji → jednorazowy znacznik `elevated`; polityka
   per akcja w configu NONE/SECOND_FACTORS/FULL_CHAIN (delete-account=FULL_CHAIN,
