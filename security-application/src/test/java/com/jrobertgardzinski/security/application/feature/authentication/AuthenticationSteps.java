@@ -179,10 +179,16 @@ public class AuthenticationSteps {
 
     private Authentication authentication() {
         if (authentication == null) {
-            authentication = AuthenticationFactory.create(
+            // these scenarios enrol no factors, so the chain is empty and sign-in is single-factor
+            authentication = AuthenticationFactory.assemble(
                     users, verifications, rejections, blocks, sessions, hashAlgorithm,
                     config, SESSION_TOKENS_CONFIG, clock, blockDuration,
-                    com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+                    com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM,
+                    new com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolledFactorRepository(),
+                    new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of()),
+                    com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
+                    new com.jrobertgardzinski.security.application.feature.support.InMemoryPendingAuthenticationStore(),
+                    10).authentication();
         }
         return authentication;
     }

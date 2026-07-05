@@ -56,6 +56,7 @@ class AuthenticationTest {
     private _GenerateSession generateSession;
     private _CleanBruteForceRecords cleanBruteForceRecords;
     private _UpdateBruteForceRecords updateBruteForceRecords;
+    private com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors;
     private Authentication authentication;
 
     @BeforeTry
@@ -68,9 +69,17 @@ class AuthenticationTest {
         generateSession = Mockito.mock(_GenerateSession.class);
         cleanBruteForceRecords = Mockito.mock(_CleanBruteForceRecords.class);
         updateBruteForceRecords = Mockito.mock(_UpdateBruteForceRecords.class);
+        // no factors enrolled in these examples → the chain is empty and sign-in is single-factor
+        enrolledFactors = Mockito.mock(com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository.class);
+        Mockito.when(enrolledFactors.findByUser(Mockito.any())).thenReturn(java.util.List.of());
+        var mfaChain = new _MfaChain(
+                new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of()),
+                com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(), CLOCK, 10);
+        var pendingStore = Mockito.mock(com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore.class);
         authentication = new Authentication(
                 bruteForceGuard, verifyCredentials, requireVerifiedEmail, generateSession,
-                cleanBruteForceRecords, updateBruteForceRecords);
+                cleanBruteForceRecords, updateBruteForceRecords,
+                enrolledFactors, mfaChain, pendingStore);
     }
 
     @Example

@@ -15,6 +15,7 @@ import static io.cucumber.junit.platform.engine.Constants.PLUGIN_PROPERTY_NAME;
 @SelectClasspathResource("authenticate.feature")
 @SelectClasspathResource("refresh-session.feature")
 @SelectClasspathResource("federated-sign-in.feature")
+@SelectClasspathResource("mfa.feature")
 @ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "html:target/report.html")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "com.jrobertgardzinski.security.application.feature")
 // features tagged @wip (not yet implemented) are excluded from the run

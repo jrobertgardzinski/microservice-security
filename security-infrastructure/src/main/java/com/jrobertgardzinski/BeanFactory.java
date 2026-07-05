@@ -121,7 +121,47 @@ public class BeanFactory {
     }
 
     @Singleton
-    Authentication authentication(
+    com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig challengeCodeConfig(
+            @io.micronaut.context.annotation.Value("${security.mfa.code.ttl-minutes:5}") int ttlMinutes,
+            @io.micronaut.context.annotation.Value("${security.mfa.code.max-attempts:5}") int maxAttempts,
+            @io.micronaut.context.annotation.Value("${security.mfa.code.length:6}") int length) {
+        return new com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig(ttlMinutes, maxAttempts, length);
+    }
+
+    /** The e-mail code factor, wired to whichever {@link com.jrobertgardzinski.security.domain.port.CodeChannel}
+     *  serves e-mail in this environment (outbox in prod, capturing in test). */
+    @Singleton
+    com.jrobertgardzinski.security.system.mfa.EmailCodeFactor emailCodeFactor(
+            java.util.List<com.jrobertgardzinski.security.domain.port.CodeChannel> channels,
+            com.jrobertgardzinski.security.system.mfa.CodeHasher codeHasher,
+            com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig challengeCodeConfig,
+            Clock clock) {
+        com.jrobertgardzinski.security.domain.port.CodeChannel emailChannel = channels.stream()
+                .filter(c -> c.servesFactor().equals(com.jrobertgardzinski.security.domain.vo.FactorType.EMAIL_CODE))
+                .findFirst().orElseThrow(() -> new IllegalStateException("no e-mail CodeChannel configured"));
+        return new com.jrobertgardzinski.security.system.mfa.EmailCodeFactor(
+                emailChannel, codeHasher, challengeCodeConfig, clock);
+    }
+
+    /** Which factor methods this deployment offers = which factor beans are wired. */
+    @Singleton
+    com.jrobertgardzinski.security.system.mfa.FactorRegistry factorRegistry(
+            java.util.List<com.jrobertgardzinski.security.system.mfa.AuthenticationFactor> factors) {
+        return new com.jrobertgardzinski.security.system.mfa.FactorRegistry(factors);
+    }
+
+    @Singleton
+    com.jrobertgardzinski.security.system.mfa.EnrolFactor enrolFactor(
+            com.jrobertgardzinski.security.system.mfa.FactorRegistry factorRegistry,
+            com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactorRepository,
+            com.jrobertgardzinski.security.system.mfa.EnrolmentChallengeStore enrolmentChallengeStore) {
+        return new com.jrobertgardzinski.security.system.mfa.EnrolFactor(
+                factorRegistry, enrolledFactorRepository, enrolmentChallengeStore);
+    }
+
+    /** Start and continue: assembled together so a sign-in begun by one is completed by the other. */
+    @Singleton
+    AuthenticationFactory.AuthenticationUseCases authenticationUseCases(
             UserRepository userRepository,
             EmailVerificationRepository emailVerificationRepository,
             RejectedAuthenticationRepository rejectedAuthenticationRepository,
@@ -132,11 +172,29 @@ public class BeanFactory {
             SessionTokensConfig sessionTokensConfig,
             Clock clock,
             BlockDurationPolicy blockDurationPolicy,
-            AccessTokenMint accessTokenMint) {
-        return AuthenticationFactory.create(
+            AccessTokenMint accessTokenMint,
+            com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactorRepository,
+            com.jrobertgardzinski.security.system.mfa.FactorRegistry factorRegistry,
+            com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig challengeCodeConfig,
+            com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore pendingAuthenticationStore,
+            @io.micronaut.context.annotation.Value("${security.mfa.ticket-ttl-minutes:10}") int ticketTtlMinutes) {
+        return AuthenticationFactory.assemble(
                 userRepository, emailVerificationRepository, rejectedAuthenticationRepository,
                 authenticationBlockRepository, authorizationDataRepository, hashAlgorithm,
-                bruteForceConfig, sessionTokensConfig, clock, blockDurationPolicy, accessTokenMint);
+                bruteForceConfig, sessionTokensConfig, clock, blockDurationPolicy, accessTokenMint,
+                enrolledFactorRepository, factorRegistry, challengeCodeConfig, pendingAuthenticationStore,
+                ticketTtlMinutes);
+    }
+
+    @Singleton
+    Authentication authentication(AuthenticationFactory.AuthenticationUseCases useCases) {
+        return useCases.authentication();
+    }
+
+    @Singleton
+    com.jrobertgardzinski.security.system.authentication.ContinueAuthentication continueAuthentication(
+            AuthenticationFactory.AuthenticationUseCases useCases) {
+        return useCases.continueAuthentication();
     }
 
     @Singleton

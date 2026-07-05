@@ -79,6 +79,13 @@ public class AuthenticationController {
                     HttpResponse.<Map<String, Object>>status(HttpStatus.TOO_MANY_REQUESTS)
                             .header("Retry-After", Long.toString(secondsUntil(blocked.authenticationBlock().expiryDate())))
                             .body(Map.of("error", "TOO_MANY_ATTEMPTS"));
+            // password was right, but the user has factors — no session yet; the first challenge is out.
+            // The refresh token is withheld until the chain completes (see AuthFactorController).
+            case AuthenticationResult.MfaRequired mfa ->
+                    HttpResponse.<Map<String, Object>>status(HttpStatus.ACCEPTED)
+                            .body(Map.of("status", "MFA_REQUIRED",
+                                    "mfaTicket", mfa.ticket(),
+                                    "nextFactor", mfa.nextFactor().value()));
         };
     }
 
