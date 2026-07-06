@@ -1,5 +1,6 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.config.oauth.OauthProviderSettings;
 import com.jrobertgardzinski.security.domain.vo.ProviderIdentity;
 import com.jrobertgardzinski.security.system.federation.FederatedSignIn;
 import com.jrobertgardzinski.security.system.federation.FederatedSignInResult;
@@ -38,7 +39,7 @@ import java.util.Map;
 @Controller("/oauth")
 final class OauthController {
 
-    private final Map<String, OauthProviderConfig> providers;
+    private final Map<String, OauthProviderSettings> providers;
     private final OauthFlowStore flows;
     private final OidcClient oidc;
     private final FederatedSignIn federatedSignIn;
@@ -46,13 +47,13 @@ final class OauthController {
     private final TransactionBoundary transactionBoundary;
     private final List<String> allowedReturnPrefixes;
 
-    OauthController(List<OauthProviderConfig> providers, OauthFlowStore flows, OidcClient oidc,
+    OauthController(List<OauthProviderSettings> providers, OauthFlowStore flows, OidcClient oidc,
                     FederatedSignIn federatedSignIn, RefreshCookies refreshCookies,
                     TransactionBoundary transactionBoundary,
                     @Value("${security.oauth.allowed-return-prefixes:http://localhost:8083/}")
                     List<String> allowedReturnPrefixes) {
         this.providers = providers.stream()
-                .collect(java.util.stream.Collectors.toMap(OauthProviderConfig::getName, p -> p));
+                .collect(java.util.stream.Collectors.toMap(OauthProviderSettings::name, p -> p));
         this.flows = flows;
         this.oidc = oidc;
         this.federatedSignIn = federatedSignIn;
@@ -66,15 +67,15 @@ final class OauthController {
     @Get(value = "/providers", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> providers() {
         return HttpResponse.ok(Map.of("providers", providers.values().stream()
-                .sorted(java.util.Comparator.comparing(OauthProviderConfig::getName))
-                .map(p -> Map.of("name", p.getName(), "label", p.getLabel()))
+                .sorted(java.util.Comparator.comparing(OauthProviderSettings::name))
+                .map(p -> Map.of("name", p.name(), "label", p.label()))
                 .toList()));
     }
 
     @Get(value = "/{provider}/start", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> start(@PathVariable String provider,
                           @Nullable @QueryValue("return") String returnUrl) {
-        OauthProviderConfig config = providers.get(provider);
+        OauthProviderSettings config = providers.get(provider);
         if (config == null) {
             return HttpResponse.notFound(Map.of("error", "UNKNOWN_PROVIDER"));
         }
@@ -85,11 +86,11 @@ final class OauthController {
         String codeVerifier = OauthFlowStore.randomToken();
         String nonce = OauthFlowStore.randomToken();
         String state = flows.begin(provider, codeVerifier, nonce, destination);
-        String location = config.getAuthorizeUrl() + "?" + query(Map.of(
+        String location = config.authorizeUrl() + "?" + query(Map.of(
                 "response_type", "code",
-                "client_id", config.getClientId(),
-                "redirect_uri", config.getRedirectUri(),
-                "scope", config.getScope(),
+                "client_id", config.clientId(),
+                "redirect_uri", config.redirectUri(),
+                "scope", config.scope(),
                 "state", state,
                 "nonce", nonce,
                 "code_challenge", s256(codeVerifier),

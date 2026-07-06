@@ -54,7 +54,9 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
     „github" na TYM SAMYM stubie ćwiczy USERINFO; smoke kryje obie ścieżki (PASS live).
     Przepisy configu realnych providerów: [docs/oauth-providers.md](docs/oauth-providers.md).
     `OauthFlowHttpTest`: 6 testów (dotychczasowe + hub/emails-url + faces/assume + strict/refused
-    + listing providerów).
+    + listing providerów). Ustawienia providera = `OauthProviderSettings` w WARSTWIE CONFIG
+    (framework-free rekord, defaulty+walidacja w konstruktorze; widoczny w glosariuszu UL);
+    infra tylko binduje propertisy (@EachProperty shim → @EachBean w BeanFactory).
 - **MFA: łańcuch czynników, metody PLUG-AND-PLAY, minimum per rola** — flagowy „wow"; największy
   otwarty temat. PEŁNY PROJEKT: [docs/mfa-design.md](docs/mfa-design.md) (2026-07-05). Skrót:
   port `AuthenticationFactor` + `FactorRegistry` = dodanie metody (TOTP/Google Authenticator,

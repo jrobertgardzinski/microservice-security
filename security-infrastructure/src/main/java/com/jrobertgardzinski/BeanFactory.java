@@ -120,6 +120,14 @@ public class BeanFactory {
         return new RandomBlockDurationPolicy(bruteForceConfig);
     }
 
+    /** Each bound social-login provider becomes the config layer's own type — the rest of the
+     *  code never sees the Micronaut binding shim. */
+    @io.micronaut.context.annotation.EachBean(OauthProviderConfig.class)
+    com.jrobertgardzinski.security.config.oauth.OauthProviderSettings oauthProvider(
+            OauthProviderConfig bound) {
+        return bound.settings();
+    }
+
     @Singleton
     com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig challengeCodeConfig(
             @io.micronaut.context.annotation.Value("${security.mfa.code.ttl-minutes:5}") int ttlMinutes,

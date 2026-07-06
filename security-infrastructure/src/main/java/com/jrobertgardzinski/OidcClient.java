@@ -1,6 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.security.config.oauth.OauthProviderSettings;
 import com.jrobertgardzinski.security.domain.vo.ProviderIdentity;
 import io.micronaut.json.JsonMapper;
 import jakarta.inject.Singleton;
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
  * The server-side half of the OAuth dance: exchanges an authorization code (with its PKCE
  * verifier) at the provider's token endpoint and turns the provider's assertion into a validated
  * {@link ProviderIdentity}. Two shapes of assertion exist (see
- * {@link OauthProviderConfig.IdentitySource}):
+ * {@link OauthProviderSettings.IdentitySource}):
  *
  * <ul>
  *   <li><b>ID_TOKEN</b> — full OIDC. Claim validation is mandatory and strict: issuer, audience,
@@ -62,16 +63,16 @@ final class OidcClient {
         this.clock = clock;
     }
 
-    ProviderIdentity identityFrom(OauthProviderConfig provider, String code, String codeVerifier,
+    ProviderIdentity identityFrom(OauthProviderSettings provider, String code, String codeVerifier,
                                   String expectedNonce) {
-        Map<String, Object> tokens = postForm(provider.getTokenUrl(), Map.of(
+        Map<String, Object> tokens = postForm(provider.tokenUrl(), Map.of(
                 "grant_type", "authorization_code",
                 "code", code,
-                "redirect_uri", provider.getRedirectUri(),
-                "client_id", provider.getClientId(),
-                "client_secret", provider.getClientSecret(),
+                "redirect_uri", provider.redirectUri(),
+                "client_id", provider.clientId(),
+                "client_secret", provider.clientSecret(),
                 "code_verifier", codeVerifier));
-        return switch (provider.getIdentitySource()) {
+        return switch (provider.identitySource()) {
             case ID_TOKEN -> fromIdToken(provider, tokens, expectedNonce);
             case USERINFO -> fromUserinfo(provider, tokens);
         };
@@ -79,7 +80,7 @@ final class OidcClient {
 
     // --- ID_TOKEN: the OIDC path ------------------------------------------------
 
-    private ProviderIdentity fromIdToken(OauthProviderConfig provider, Map<String, Object> tokens,
+    private ProviderIdentity fromIdToken(OauthProviderSettings provider, Map<String, Object> tokens,
                                          String expectedNonce) {
         String idToken = (String) tokens.get("id_token");
         if (idToken == null) {
@@ -93,10 +94,10 @@ final class OidcClient {
         if (subject == null || subject.isBlank() || email == null || email.isBlank()) {
             throw new OauthDanceFailed("the id_token names no subject or email");
         }
-        return new ProviderIdentity(provider.getName(), subject, Email.of(email), vouched);
+        return new ProviderIdentity(provider.name(), subject, Email.of(email), vouched);
     }
 
-    private Map<String, Object> validatedClaims(OauthProviderConfig provider, String idToken,
+    private Map<String, Object> validatedClaims(OauthProviderSettings provider, String idToken,
                                                 String expectedNonce) {
         String[] parts = idToken.split("\\.");
         if (parts.length != 3) {
@@ -104,15 +105,15 @@ final class OidcClient {
         }
         Map<String, Object> header = decodeJson(parts[0]);
         if ("HS256".equals(header.get("alg"))) {
-            verifyHs256(provider.getClientSecret(), parts);
+            verifyHs256(provider.clientSecret(), parts);
         }
         // other algs (e.g. Google's RS256): trusted because the token arrived straight from the
         // token endpoint over TLS (OIDC Core 3.1.3.7) — the claims below are still checked hard
         Map<String, Object> claims = decodeJson(parts[1]);
-        if (provider.getIssuer() != null && !provider.getIssuer().equals(claims.get("iss"))) {
+        if (provider.issuer() != null && !provider.issuer().equals(claims.get("iss"))) {
             throw new OauthDanceFailed("issuer mismatch: " + claims.get("iss"));
         }
-        if (!provider.getClientId().equals(claims.get("aud"))) {
+        if (!provider.clientId().equals(claims.get("aud"))) {
             throw new OauthDanceFailed("the id_token was minted for another audience");
         }
         long expiry = ((Number) claims.getOrDefault("exp", 0)).longValue();
@@ -140,25 +141,25 @@ final class OidcClient {
 
     // --- USERINFO: the plain-OAuth2 path -----------------------------------------
 
-    private ProviderIdentity fromUserinfo(OauthProviderConfig provider, Map<String, Object> tokens) {
+    private ProviderIdentity fromUserinfo(OauthProviderSettings provider, Map<String, Object> tokens) {
         String accessToken = (String) tokens.get("access_token");
         if (accessToken == null || accessToken.isBlank()) {
             throw new OauthDanceFailed("the token endpoint returned no access_token");
         }
-        Map<String, Object> info = getJson(provider.getUserinfoUrl(), accessToken);
+        Map<String, Object> info = getJson(provider.userinfoUrl(), accessToken);
 
-        String subject = stringField(info, provider.getSubjectField());
+        String subject = stringField(info, provider.subjectField());
         if (subject == null) {
             throw new OauthDanceFailed("the userinfo response names no '"
-                    + provider.getSubjectField() + "'");
+                    + provider.subjectField() + "'");
         }
-        String email = stringField(info, provider.getEmailField());
-        Object verifiedClaim = info.get(provider.getEmailVerifiedField());
+        String email = stringField(info, provider.emailField());
+        Object verifiedClaim = info.get(provider.emailVerifiedField());
         boolean vouched = Boolean.parseBoolean(String.valueOf(verifiedClaim));
 
         // GitHub keeps the truth behind /user/emails: userinfo may say null (private address) and
         // never carries a verified flag — the emails endpoint states both, so it wins when set
-        if ((email == null || verifiedClaim == null) && provider.getEmailsUrl() != null) {
+        if ((email == null || verifiedClaim == null) && provider.emailsUrl() != null) {
             VerifiedEmail primary = primaryVerifiedEmail(provider, accessToken);
             if (primary != null) {
                 email = primary.address();
@@ -169,18 +170,18 @@ final class OidcClient {
             throw new OauthDanceFailed("the provider disclosed no email address");
         }
         // Facebook states no verification at all — accepting it is a per-deployment decision
-        if (verifiedClaim == null && provider.isAssumeEmailVerified()) {
+        if (verifiedClaim == null && provider.assumeEmailVerified()) {
             vouched = true;
         }
-        return new ProviderIdentity(provider.getName(), subject, Email.of(email), vouched);
+        return new ProviderIdentity(provider.name(), subject, Email.of(email), vouched);
     }
 
     private record VerifiedEmail(String address) {
     }
 
     /** GitHub-shaped {@code emails-url}: a JSON array of {@code {email, primary, verified}}. */
-    private VerifiedEmail primaryVerifiedEmail(OauthProviderConfig provider, String accessToken) {
-        List<Map<String, Object>> entries = getJsonArray(provider.getEmailsUrl(), accessToken);
+    private VerifiedEmail primaryVerifiedEmail(OauthProviderSettings provider, String accessToken) {
+        List<Map<String, Object>> entries = getJsonArray(provider.emailsUrl(), accessToken);
         return entries.stream()
                 .filter(e -> Boolean.TRUE.equals(e.get("verified")))
                 .sorted((a, b) -> Boolean.compare(
