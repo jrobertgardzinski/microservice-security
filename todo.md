@@ -111,12 +111,16 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   - ~~FAZA D — admin reset~~ — ZROBIONE (2026-07-05): `PUT /admin/users/{email}/factors/reset`
     (ADMIN + step-up), `EnrolledFactorRepository.removeAll`; użytkownik po resecie spada pod podłogę.
     `AdminFactorResetHttpTest`.
-  - ZOSTAJE: **recovery codes** — ODŁOŻONE ŚWIADOMIE: nie pasują do modelu sekwencyjnego łańcucha jako
-    OBOWIĄZKOWE ogniwo (user musiałby wpisywać recovery code przy każdym logowaniu). Poprawnie to
-    „czynnik ALTERNATYWNY" — użyj recovery code ZAMIAST ogniwa, którego nie masz. Wymaga rozszerzenia
-    egzekutora o alternatywy (mała, ale osobna zmiana projektowa) — nie doklejać jako ogniwo. Faza G
-    (specs e2e MFA w security-ui) — opcjonalny szlif; MFA pokryte HTTP-testami + live smoke. Szczegóły
-    w docs/mfa-design.md.
+  - ~~recovery codes~~ — ZROBIONE (2026-07-06), dokładnie jako czynnik ALTERNATYWNY (nie ogniwo):
+    `MfaChain.verify` po odmowie czynnika próbuje skonsumować nieużyty recovery code (normalizacja
+    case/myślników → SHA-256 → warunkowy UPDATE, więc jednorazowość jest atomowa) — sign-in
+    continuation i step-up łapią to bez własnych zmian. `RecoveryCodeRepository` (V13, spent
+    zostaje wierszem — UI mówi „N z 10"), `GenerateRecoveryCodes` (alfabet bez homoglifów, grupy
+    po 5) + `RecoveryCodeConfig` (warstwa config). `POST /account/recovery-codes` pokazuje batch
+    RAZ i unieważnia stary; `GET` = licznik. UI: security-ui generuje/liczy + hint na ekranie
+    kodu; galeria hint. Testy: mfa.feature (2 scenariusze), MfaHttpTest (spend/replay/regeneracja),
+    infra-smoke krok. ZOSTAJE: Faza G (specs e2e MFA w security-ui) — opcjonalny szlif; MFA pokryte
+    HTTP-testami + live smoke. Szczegóły w docs/mfa-design.md.
 - **Step-up auth** — WPISANE W PROJEKT MFA (faza E, [docs/mfa-design.md](docs/mfa-design.md)):
   ten sam egzekutor łańcucha odpalony na żywej sesji → jednorazowy znacznik `elevated`; polityka
   per akcja w configu NONE/SECOND_FACTORS/FULL_CHAIN (delete-account=FULL_CHAIN,

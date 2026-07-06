@@ -68,17 +68,24 @@ public class MfaSteps {
     private final InMemoryPendingAuthenticationStore pendingStore = new InMemoryPendingAuthenticationStore();
     private final InMemoryEnrolmentChallengeStore enrolmentStore = new InMemoryEnrolmentChallengeStore();
     private final CapturingCodeChannel emailChannel = new CapturingCodeChannel(FactorType.EMAIL_CODE);
+    private final com.jrobertgardzinski.security.application.feature.support.InMemoryRecoveryCodeRepository
+            recoveryCodes = new com.jrobertgardzinski.security.application.feature.support.InMemoryRecoveryCodeRepository();
 
     private final FactorRegistry registry = new FactorRegistry(List.of(
             new CodeFactor(emailChannel, raw -> "hash:" + raw, ChallengeCodeConfig.withDefaults(), clock)));
     private final EnrolFactor enrolFactor = new EnrolFactor(registry, enrolledFactors, enrolmentStore);
+    private final com.jrobertgardzinski.security.system.mfa.GenerateRecoveryCodes generateRecoveryCodes =
+            new com.jrobertgardzinski.security.system.mfa.GenerateRecoveryCodes(
+                    recoveryCodes, raw -> "hash:" + raw,
+                    com.jrobertgardzinski.security.config.mfa.RecoveryCodeConfig.withDefaults());
 
     private final AuthenticationFactory.AuthenticationUseCases useCases = AuthenticationFactory.assemble(
             users, verifications, rejections, blocks, sessions, hashAlgorithm,
             BruteForceConfig.builder().build(), SESSION_TOKENS_CONFIG, clock,
             () -> 5, AccessTokenMint.RANDOM,
             enrolledFactors,
-            new com.jrobertgardzinski.security.system.mfa.MfaChain(registry, ChallengeCodeConfig.withDefaults(), clock, 10),
+            new com.jrobertgardzinski.security.system.mfa.MfaChain(registry, ChallengeCodeConfig.withDefaults(),
+                    recoveryCodes, raw -> "hash:" + raw, clock, 10),
             pendingStore);
     private final Authentication authentication = useCases.authentication();
     private final ContinueAuthentication continueAuthentication = useCases.continueAuthentication();
@@ -86,6 +93,8 @@ public class MfaSteps {
     private String email;
     private AuthenticationResult authResult;
     private ContinueAuthenticationResult factorResult;
+    private List<String> generatedRecoveryCodes;
+    private String spentRecoveryCode;
 
     @Given("a verified USER {string} with password {string}")
     public void aVerifiedUser(String email, String password) {
@@ -121,6 +130,30 @@ public class MfaSteps {
     @When("the USER submits a wrong CODE")
     public void submitWrongCode() {
         factorResult = continueAuthentication.execute(ticket(), "000000");
+    }
+
+    @Given("the USER has GENERATED RECOVERY CODES")
+    public void generatedRecoveryCodes() {
+        generatedRecoveryCodes = generateRecoveryCodes.execute(Email.of(email));
+    }
+
+    @When("the USER submits a RECOVERY CODE instead of the mailed CODE")
+    public void submitRecoveryCode() {
+        spentRecoveryCode = generatedRecoveryCodes.get(0);
+        factorResult = continueAuthentication.execute(ticket(), spentRecoveryCode);
+    }
+
+    @Given("the USER has signed in with a RECOVERY CODE once already")
+    public void signedInWithRecoveryCodeOnce() {
+        authenticatedPasswordStep();
+        submitRecoveryCode();
+        assertInstanceOf(ContinueAuthenticationResult.Completed.class, factorResult,
+                "the first recovery-code sign-in should have succeeded");
+    }
+
+    @When("the USER submits the same RECOVERY CODE again")
+    public void submitSameRecoveryCodeAgain() {
+        factorResult = continueAuthentication.execute(ticket(), spentRecoveryCode);
     }
 
     @Then("a FACTOR CODE is required, not a session")

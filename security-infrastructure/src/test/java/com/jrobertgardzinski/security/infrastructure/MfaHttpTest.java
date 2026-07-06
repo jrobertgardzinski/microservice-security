@@ -112,6 +112,54 @@ class MfaHttpTest {
                 .getBody(Map.class).orElseThrow().get("email"));
     }
 
+    @Test
+    @DisplayName("a recovery code stands in for the factor once — generated while signed in, spent at sign-in, dead after")
+    void recovery_code_signs_in_once() {
+        String email = "recovery-user@example.com";
+        String token = registerVerifyAuthenticate(email);
+        enrolEmailFactor(email, token);
+
+        // generate a batch: plain codes appear exactly once in this response
+        HttpResponse<Map> minted = exchange(HttpRequest.POST("/account/recovery-codes", Map.of())
+                .header("Authorization", "Bearer " + token));
+        assertEquals(HttpStatus.OK, minted.getStatus());
+        java.util.List<String> codes = (java.util.List<String>) minted.getBody(Map.class).orElseThrow().get("codes");
+        assertEquals(10, codes.size(), "the default batch is ten codes");
+        assertEquals(10, unusedCount(token));
+
+        // sign in: password → ticket → a RECOVERY code (typed with its print formatting) instead of the mailed one
+        Map<?, ?> first = exchange(HttpRequest.POST("/authenticate",
+                Map.of("email", email, "password", PASSWORD))).getBody(Map.class).orElseThrow();
+        String recoveryCode = codes.get(0).toUpperCase();   // case and hyphens are forgiven
+        HttpResponse<Map> done = exchange(HttpRequest.POST("/authenticate/factor",
+                Map.of("mfaTicket", first.get("mfaTicket"), "proof", recoveryCode)));
+        assertEquals(HttpStatus.OK, done.getStatus(), "an unused recovery code completes the chain");
+        assertEquals(9, unusedCount(token), "the spent code is gone from the count");
+
+        // the same code again buys nothing
+        Map<?, ?> second = exchange(HttpRequest.POST("/authenticate",
+                Map.of("email", email, "password", PASSWORD))).getBody(Map.class).orElseThrow();
+        HttpResponse<Map> replayed = exchange(HttpRequest.POST("/authenticate/factor",
+                Map.of("mfaTicket", second.get("mfaTicket"), "proof", recoveryCode)));
+        assertEquals(HttpStatus.UNAUTHORIZED, replayed.getStatus(), "a recovery code is single-use");
+
+        // a fresh batch kills the remaining nine
+        exchange(HttpRequest.POST("/account/recovery-codes", Map.of())
+                .header("Authorization", "Bearer " + token));
+        HttpResponse<Map> third = exchange(HttpRequest.POST("/authenticate",
+                Map.of("email", email, "password", PASSWORD)));
+        Map<?, ?> thirdBody = third.getBody(Map.class).orElseThrow();
+        HttpResponse<Map> oldBatch = exchange(HttpRequest.POST("/authenticate/factor",
+                Map.of("mfaTicket", thirdBody.get("mfaTicket"), "proof", codes.get(1))));
+        assertEquals(HttpStatus.UNAUTHORIZED, oldBatch.getStatus(), "regeneration invalidates the old batch");
+    }
+
+    private int unusedCount(String token) {
+        return (int) exchange(HttpRequest.GET("/account/recovery-codes")
+                .header("Authorization", "Bearer " + token))
+                .getBody(Map.class).orElseThrow().get("unused");
+    }
+
     private static String secretFromOtpauth(String uri) {
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("secret=([A-Z2-7]+)").matcher(uri);
         assertEquals(true, m.find(), "no secret in otpauth URI: " + uri);

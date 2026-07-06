@@ -76,7 +76,9 @@ public class FederatedSignInSteps {
             new SessionTokensConfig(new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1)),
             Clock.systemUTC(), AccessTokenMint.RANDOM, passwordless, enrolledFactors,
             new com.jrobertgardzinski.security.system.mfa.MfaChain(registry,
-                    com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(), Clock.systemUTC(), 10),
+                    com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
+                    new com.jrobertgardzinski.security.application.feature.support.InMemoryRecoveryCodeRepository(),
+                    raw -> "hash:" + raw, Clock.systemUTC(), 10),
             new com.jrobertgardzinski.security.application.feature.support.InMemoryPendingAuthenticationStore());
 
     private FederatedSignInResult result;

@@ -3,6 +3,7 @@ package com.jrobertgardzinski.security.system.mfa;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig;
 import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
+import com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -14,17 +15,28 @@ import java.util.List;
  * issues each factor's challenge as it becomes current, and verifies a proof against the current
  * factor. It reaches into the {@link FactorRegistry} — which adapter serves a type — so the use
  * cases above it (password sign-in, federated sign-in, the continuation) never need to know.
+ *
+ * <p>A proof the current factor rejects gets one more chance: if it is an unused RECOVERY CODE it
+ * is consumed (single-use) and stands in for that link — the break-glass path for a lost phone or
+ * inbox. Recovery codes are an alternative to a link, never a link of their own, so every entry
+ * point that walks the chain (sign-in continuation, step-up) accepts them without knowing.
  */
 public class MfaChain {
 
     private final FactorRegistry registry;
     private final ChallengeCodeConfig config;
+    private final RecoveryCodeRepository recoveryCodes;
+    private final CodeHasher codeHasher;
     private final Clock clock;
     private final int ticketTtlMinutes;
 
-    public MfaChain(FactorRegistry registry, ChallengeCodeConfig config, Clock clock, int ticketTtlMinutes) {
+    public MfaChain(FactorRegistry registry, ChallengeCodeConfig config,
+                    RecoveryCodeRepository recoveryCodes, CodeHasher codeHasher,
+                    Clock clock, int ticketTtlMinutes) {
         this.registry = registry;
         this.config = config;
+        this.recoveryCodes = recoveryCodes;
+        this.codeHasher = codeHasher;
         this.clock = clock;
         this.ticketTtlMinutes = ticketTtlMinutes;
     }
@@ -49,8 +61,14 @@ public class MfaChain {
 
     public boolean verify(PendingAuthentication pending, String proof) {
         EnrolledFactor current = pending.currentFactor();
-        return registry.forType(current.type())
+        boolean passed = registry.forType(current.type())
                 .map(f -> f.verify(current, pending.challenge(), proof))
                 .orElse(false);
+        if (passed) {
+            return true;
+        }
+        // not the factor's proof — maybe a recovery code standing in for this link (spent if so)
+        return proof != null && !proof.isBlank() && recoveryCodes.consume(pending.email(),
+                codeHasher.hash(GenerateRecoveryCodes.normalise(proof)));
     }
 }

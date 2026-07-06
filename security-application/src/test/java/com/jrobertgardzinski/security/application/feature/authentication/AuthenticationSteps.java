@@ -187,7 +187,9 @@ public class AuthenticationSteps {
                     new com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolledFactorRepository(),
                     new com.jrobertgardzinski.security.system.mfa.MfaChain(
                             new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of()),
-                            com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(), clock, 10),
+                            com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
+                            new com.jrobertgardzinski.security.application.feature.support.InMemoryRecoveryCodeRepository(),
+                            raw -> "hash:" + raw, clock, 10),
                     new com.jrobertgardzinski.security.application.feature.support.InMemoryPendingAuthenticationStore()
                     ).authentication();
         }

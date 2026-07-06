@@ -38,6 +38,9 @@ export function App() {
   const [enrollDisplay, setEnrollDisplay] = useState('');
   const [enrollTarget, setEnrollTarget] = useState('');
   const [enrolCode, setEnrolCode] = useState('');
+  // recovery codes: shown exactly once, right after generation; only the count is retrievable later
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [recoveryUnused, setRecoveryUnused] = useState<number | null>(null);
 
   useEffect(() => {
     const mailed = new URLSearchParams(location.search).get('verify');
@@ -148,6 +151,23 @@ export function App() {
   const loadFactors = async (accessToken: string) => {
     const r = await fetch(`${SECURITY}/account/factors`, { headers: { Authorization: `Bearer ${accessToken}` } });
     if (r.ok) { const body = await r.json(); setFactors(body.have ?? []); setOffered(body.offered ?? []); }
+    const rc = await fetch(`${SECURITY}/account/recovery-codes`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (rc.ok) setRecoveryUnused((await rc.json()).unused ?? 0);
+  };
+
+  const generateRecoveryCodes = async () => {
+    setNotice(null);
+    const r = await fetch(`${SECURITY}/account/recovery-codes`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (r.ok) {
+      const body: { codes: string[] } = await r.json();
+      setRecoveryCodes(body.codes ?? []);           // the one and only time they are visible
+      setRecoveryUnused((body.codes ?? []).length);
+    } else {
+      setNotice(`Could not generate recovery codes (${r.status}).`);
+    }
   };
 
   const startEnrol = async (type: string) => {
@@ -234,6 +254,25 @@ export function App() {
               <button data-testid="enroll-submit" onClick={() => void confirmEnrol()}>Confirm</button>
             </div>
           )}
+          <h4>Recovery codes</h4>
+          {recoveryCodes.length > 0 ? (
+            <div data-testid="recovery-codes">
+              <p className="notice">
+                Save these now — they will never be shown again. Each signs you in once when a
+                factor is out of reach.
+              </p>
+              <ul style={{ columns: 2, fontFamily: 'monospace' }}>
+                {recoveryCodes.map((c) => <li key={c}>{c}</li>)}
+              </ul>
+            </div>
+          ) : (
+            <p data-testid="recovery-count">
+              {recoveryUnused ? `${recoveryUnused} unused code(s) left.` : 'None yet.'}{' '}
+              <button data-testid="generate-recovery" onClick={() => void generateRecoveryCodes()}>
+                Generate {recoveryUnused ? 'a fresh batch (replaces the old one)' : 'recovery codes'}
+              </button>
+            </p>
+          )}
           <p><button data-testid="sign-out" onClick={signOut}>Sign out</button></p>
         </>
       )}
@@ -247,6 +286,9 @@ export function App() {
                    onChange={(e) => setCode(e.target.value)} autoFocus />
             <button data-testid="mfa-submit" type="submit">Sign in</button>
           </form>
+          <p data-testid="recovery-hint" style={{ fontSize: '0.85rem', opacity: 0.8 }}>
+            Lost access? Type one of your recovery codes instead — it works once.
+          </p>
         </>
       )}
 
