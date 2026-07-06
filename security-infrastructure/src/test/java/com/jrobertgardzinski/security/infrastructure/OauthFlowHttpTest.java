@@ -35,10 +35,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The whole social sign-in dance over the wire, against a fake provider: /oauth/{provider}/start
  * hands the browser a PKCE-armed authorize redirect; /oauth/callback exchanges the code at the
- * provider's token endpoint, validates the id_token (HS256 against the client secret, issuer,
- * audience, nonce) and lands the browser back on the allow-listed return URL with an access token
- * in the fragment and the refresh cookie set. States are single-use; a wrong nonce or an
- * unvouched email never opens a session.
+ * provider's token endpoint, validates the assertion and lands the browser back on the
+ * allow-listed return URL with an access token in the fragment and the refresh cookie set.
+ * States are single-use; a wrong nonce or an unvouched email never opens a session.
+ *
+ * <p>Both identity sources are danced: {@code fake} asserts through an OIDC id_token (HS256
+ * against the client secret, issuer, audience, nonce); {@code hub} is GitHub-shaped plain OAuth2
+ * (numeric id in userinfo, address hidden behind /emails) and {@code faces} Facebook-shaped
+ * (no verified flag at all — accepted only where the deployment says so).
  */
 @Epic("Authentication")
 @Feature("Federated sign-in")
@@ -49,31 +53,64 @@ class OauthFlowHttpTest {
 
     private HttpServer fakeIdp;
     private final AtomicReference<String> nextIdToken = new AtomicReference<>();
+    private final AtomicReference<String> nextUserinfo = new AtomicReference<>();
+    private final AtomicReference<String> nextEmails = new AtomicReference<>();
     private EmbeddedServer server;
     private BlockingHttpClient client;
 
     @BeforeEach
     void start() throws Exception {
         fakeIdp = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
-        fakeIdp.createContext("/token", exchange -> {
-            byte[] body = ("{\"access_token\":\"at-1\",\"token_type\":\"Bearer\",\"id_token\":\""
-                    + nextIdToken.get() + "\"}").getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().add("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, body.length);
-            exchange.getResponseBody().write(body);
-            exchange.close();
-        });
+        fakeIdp.createContext("/token", exchange -> respond(exchange,
+                "{\"access_token\":\"at-1\",\"token_type\":\"Bearer\",\"id_token\":\""
+                        + nextIdToken.get() + "\"}"));
+        fakeIdp.createContext("/userinfo", exchange -> respond(exchange,
+                "Bearer at-1".equals(exchange.getRequestHeaders().getFirst("Authorization"))
+                        ? nextUserinfo.get() : null));
+        fakeIdp.createContext("/emails", exchange -> respond(exchange,
+                "Bearer at-1".equals(exchange.getRequestHeaders().getFirst("Authorization"))
+                        ? nextEmails.get() : null));
         fakeIdp.start();
         String idp = "http://localhost:" + fakeIdp.getAddress().getPort();
 
-        server = ApplicationContext.run(EmbeddedServer.class, Map.of(
-                "security.oauth.providers.fake.issuer", idp,
-                "security.oauth.providers.fake.authorize-url", idp + "/authorize",
-                "security.oauth.providers.fake.token-url", idp + "/token",
-                "security.oauth.providers.fake.client-id", "test-client",
-                "security.oauth.providers.fake.client-secret", CLIENT_SECRET,
-                "security.oauth.providers.fake.redirect-uri", "http://security.example/oauth/callback",
-                "security.oauth.allowed-return-prefixes", "http://app.example/"), "test");
+        server = ApplicationContext.run(EmbeddedServer.class, Map.ofEntries(
+                Map.entry("security.oauth.providers.fake.issuer", idp),
+                Map.entry("security.oauth.providers.fake.authorize-url", idp + "/authorize"),
+                Map.entry("security.oauth.providers.fake.token-url", idp + "/token"),
+                Map.entry("security.oauth.providers.fake.client-id", "test-client"),
+                Map.entry("security.oauth.providers.fake.client-secret", CLIENT_SECRET),
+                Map.entry("security.oauth.providers.fake.redirect-uri", "http://security.example/oauth/callback"),
+                // GitHub-shaped: identity read from userinfo, address behind /emails
+                Map.entry("security.oauth.providers.hub.identity-source", "USERINFO"),
+                Map.entry("security.oauth.providers.hub.authorize-url", idp + "/authorize"),
+                Map.entry("security.oauth.providers.hub.token-url", idp + "/token"),
+                Map.entry("security.oauth.providers.hub.userinfo-url", idp + "/userinfo"),
+                Map.entry("security.oauth.providers.hub.emails-url", idp + "/emails"),
+                Map.entry("security.oauth.providers.hub.scope", "read:user user:email"),
+                Map.entry("security.oauth.providers.hub.subject-field", "id"),
+                Map.entry("security.oauth.providers.hub.client-id", "test-client"),
+                Map.entry("security.oauth.providers.hub.client-secret", CLIENT_SECRET),
+                Map.entry("security.oauth.providers.hub.redirect-uri", "http://security.example/oauth/callback"),
+                // Facebook-shaped: no verified flag ever; the deployment vouches deliberately
+                Map.entry("security.oauth.providers.faces.identity-source", "USERINFO"),
+                Map.entry("security.oauth.providers.faces.authorize-url", idp + "/authorize"),
+                Map.entry("security.oauth.providers.faces.token-url", idp + "/token"),
+                Map.entry("security.oauth.providers.faces.userinfo-url", idp + "/userinfo"),
+                Map.entry("security.oauth.providers.faces.subject-field", "id"),
+                Map.entry("security.oauth.providers.faces.assume-email-verified", "true"),
+                Map.entry("security.oauth.providers.faces.client-id", "test-client"),
+                Map.entry("security.oauth.providers.faces.client-secret", CLIENT_SECRET),
+                Map.entry("security.oauth.providers.faces.redirect-uri", "http://security.example/oauth/callback"),
+                // same Facebook shape WITHOUT the vouch — must never open a session
+                Map.entry("security.oauth.providers.strict.identity-source", "USERINFO"),
+                Map.entry("security.oauth.providers.strict.authorize-url", idp + "/authorize"),
+                Map.entry("security.oauth.providers.strict.token-url", idp + "/token"),
+                Map.entry("security.oauth.providers.strict.userinfo-url", idp + "/userinfo"),
+                Map.entry("security.oauth.providers.strict.subject-field", "id"),
+                Map.entry("security.oauth.providers.strict.client-id", "test-client"),
+                Map.entry("security.oauth.providers.strict.client-secret", CLIENT_SECRET),
+                Map.entry("security.oauth.providers.strict.redirect-uri", "http://security.example/oauth/callback"),
+                Map.entry("security.oauth.allowed-return-prefixes", "http://app.example/")), "test");
         DefaultHttpClientConfiguration noRedirects = new DefaultHttpClientConfiguration();
         noRedirects.setFollowRedirects(false);
         client = server.getApplicationContext()
@@ -149,10 +186,84 @@ class OauthFlowHttpTest {
         assertEquals(HttpStatus.BAD_REQUEST, refused.getStatus());
     }
 
+    @Test
+    @DisplayName("a USERINFO provider signs in through userinfo; a private address is found behind emails-url")
+    void the_userinfo_dance_signs_in() {
+        Map<String, String> authorize = startFlow("hub");
+        assertEquals("read:user user:email", authorize.get("scope"),
+                "the provider's own scope rides on the authorize redirect");
+
+        // GitHub shape: numeric id, the address held back (private), no verified flag anywhere
+        nextUserinfo.set("{\"id\":42,\"login\":\"octo\",\"email\":null}");
+        nextEmails.set("[{\"email\":\"old@example.com\",\"primary\":false,\"verified\":true},"
+                + "{\"email\":\"octo@example.com\",\"primary\":true,\"verified\":true},"
+                + "{\"email\":\"spam@example.com\",\"primary\":false,\"verified\":false}]");
+        HttpResponse<?> back = exchange("/oauth/callback?state=" + authorize.get("state") + "&code=c-9");
+
+        assertEquals(HttpStatus.FOUND, back.getStatus());
+        String location = back.getHeaders().get("Location");
+        assertTrue(location.startsWith(RETURN_URL + "#accessToken="),
+                "the userinfo path signs in like the id_token one, got: " + location);
+
+        String accessToken = location.substring((RETURN_URL + "#accessToken=").length());
+        HttpResponse<Map> me = exchange(HttpRequest.GET("/me").header("Authorization", "Bearer " + accessToken), Map.class);
+        assertEquals(HttpStatus.OK, me.getStatus());
+        assertEquals("octo@example.com", me.getBody(Map.class).orElseThrow().get("email"),
+                "the primary verified address from emails-url wins");
+    }
+
+    @Test
+    @DisplayName("a provider without a verified flag needs the deployment's explicit vouch")
+    void assume_email_verified_is_a_deliberate_decision() {
+        // Facebook shape: subject + email, verification never stated
+        Map<String, String> vouched = startFlow("faces");
+        nextUserinfo.set("{\"id\":\"fb-7\",\"email\":\"faced@example.com\"}");
+        HttpResponse<?> in = exchange("/oauth/callback?state=" + vouched.get("state") + "&code=c-10");
+        assertEquals(HttpStatus.FOUND, in.getStatus());
+        assertTrue(in.getHeaders().get("Location").startsWith(RETURN_URL + "#accessToken="),
+                "assume-email-verified lets the configured deployment accept it");
+
+        // the same assertion through a provider nobody vouched for stays outside
+        Map<String, String> unvouched = startFlow("strict");
+        nextUserinfo.set("{\"id\":\"fb-8\",\"email\":\"stranger@example.com\"}");
+        HttpResponse<?> out = exchange("/oauth/callback?state=" + unvouched.get("state") + "&code=c-11");
+        assertEquals(HttpStatus.FOUND, out.getStatus());
+        assertTrue(out.getHeaders().get("Location").endsWith("#oauthError=EMAIL_NOT_VOUCHED"),
+                "no verified flag and no vouch means no session, got: " + out.getHeaders().get("Location"));
+    }
+
+    @Test
+    @DisplayName("the configured providers are listed for the UI to draw its buttons from")
+    void providers_are_listed() {
+        HttpResponse<Map> listed = exchange(HttpRequest.GET("/oauth/providers"), Map.class);
+        assertEquals(HttpStatus.OK, listed.getStatus());
+        java.util.List<Map<String, String>> providers =
+                (java.util.List<Map<String, String>>) listed.getBody(Map.class).orElseThrow().get("providers");
+        assertEquals(java.util.List.of("faces", "fake", "hub", "strict"),
+                providers.stream().map(p -> p.get("name")).toList());
+        assertEquals("Hub", providers.stream()
+                        .filter(p -> "hub".equals(p.get("name"))).findFirst().orElseThrow().get("label"),
+                "the label defaults to the capitalised name");
+    }
+
     // --- Helpers --------------------------------------------------------------
 
+    private static void respond(com.sun.net.httpserver.HttpExchange exchange, String json)
+            throws java.io.IOException {
+        int status = json == null ? 401 : 200;
+        byte[] body = (json == null ? "{\"error\":\"invalid_token\"}" : json).getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().add("Content-Type", "application/json");
+        exchange.sendResponseHeaders(status, body.length);
+        exchange.getResponseBody().write(body);
+        exchange.close();
+    }
+
     private Map<String, String> startFlow() {
-        HttpResponse<?> redirect = exchange("/oauth/fake/start?return=" + RETURN_URL);
+        return startFlow("fake");
+    }
+
+    private Map<String, String> startFlow(String provider) {
+        HttpResponse<?> redirect = exchange("/oauth/" + provider + "/start?return=" + RETURN_URL);
         assertEquals(HttpStatus.FOUND, redirect.getStatus());
         String location = redirect.getHeaders().get("Location");
         assertTrue(location.startsWith(issuer() + "/authorize?"), "unexpected authorize URL: " + location);

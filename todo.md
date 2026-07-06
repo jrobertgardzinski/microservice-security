@@ -42,8 +42,19 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   taniec po drucie z fake'owym providerem: replay state'a, zły nonce, cudzy return-URL) + krok
   w infra-smoke (PASS live). Mail „already registered" podpowiada logowanie społecznościowe /
   ustawienie hasła resetem; UI galerii ma przycisk „Sign in with Google". ZOSTAJE na później:
-  adapter Facebooka, realny Google (client-id/secret od usera), odświeżanie linku federacyjnego
+  realny Google (client-id/secret od usera), odświeżanie linku federacyjnego
   przy change-email (dziś stały link bezpiecznie odpada i re-linkuje się przy następnym logowaniu).
+  - ~~Uogólnienie na Facebook/GitHub/GitLab~~ — ZROBIONE (2026-07-06): `identity-source`
+    per provider — `ID_TOKEN` (Google/GitLab, jak dotąd) albo `USERINFO` (Facebook/GitHub:
+    exchange kodu → access_token → GET userinfo; mapowanie pól `subject-field`/`email-field`/
+    `email-verified-field`, opcjonalny `emails-url` GitHub-shaped — primary verified wygrywa,
+    `assume-email-verified` jako świadoma decyzja deploymentu — bez niej brak flagi =
+    `EMAIL_NOT_VOUCHED`); `scope` i `label` per provider; `GET /oauth/providers` → UI galerii
+    rysuje przyciski dynamicznie (dodanie providera = tylko config). W compose drugi provider
+    „github" na TYM SAMYM stubie ćwiczy USERINFO; smoke kryje obie ścieżki (PASS live).
+    Przepisy configu realnych providerów: [docs/oauth-providers.md](docs/oauth-providers.md).
+    `OauthFlowHttpTest`: 6 testów (dotychczasowe + hub/emails-url + faces/assume + strict/refused
+    + listing providerów).
 - **MFA: łańcuch czynników, metody PLUG-AND-PLAY, minimum per rola** — flagowy „wow"; największy
   otwarty temat. PEŁNY PROJEKT: [docs/mfa-design.md](docs/mfa-design.md) (2026-07-05). Skrót:
   port `AuthenticationFactor` + `FactorRegistry` = dodanie metody (TOTP/Google Authenticator,

@@ -61,6 +61,16 @@ final class OauthController {
         this.allowedReturnPrefixes = allowedReturnPrefixes;
     }
 
+    /** The configured providers, for the UI to draw its sign-in buttons from — adding a provider
+     * to the config is all it takes for a new button to appear. */
+    @Get(value = "/providers", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<?> providers() {
+        return HttpResponse.ok(Map.of("providers", providers.values().stream()
+                .sorted(java.util.Comparator.comparing(OauthProviderConfig::getName))
+                .map(p -> Map.of("name", p.getName(), "label", p.getLabel()))
+                .toList()));
+    }
+
     @Get(value = "/{provider}/start", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> start(@PathVariable String provider,
                           @Nullable @QueryValue("return") String returnUrl) {
@@ -79,7 +89,7 @@ final class OauthController {
                 "response_type", "code",
                 "client_id", config.getClientId(),
                 "redirect_uri", config.getRedirectUri(),
-                "scope", "openid email",
+                "scope", config.getScope(),
                 "state", state,
                 "nonce", nonce,
                 "code_challenge", s256(codeVerifier),
