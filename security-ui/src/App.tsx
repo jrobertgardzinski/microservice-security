@@ -88,15 +88,16 @@ export function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    if (r.ok) {
-      await enterSession((await r.json()).accessToken);
-    } else if (r.status === 202) {
-      // more factors owed — the first challenge is out; ask for the proof
+    if (r.status === 202) {
+      // more factors owed — the first challenge is out; ask for the proof.
+      // (202 is "ok" to fetch, so this MUST be checked before r.ok)
       const body: { mfaTicket: string; nextFactor: string } = await r.json();
       setMfaTicket(body.mfaTicket);
       setNextFactor(body.nextFactor);
       setCode('');
       setMode('mfa');
+    } else if (r.ok) {
+      await enterSession((await r.json()).accessToken);
     } else if (r.status === 403) {
       setNotice('E-mail not verified yet — follow the link in the mail first.');
     } else if (r.status === 429) {
@@ -113,11 +114,12 @@ export function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mfaTicket, proof: code }),
     });
-    if (r.ok) {
-      await enterSession((await r.json()).accessToken);
-    } else if (r.status === 202) {
+    if (r.status === 202) {
+      // the chain has another link — 202 is "ok" to fetch, so check it before r.ok
       setNextFactor((await r.json()).nextFactor);
       setCode('');
+    } else if (r.ok) {
+      await enterSession((await r.json()).accessToken);
     } else {
       const body: { status?: string; attemptsLeft?: number } = await r.json();
       setNotice(body.status === 'WRONG_CODE'

@@ -119,8 +119,14 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
     po 5) + `RecoveryCodeConfig` (warstwa config). `POST /account/recovery-codes` pokazuje batch
     RAZ i unieważnia stary; `GET` = licznik. UI: security-ui generuje/liczy + hint na ekranie
     kodu; galeria hint. Testy: mfa.feature (2 scenariusze), MfaHttpTest (spend/replay/regeneracja),
-    infra-smoke krok. ZOSTAJE: Faza G (specs e2e MFA w security-ui) — opcjonalny szlif; MFA pokryte
-    HTTP-testami + live smoke. Szczegóły w docs/mfa-design.md.
+    infra-smoke krok. Szczegóły w docs/mfa-design.md.
+  - ~~FAZA G — MFA w e2e security-ui~~ — ZROBIONE (2026-07-06): mfa.feature (5 scenariuszy, w tym
+    oba recovery) przez realny UI (cucumber-js/Playwright, wspólne Gherkiny); backdoor
+    `/test/mailbox/signin-code` (AUTH_CODE); recovery codes zbierane ze strony po generacji —
+    jedyne miejsce, gdzie plaintext istnieje. 22/22 e2e. Znalazło i naprawiło realny bug UI:
+    fetch `r.ok` true dla 202 → gałąź MFA martwa po rebuildzie na Reacta (signIn + submitFactor).
+    Poza zakresem e2e security-ui: TOTP (MfaHttpTest+smoke), step-up przy delete (galeria+smoke;
+    security-ui nie ma UI delete).
 - **Step-up auth** — WPISANE W PROJEKT MFA (faza E, [docs/mfa-design.md](docs/mfa-design.md)):
   ten sam egzekutor łańcucha odpalony na żywej sesji → jednorazowy znacznik `elevated`; polityka
   per akcja w configu NONE/SECOND_FACTORS/FULL_CHAIN (delete-account=FULL_CHAIN,

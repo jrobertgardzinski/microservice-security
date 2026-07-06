@@ -21,9 +21,12 @@ import java.util.Map;
 final class TestMailboxController {
 
     private final CapturingEmailVerificationNotifier verificationMails;
+    private final CapturingEmailCodeChannel signInCodes;
 
-    TestMailboxController(CapturingEmailVerificationNotifier verificationMails) {
+    TestMailboxController(CapturingEmailVerificationNotifier verificationMails,
+                          CapturingEmailCodeChannel signInCodes) {
         this.verificationMails = verificationMails;
+        this.signInCodes = signInCodes;
     }
 
     @Get(value = "/verification-token", produces = MediaType.APPLICATION_JSON)
@@ -32,5 +35,14 @@ final class TestMailboxController {
         return token == null
                 ? HttpResponse.notFound(Map.of("error", "NO_MAIL_FOR_" + email))
                 : HttpResponse.ok(Map.of("token", token));
+    }
+
+    /** The last one-time sign-in / enrolment code "mailed" to an address (the AUTH_CODE mail). */
+    @Get(value = "/signin-code", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<Map<String, String>> signinCode(@QueryValue String email) {
+        String code = signInCodes.lastCodeFor(email);
+        return code == null
+                ? HttpResponse.notFound(Map.of("error", "NO_CODE_FOR_" + email))
+                : HttpResponse.ok(Map.of("code", code));
     }
 }
