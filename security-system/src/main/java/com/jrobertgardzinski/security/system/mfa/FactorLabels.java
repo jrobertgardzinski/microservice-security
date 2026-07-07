@@ -21,6 +21,9 @@ final class FactorLabels {
         if (FactorType.TOTP.equals(type)) {
             return "authenticator app";
         }
+        if (FactorType.WEBAUTHN.equals(type)) {
+            return "passkey";
+        }
         return type.value();
     }
 }

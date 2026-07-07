@@ -12,6 +12,7 @@ public record FactorType(String value) {
     public static final FactorType EMAIL_CODE = new FactorType("EMAIL_CODE");
     public static final FactorType SMS_CODE = new FactorType("SMS_CODE");
     public static final FactorType TOTP = new FactorType("TOTP");
+    public static final FactorType WEBAUTHN = new FactorType("WEBAUTHN");
 
     public FactorType {
         if (value.isBlank()) {

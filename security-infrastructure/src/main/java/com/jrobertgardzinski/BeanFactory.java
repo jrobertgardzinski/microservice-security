@@ -157,14 +157,28 @@ public class BeanFactory {
         return new com.jrobertgardzinski.security.system.mfa.TotpFactor(clock, issuer);
     }
 
+    /** The WebAuthn / passkey factor: pure-JDK signature verification, no library. The proof that
+     *  the factor port is plug-and-play — one more bean, no change to the chain. */
+    @Singleton
+    com.jrobertgardzinski.security.system.mfa.WebauthnFactor webauthnFactor(Clock clock,
+            @io.micronaut.context.annotation.Value("${security.webauthn.rp-id:localhost}") String rpId,
+            @io.micronaut.context.annotation.Value("${security.webauthn.rp-name:Security}") String rpName,
+            @io.micronaut.context.annotation.Value("${security.webauthn.origins:http://localhost:4200,http://localhost:8080}")
+                    java.util.List<String> origins,
+            @io.micronaut.context.annotation.Value("${security.webauthn.challenge-ttl-minutes:5}") int ttlMinutes) {
+        return new com.jrobertgardzinski.security.system.mfa.WebauthnFactor(clock, rpId, rpName, origins, ttlMinutes);
+    }
+
     /** Which factor methods this deployment offers = which factor beans are wired. */
     @Singleton
     com.jrobertgardzinski.security.system.mfa.FactorRegistry factorRegistry(
             java.util.List<com.jrobertgardzinski.security.system.mfa.CodeFactor> codeFactors,
-            com.jrobertgardzinski.security.system.mfa.TotpFactor totpFactor) {
+            com.jrobertgardzinski.security.system.mfa.TotpFactor totpFactor,
+            com.jrobertgardzinski.security.system.mfa.WebauthnFactor webauthnFactor) {
         java.util.List<com.jrobertgardzinski.security.system.mfa.AuthenticationFactor> factors =
                 new java.util.ArrayList<>(codeFactors);
         factors.add(totpFactor);
+        factors.add(webauthnFactor);
         return new com.jrobertgardzinski.security.system.mfa.FactorRegistry(factors);
     }
 
