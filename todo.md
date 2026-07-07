@@ -4,8 +4,7 @@ Tylko otwarte rzeczy. Historia zrobionego = git log.
 (Stara wersja z pełnym logiem faz: git log tego pliku.)
 
 **Plan pracy z instrukcjami wykonawczymi: [docs/opus-playbook.md](docs/opus-playbook.md)**
-(2026-07-07; S2 ZROBIONE — dalej: S1 UI-e2e dla wszystkich specs → S3 WebAuthn →
-S4/S5 zablokowane na usera).
+(2026-07-07; S1 i S2 ZROBIONE — dalej: S3 WebAuthn; S4/S5 zablokowane na usera).
 
 ## Stan (2026-07-02) — kontekst, nie backlog
 
@@ -197,9 +196,17 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
 
 ## Otwarte — wejścia i dokumentacja
 
-- **UI jako 3. wejście** — Angular + cucumber-js/Playwright napędza TE SAME feature'y ze
-  `specs/` (po to leżą w neutralnym katalogu, nie w `src/test` modułu JVM). Gdy scenariusze
-  się rozjadą między wejściami → tagi `@http`/`@ui` + filtr per runner.
+- ~~UI jako 3. wejście~~ — ZROBIONE W CAŁOŚCI (2026-07-07, playbook S1, kroki 0–7): KAŻDY
+  feature ze `specs/` zadeklarował wejścia tagiem — `@ui` jedzie przez realną przeglądarkę
+  (cucumber-js+Playwright, `security-ui/run-e2e.sh`, selekcja `@ui and not @http-only`),
+  `@http-only` to mechanika drutu (cookie/rotacja, introspekcja, taniec OAuth, logout —
+  unieważnienie jedzie na cookie, którego cross-originowe dev UI nie trzyma; per-scenariusz
+  także saga delete i federacyjny unlink). UI dorósł do speców: forgot/reset hasła,
+  zmiana hasła i emaila w koncie (link `?change=`), lista sesji + „Sign out everywhere",
+  danger zone ze step-upem FULL_CHAIN; sign-out przestał być kosmetyczny (POST /logout).
+  Backdoory skrzynki: `/test/mailbox/{reset-token,notice}` obok istniejących. Konta w glue
+  są scenariuszowo-unikalne (`support/account.mjs` — mutacje hasła/konta nie zatruwają
+  innych feature'ów). **35 scenariuszy UI / 157 kroków zielone**; suita JVM 175 zielona.
 
 ## Otwarte — porządki
 

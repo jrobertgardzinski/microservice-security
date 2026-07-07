@@ -50,6 +50,11 @@ export function App() {
   const [newEmail, setNewEmail] = useState('');
   // every active session of the account (family id + refresh expiry)
   const [sessions, setSessions] = useState<{ family: string; expiresAt: string }[]>([]);
+  // account deletion: irreversible, so it demands a fresh step-up (password, then factors)
+  const [deleting, setDeleting] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteTicket, setDeleteTicket] = useState('');
+  const [deleteCode, setDeleteCode] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -322,6 +327,53 @@ export function App() {
     if (r.status === 202) setNewEmail('');
   };
 
+  const performDelete = async () => {
+    const r = await fetch(`${SECURITY}/account/delete`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (r.status === 202) {
+      signOut();
+      setNotice('Account closing — you are signed out everywhere.');
+    } else {
+      setNotice(`Could not close the account (${r.status}).`);
+    }
+  };
+
+  const startDelete = async () => {
+    reset();
+    const r = await fetch(`${SECURITY}/account/step-up`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'delete-account', password: deletePassword }),
+    });
+    if (r.status === 202) {
+      // the chain has factors — 202 is "ok" to fetch, so check it before r.ok
+      setDeleteTicket((await r.json()).stepUpTicket);
+      setDeleteCode('');
+    } else if (r.ok) {
+      await performDelete();
+    } else {
+      setNotice('Wrong password.');
+    }
+  };
+
+  const submitDeleteCode = async () => {
+    reset();
+    const r = await fetch(`${SECURITY}/account/step-up/factor`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stepUpTicket: deleteTicket, proof: deleteCode }),
+    });
+    if (r.status === 202) {
+      setDeleteCode('');   // another link in the chain
+    } else if (r.ok) {
+      await performDelete();
+    } else {
+      setNotice('Wrong code.');
+    }
+  };
+
   const signOut = () => {
     // end the session server-side too — with a same-origin deployment the refresh cookie rides
     // along and the session family dies; cross-origin (no cookie) it is an idempotent no-op
@@ -425,6 +477,29 @@ export function App() {
                    value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
             <button data-testid="change-password-submit" type="submit">Change password</button>
           </form>
+          <h4>Danger zone</h4>
+          {!deleting ? (
+            <p><button data-testid="delete-account" onClick={() => setDeleting(true)}>
+              Delete my account…
+            </button></p>
+          ) : (
+            <div>
+              <p className="notice">This cannot be undone — prove it is you.</p>
+              <input data-testid="delete-password" type="password" placeholder="your password"
+                     autoComplete="current-password"
+                     value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} />
+              <button data-testid="delete-start" onClick={() => void startDelete()}>Continue</button>
+              {deleteTicket && (
+                <div>
+                  <input data-testid="delete-code" placeholder="code we sent you"
+                         value={deleteCode} onChange={(e) => setDeleteCode(e.target.value)} />
+                  <button data-testid="delete-submit" onClick={() => void submitDeleteCode()}>
+                    Confirm deletion
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           <p><button data-testid="sign-out" onClick={signOut}>Sign out</button></p>
         </>
       )}

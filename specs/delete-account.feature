@@ -1,3 +1,4 @@
+@ui
 Feature: Closing the account
 
   A signed-in USER closes their account. Closure is a SAGA across services: the account locks at
@@ -27,6 +28,7 @@ Feature: Closing the account
 
   Rule: The USER chooses what happens to their content
 
+    @http-only
     Example:
       Given the USER has AUTHENTICATED
       When the USER requests account DELETION keeping content with at least 100 votes
@@ -34,6 +36,7 @@ Feature: Closing the account
 
   Rule: The closure completes only when EVERY content service confirmed its purge
 
+    @http-only
     Example:
       Given the USER has AUTHENTICATED
       And the USER requested account DELETION
@@ -44,6 +47,7 @@ Feature: Closing the account
 
   Rule: Without confirmation in time the closure rolls back
 
+    @http-only
     Example:
       Given the USER has AUTHENTICATED
       And the USER requested account DELETION
