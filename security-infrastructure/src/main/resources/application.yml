@@ -1,6 +1,13 @@
 micronaut:
   application:
     name: security-service
+  metrics:
+    enabled: true
+    export:
+      prometheus:
+        enabled: true
+        descriptions: true
+        step: PT10S
   server:
     cors:
       enabled: true
@@ -14,6 +21,11 @@ micronaut:
             - http://localhost:4200
 endpoints:
   health:
+    enabled: true
+    sensitive: false
+  # scraped by the workspace's Prometheus (observability/prometheus.yml); metrics carry no
+  # secrets — request timings, JVM vitals, connection pools
+  prometheus:
     enabled: true
     sensitive: false
 # Links carried by the verification / password-reset mails; the mails themselves travel as events
