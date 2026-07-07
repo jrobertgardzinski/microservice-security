@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { assertPasskey, enrolPasskey } from './webauthn';
 
 // the e2e harness points the app at its own test-env service (Playwright injects window.SECURITY_URL
 // before the app boots); a human on the dev server gets the stack's default
@@ -31,6 +32,7 @@ export function App() {
   const [mfaTicket, setMfaTicket] = useState('');
   const [nextFactor, setNextFactor] = useState('');
   const [code, setCode] = useState('');
+  const [challengeData, setChallengeData] = useState('');
   // enrolment
   const [factors, setFactors] = useState<Factor[]>([]);
   const [offered, setOffered] = useState<string[]>([]);
@@ -147,9 +149,10 @@ export function App() {
     if (r.status === 202) {
       // more factors owed — the first challenge is out; ask for the proof.
       // (202 is "ok" to fetch, so this MUST be checked before r.ok)
-      const body: { mfaTicket: string; nextFactor: string } = await r.json();
+      const body: { mfaTicket: string; nextFactor: string; challengeData?: string } = await r.json();
       setMfaTicket(body.mfaTicket);
       setNextFactor(body.nextFactor);
+      setChallengeData(body.challengeData ?? '');
       setCode('');
       setMode('mfa');
     } else if (r.ok) {
@@ -163,16 +166,18 @@ export function App() {
     }
   };
 
-  const submitFactor = async () => {
+  const submitFactor = async (proof: string) => {
     reset();
     const r = await fetch(`${SECURITY}/authenticate/factor`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mfaTicket, proof: code }),
+      body: JSON.stringify({ mfaTicket, proof }),
     });
     if (r.status === 202) {
       // the chain has another link — 202 is "ok" to fetch, so check it before r.ok
-      setNextFactor((await r.json()).nextFactor);
+      const body: { nextFactor: string; challengeData?: string } = await r.json();
+      setNextFactor(body.nextFactor);
+      setChallengeData(body.challengeData ?? '');
       setCode('');
     } else if (r.ok) {
       await enterSession((await r.json()).accessToken);
@@ -184,6 +189,25 @@ export function App() {
       if (body.status !== 'WRONG_CODE') switchTo('signin');
     }
   };
+
+  // a passkey step needs no typing: sign the challenge and submit the assertion
+  const submitPasskey = async () => {
+    reset();
+    try {
+      const assertion = await assertPasskey(challengeData);
+      if (assertion) await submitFactor(assertion);
+    } catch {
+      setNotice('Passkey sign-in was cancelled or failed.');
+    }
+  };
+
+  // when the sign-in chain reaches a passkey, prompt the authenticator right away
+  useEffect(() => {
+    if (mode === 'mfa' && nextFactor === 'WEBAUTHN' && challengeData) {
+      void submitPasskey();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, nextFactor, challengeData]);
 
   const signUp = async () => {
     reset();
@@ -204,7 +228,7 @@ export function App() {
   };
 
   const factorLabel = (type: string) =>
-    ({ EMAIL_CODE: 'e-mail code', SMS_CODE: 'SMS code', TOTP: 'authenticator app' } as Record<string, string>)[type] ?? type;
+    ({ EMAIL_CODE: 'e-mail code', SMS_CODE: 'SMS code', TOTP: 'authenticator app', WEBAUTHN: 'passkey' } as Record<string, string>)[type] ?? type;
 
   const loadFactors = async (accessToken: string) => {
     const r = await fetch(`${SECURITY}/account/factors`, { headers: { Authorization: `Bearer ${accessToken}` } });
@@ -238,11 +262,36 @@ export function App() {
     });
     if (r.status === 202) {
       const setup: { status: string; display?: string } = await r.json();
+      if (type === 'WEBAUTHN') {
+        // a passkey enrols in one gesture: create the credential and confirm the attestation
+        await confirmPasskeyEnrol(setup.display ?? '');
+        return;
+      }
       setEnrollingType(type);
       setEnrollDisplay(setup.display ?? '');
       setEnrolCode('');
     } else {
       setNotice('Could not start enrolment.');
+    }
+  };
+
+  const confirmPasskeyEnrol = async (display: string) => {
+    try {
+      const attestation = await enrolPasskey(display);
+      if (!attestation) { setNotice('Passkey enrolment was cancelled.'); return; }
+      const r = await fetch(`${SECURITY}/account/factors/WEBAUTHN/enroll/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code: attestation }),
+      });
+      if (r.ok) {
+        setNotice('passkey enrolled — you will use it next sign-in.');
+        void loadFactors(token);
+      } else {
+        setNotice('Passkey enrolment not completed.');
+      }
+    } catch {
+      setNotice('Passkey enrolment was cancelled or failed.');
     }
   };
 
@@ -507,15 +556,24 @@ export function App() {
       {mode === 'mfa' && (
         <>
           <h3 data-testid="mfa-screen">One more step</h3>
-          <p>We sent a {prettify(nextFactor)} to your e-mail — enter it to finish signing in.</p>
-          <form onSubmit={(e) => { e.preventDefault(); void submitFactor(); }}>
-            <input data-testid="mfa-code" placeholder="sign-in code" value={code}
-                   onChange={(e) => setCode(e.target.value)} autoFocus />
-            <button data-testid="mfa-submit" type="submit">Sign in</button>
-          </form>
-          <p data-testid="recovery-hint" style={{ fontSize: '0.85rem', opacity: 0.8 }}>
-            Lost access? Type one of your recovery codes instead — it works once.
-          </p>
+          {nextFactor === 'WEBAUTHN' ? (
+            <>
+              <p data-testid="passkey-prompt">Confirm with your passkey to finish signing in.</p>
+              <button data-testid="passkey-retry" onClick={() => void submitPasskey()}>Use passkey</button>
+            </>
+          ) : (
+            <>
+              <p>We sent a {prettify(nextFactor)} to your e-mail — enter it to finish signing in.</p>
+              <form onSubmit={(e) => { e.preventDefault(); void submitFactor(code); }}>
+                <input data-testid="mfa-code" placeholder="sign-in code" value={code}
+                       onChange={(e) => setCode(e.target.value)} autoFocus />
+                <button data-testid="mfa-submit" type="submit">Sign in</button>
+              </form>
+              <p data-testid="recovery-hint" style={{ fontSize: '0.85rem', opacity: 0.8 }}>
+                Lost access? Type one of your recovery codes instead — it works once.
+              </p>
+            </>
+          )}
         </>
       )}
 
