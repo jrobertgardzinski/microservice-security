@@ -1,3 +1,4 @@
+@ui
 Feature: Registration
 
   A new USER REGISTERS with an EMAIL and a password. Registration is refused

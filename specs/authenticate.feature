@@ -1,3 +1,4 @@
+@ui
 Feature: Authentication
 
   Repeated failed AUTHENTICATION attempts from the same source temporarily

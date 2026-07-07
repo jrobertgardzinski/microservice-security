@@ -1,3 +1,4 @@
+@http-only
 Feature: Refresh token theft detection
 
   REFRESH tokens are single-use: each REFRESH rotates to a new one. Presenting a REFRESH TOKEN that

@@ -1,3 +1,4 @@
+@http-only
 Feature: Authorizing access with an access token
 
   A protected resource requires a valid, unexpired ACCESS TOKEN. The token is obtained by

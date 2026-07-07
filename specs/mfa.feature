@@ -1,3 +1,4 @@
+@ui
 Feature: Multi-factor sign-in
 
   A USER may enrol extra FACTORS. Once enrolled, a correct password is no longer

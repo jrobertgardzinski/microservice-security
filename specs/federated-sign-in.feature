@@ -1,3 +1,4 @@
+@http-only
 Feature: Federated sign-in
 
   A USER SIGNS IN with an identity an external PROVIDER vouches for. Registration
