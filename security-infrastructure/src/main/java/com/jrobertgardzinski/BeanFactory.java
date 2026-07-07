@@ -352,8 +352,11 @@ public class BeanFactory {
 
     @Singleton
     ConfirmEmailChange confirmEmailChange(EmailChangeRepository emailChangeRepository, UserRepository userRepository,
-                                          EmailVerificationRepository emailVerificationRepository) {
-        return new ConfirmEmailChange(emailChangeRepository, userRepository, emailVerificationRepository);
+                                          EmailVerificationRepository emailVerificationRepository,
+                                          com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository
+                                                  federatedIdentityRepository) {
+        return new ConfirmEmailChange(emailChangeRepository, userRepository, emailVerificationRepository,
+                federatedIdentityRepository);
     }
 
     @Singleton

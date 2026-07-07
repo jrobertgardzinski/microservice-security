@@ -29,6 +29,7 @@ class ConfirmEmailChangeTest {
     private EmailChangeRepository emailChangeRepository;
     private UserRepository userRepository;
     private EmailVerificationRepository emailVerificationRepository;
+    private com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository federatedIdentityRepository;
     private ConfirmEmailChange confirmEmailChange;
 
     @BeforeTry
@@ -36,7 +37,10 @@ class ConfirmEmailChangeTest {
         emailChangeRepository = Mockito.mock(EmailChangeRepository.class);
         userRepository = Mockito.mock(UserRepository.class);
         emailVerificationRepository = Mockito.mock(EmailVerificationRepository.class);
-        confirmEmailChange = new ConfirmEmailChange(emailChangeRepository, userRepository, emailVerificationRepository);
+        federatedIdentityRepository = Mockito.mock(
+                com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository.class);
+        confirmEmailChange = new ConfirmEmailChange(emailChangeRepository, userRepository,
+                emailVerificationRepository, federatedIdentityRepository);
     }
 
     @Example
@@ -47,6 +51,16 @@ class ConfirmEmailChangeTest {
         assertEquals(new ConfirmEmailChangeResult.EmailChanged(NEW), confirmEmailChange.execute(TOKEN));
         Mockito.verify(userRepository).updateEmail(OLD, NEW);
         Mockito.verify(emailVerificationRepository).markVerified(NEW);
+    }
+
+    @Example
+    @Label("Federated links die with the old address — the provider vouched for it, not the account")
+    void federated_links_are_severed() {
+        Mockito.when(emailChangeRepository.confirmChange(TOKEN)).thenReturn(Optional.of(new EmailChange(OLD, NEW)));
+
+        confirmEmailChange.execute(TOKEN);
+
+        Mockito.verify(federatedIdentityRepository).unlinkAll(OLD);
     }
 
     @Example

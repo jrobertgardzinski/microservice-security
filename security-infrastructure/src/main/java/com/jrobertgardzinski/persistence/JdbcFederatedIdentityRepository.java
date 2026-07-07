@@ -39,4 +39,9 @@ final class JdbcFederatedIdentityRepository implements FederatedIdentityReposito
         repository.save(new FederatedIdentityEntity(key, provider, subject,
                 userEmail.value(), LocalDateTime.now(clock)));
     }
+
+    @Override
+    public void unlinkAll(Email userEmail) {
+        repository.deleteByUserEmail(userEmail.value());
+    }
 }

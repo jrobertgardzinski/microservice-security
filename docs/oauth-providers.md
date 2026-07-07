@@ -112,3 +112,14 @@ e-mail was never confirmed could reach the matching local account.
 Both flavours run against the same stub IdP (`microservice-idp`): `google`
 exercises ID_TOKEN, `github` exercises USERINFO (`/userinfo` on the stub).
 `infra-smoke.sh` proves both paths live.
+
+## Email change & federated identities
+
+A confirmed email change **severs every federated link** of the account
+(`ConfirmEmailChange` → `FederatedIdentityRepository.unlinkAll`): the provider
+vouched for the OLD address, so the link must not silently follow the account
+to a new one. Nothing is re-pointed automatically — at the user's next
+federated sign-in the ordinary rules apply (the account is verified, so the
+identity auto-links again). Until then the identity opens nothing.
+Pinned by the "FEDERATED LINKS die with the old EMAIL" rule in
+`specs/change-email.feature` and `ConfirmEmailChangeTest`.

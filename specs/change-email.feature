@@ -38,3 +38,15 @@ Feature: Changing the email address
       When the USER requests to CHANGE the EMAIL to "occupied@example.com"
       Then the CHANGE request is quietly refused, indistinguishable from a fresh one
       And the owner of "occupied@example.com" is notified by mail
+
+  Rule: FEDERATED LINKS die with the old EMAIL — the provider vouched for the address, not the account
+
+    The next federated sign-in re-links through the ordinary verified-account auto-link;
+    until then the identity opens nothing.
+
+    Example:
+      Given the USER also signs in through "google" as subject "subject-7"
+      And the USER has AUTHENTICATED
+      When the USER requests to CHANGE the EMAIL to "fresh@example.com"
+      And the USER CONFIRMS the EMAIL CHANGE with the token from the link
+      Then the "google" identity "subject-7" no longer opens any account

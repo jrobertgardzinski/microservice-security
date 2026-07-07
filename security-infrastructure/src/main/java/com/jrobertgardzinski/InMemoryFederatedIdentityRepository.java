@@ -29,4 +29,9 @@ public final class InMemoryFederatedIdentityRepository implements FederatedIdent
     public void link(String provider, String subject, Email userEmail) {
         userBySubject.put(provider + "|" + subject, userEmail.value());
     }
+
+    @Override
+    public void unlinkAll(Email userEmail) {
+        userBySubject.values().removeIf(userEmail.value()::equals);
+    }
 }

@@ -4,8 +4,8 @@ Tylko otwarte rzeczy. Historia zrobionego = git log.
 (Stara wersja z pełnym logiem faz: git log tego pliku.)
 
 **Plan pracy z instrukcjami wykonawczymi: [docs/opus-playbook.md](docs/opus-playbook.md)**
-(2026-07-07; kolejność: S1 UI-e2e dla wszystkich specs → S2 link federacyjny przy
-change-email → S3 WebAuthn → S4/S5 zablokowane na usera).
+(2026-07-07; S2 ZROBIONE — dalej: S1 UI-e2e dla wszystkich specs → S3 WebAuthn →
+S4/S5 zablokowane na usera).
 
 ## Stan (2026-07-02) — kontekst, nie backlog
 
@@ -46,8 +46,13 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   taniec po drucie z fake'owym providerem: replay state'a, zły nonce, cudzy return-URL) + krok
   w infra-smoke (PASS live). Mail „already registered" podpowiada logowanie społecznościowe /
   ustawienie hasła resetem; UI galerii ma przycisk „Sign in with Google". ZOSTAJE na później:
-  realny Google (client-id/secret od usera), odświeżanie linku federacyjnego
-  przy change-email (dziś stały link bezpiecznie odpada i re-linkuje się przy następnym logowaniu).
+  realny Google (client-id/secret od usera — ZABLOKOWANE na usera, przepis w docs/oauth-providers.md).
+  ~~Odświeżanie linku federacyjnego przy change-email~~ — ZROBIONE (2026-07-07, playbook S2):
+  potwierdzenie zmiany emaila JAWNIE odpina wszystkie tożsamości federacyjne
+  (`FederatedIdentityRepository.unlinkAll`, in-memory + JDBC `deleteByUserEmail`);
+  bez auto-przepięcia — provider poręczył stary adres, re-link przy następnym federacyjnym
+  logowaniu ścieżką auto-link. Reguła w change-email.feature (HTTP glue), unit w
+  ConfirmEmailChangeTest, sekcja w docs/oauth-providers.md.
   - ~~Uogólnienie na Facebook/GitHub/GitLab~~ — ZROBIONE (2026-07-06): `identity-source`
     per provider — `ID_TOKEN` (Google/GitLab, jak dotąd) albo `USERINFO` (Facebook/GitHub:
     exchange kodu → access_token → GET userinfo; mapowanie pól `subject-field`/`email-field`/

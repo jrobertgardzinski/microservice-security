@@ -111,6 +111,23 @@ public class HttpChangeEmailSteps {
         confirmResponse = exchange(HttpRequest.POST("/confirm-email-change", Map.of("token", "garbage-token")));
     }
 
+    @Given("the USER also signs in through {string} as subject {string}")
+    public void alsoSignsInThrough(String provider, String subject) {
+        federatedIdentities().link(provider, subject, com.jrobertgardzinski.email.domain.Email.of(email));
+    }
+
+    @Then("the {string} identity {string} no longer opens any account")
+    public void identityNoLongerOpensAnyAccount(String provider, String subject) {
+        org.junit.jupiter.api.Assertions.assertTrue(
+                federatedIdentities().findUserBy(provider, subject).isEmpty(),
+                "the federated link must die with the old address — the provider vouched for it");
+    }
+
+    private com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository federatedIdentities() {
+        return server.getApplicationContext()
+                .getBean(com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository.class);
+    }
+
     @Then("the USER can AUTHENTICATE as {string}")
     public void canAuthenticateAs(String asEmail) {
         assertEquals(HttpStatus.OK, authenticate(asEmail).getStatus());

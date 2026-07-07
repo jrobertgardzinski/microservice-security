@@ -10,4 +10,6 @@ import javax.sql.DataSource;
 @JdbcRepository(dialect = Dialect.POSTGRES)
 @Requires(beans = DataSource.class)
 interface FederatedIdentityJdbcRepository extends CrudRepository<FederatedIdentityEntity, String> {
+
+    void deleteByUserEmail(String userEmail);
 }

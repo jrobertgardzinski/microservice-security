@@ -15,4 +15,12 @@ public interface FederatedIdentityRepository {
     Optional<Email> findUserBy(String provider, String subject);
 
     void link(String provider, String subject, Email userEmail);
+
+    /**
+     * Severs every federated link of this account. Called when the account's email changes: the
+     * provider vouched for the OLD address, so the link must not follow the account to the new
+     * one — the user re-links naturally at their next federated sign-in (auto-link on a verified
+     * account), and until then the identity opens nothing.
+     */
+    void unlinkAll(Email userEmail);
 }
