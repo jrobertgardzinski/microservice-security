@@ -127,12 +127,16 @@ stale identity can open whatever account later claims the freed address.
 Pinned by the "FEDERATED LINKS follow the account" rule in
 `specs/change-email.feature`, `ConfirmEmailChangeTest` and `DeleteAccountTest`.
 
-## Keycloak (a real, self-hosted OIDC provider)
+## Keycloak (a real, self-hosted OIDC provider) — recipe
 
-The compose stack runs a real Keycloak next to the stub (`keycloak:` service,
-realm `portfolio` imported from `keycloak/realm-portfolio.json`; demo account
-`kc-demo@example.com` / `StrongPassword1!`). The provider plugs in with env
-alone — the dance code is identical to Google's:
+Verified live against Keycloak 26 (2026-07-07): the full dance — authorize,
+login form, code, PKCE exchange, session, `/me` — passed headlessly with the
+provider configured by env alone; the dance code is identical to Google's.
+(The compose stack does not carry a Keycloak container — the proof is banked;
+spin one up with `start-dev --import-realm` when you want the button back.)
+Keycloak side: a confidential client with the `/oauth/callback` redirect URI,
+and a user with a VERIFIED email (and first/last name, or the login form
+detours into update-profile). Security side:
 
 ```yaml
 SECURITY_OAUTH_PROVIDERS_KEYCLOAK_ISSUER:        http://localhost:8180/realms/portfolio
