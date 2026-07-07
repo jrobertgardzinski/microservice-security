@@ -74,6 +74,10 @@ class MfaRoleFloorHttpTest {
         // now the floor is 2 and the user has one factor (the password): under-protected
         Map<?, ?> nowMe = me(userToken);
         assertEquals(false, nowMe.get("mfaCompliant"));
+        // a token minted NOW carries the compliance verdict as a claim, so offline consumers
+        // (comments and friends) can withhold privileged roles without calling /me
+        assertEquals(false, claims(signIn(user)).get("mfaCompliant"),
+                "a fresh token of an under-enrolled moderator says mfaCompliant=false");
         assertEquals(2, nowMe.get("requiredFactors"));
         assertEquals(1, nowMe.get("haveFactors"));
 
@@ -103,6 +107,23 @@ class MfaRoleFloorHttpTest {
         exchange(HttpRequest.POST("/verify-email", Map.of("token", verificationToken)));
         return (String) exchange(HttpRequest.POST("/authenticate", Map.of("email", email, "password", PASSWORD)))
                 .getBody(Map.class).orElseThrow().get("accessToken");
+    }
+
+    /** A fresh token for an already-onboarded account (re-authenticate). */
+    private String signIn(String email) {
+        return (String) exchange(HttpRequest.POST("/authenticate", Map.of("email", email, "password", PASSWORD)))
+                .getBody(Map.class).orElseThrow().get("accessToken");
+    }
+
+    /** The JWT payload, decoded — what an offline consumer reads. */
+    private Map<?, ?> claims(String jwt) {
+        try {
+            byte[] payload = java.util.Base64.getUrlDecoder().decode(jwt.split("\\.")[1]);
+            return server.getApplicationContext().getBean(io.micronaut.json.JsonMapper.class)
+                    .readValue(payload, Map.class);
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 
     private void enrolEmailFactor(String email, String token) {

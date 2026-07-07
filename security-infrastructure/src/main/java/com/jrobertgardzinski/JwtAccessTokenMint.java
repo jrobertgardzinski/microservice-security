@@ -52,29 +52,37 @@ class JwtAccessTokenMint implements AccessTokenMint {
     private final KeyPair keyPair;
     private final String keyId;
     private final UserRepository users;
+    private final com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance;
     private final Clock clock;
     private final JsonMapper json;
 
     JwtAccessTokenMint(@Value("${security.jwt.private-key:}") String privateKeyBase64,
                        @Value("${security.jwt.public-key:}") String publicKeyBase64,
-                       UserRepository users, Clock clock, JsonMapper json) {
+                       UserRepository users, com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance,
+                       Clock clock, JsonMapper json) {
         this.keyPair = load(privateKeyBase64, publicKeyBase64);
         this.keyId = keyIdOf(keyPair.getPublic());
         this.users = users;
+        this.compliance = compliance;
         this.clock = clock;
         this.json = json;
     }
 
     @Override
     public AccessToken mint(Email email, AuthorizationTokenExpiration expiration) {
-        List<String> roles = users.findBy(email)
-                .map(user -> user.roles().stream().map(Role::name).sorted().toList())
-                .orElse(List.of(Role.USER.name()));
+        java.util.Set<Role> roleSet = users.findBy(email)
+                .map(user -> user.roles())
+                .orElse(java.util.Set.of(Role.USER));
+        List<String> roles = roleSet.stream().map(Role::name).sorted().toList();
         Map<String, Object> header = Map.of("alg", "EdDSA", "typ", "JWT", "kid", keyId);
         Map<String, Object> claims = new LinkedHashMap<>();
         claims.put("iss", ISSUER);
         claims.put("sub", email.value());
         claims.put("roles", roles);
+        // whether the account meets its role's factor floor AT MINT TIME — offline consumers use
+        // it to withhold privileged roles from an under-enrolled caller. Same trade-off as the
+        // rest of the claims: enrolment mid-session shows after the next sign-in/refresh.
+        claims.put("mfaCompliant", compliance.isCompliant(email, roleSet));
         claims.put("iat", clock.instant().getEpochSecond());
         claims.put("exp", expiration.value().atZone(clock.getZone()).toEpochSecond());
         claims.put("jti", UUID.randomUUID().toString());
