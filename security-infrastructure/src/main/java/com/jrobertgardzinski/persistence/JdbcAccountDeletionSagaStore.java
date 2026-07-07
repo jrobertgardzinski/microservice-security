@@ -22,7 +22,7 @@ class JdbcAccountDeletionSagaStore implements AccountDeletionSagaStore {
 
     @Override
     public void start(UUID sagaId, String email, Instant at) {
-        repository.save(new AccountDeletionSagaEntity(sagaId, email, "STARTED", false, false, at, at));
+        repository.save(new AccountDeletionSagaEntity(sagaId, email, "STARTED", false, false, false, at, at));
     }
 
     @Override
@@ -30,6 +30,7 @@ class JdbcAccountDeletionSagaStore implements AccountDeletionSagaStore {
         switch (participant) {
             case "memes" -> repository.confirmMemes(email, at);
             case "comments" -> repository.confirmComments(email, at);
+            case "collections" -> repository.confirmCollections(email, at);
             default -> throw new IllegalArgumentException("unknown saga participant: " + participant);
         }
         return repository.completeFullyConfirmed(email, at) > 0;

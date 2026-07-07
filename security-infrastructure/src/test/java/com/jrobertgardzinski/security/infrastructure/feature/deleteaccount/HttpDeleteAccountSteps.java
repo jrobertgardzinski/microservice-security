@@ -123,6 +123,11 @@ public class HttpDeleteAccountSteps {
         server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).completePurge(email, "comments");
     }
 
+    @When("the collections service confirms the content purge too")
+    public void theCollectionsServiceConfirmsToo() {
+        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).completePurge(email, "collections");
+    }
+
     @When("the content purge does not confirm within the time limit")
     public void thePurgeDoesNotConfirmInTime() {
         client.exchange(HttpRequest.POST("/test/clock/advance", Map.of("duration", "PT3M")));

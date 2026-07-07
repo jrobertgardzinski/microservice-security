@@ -43,6 +43,7 @@ Feature: Closing the account
       When only the meme service confirmed the content purge
       Then the email is not yet free to REGISTER
       When the comments service confirms the content purge too
+      And the collections service confirms the content purge too
       Then the USER can REGISTER again with "StrongPassword1!"
 
   Rule: Without confirmation in time the closure rolls back

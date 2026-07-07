@@ -14,6 +14,7 @@ record AccountDeletionSagaEntity(
         String state,
         boolean memesPurged,
         boolean commentsPurged,
+        boolean collectionsPurged,
         Instant createdAt,
         Instant updatedAt) {
 }

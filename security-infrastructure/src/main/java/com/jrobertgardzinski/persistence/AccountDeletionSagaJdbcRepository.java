@@ -23,8 +23,13 @@ interface AccountDeletionSagaJdbcRepository extends CrudRepository<AccountDeleti
             + "WHERE email = :email AND state = 'STARTED'")
     void confirmComments(String email, Instant at);
 
+    @Query("UPDATE account_deletion_sagas SET collections_purged = true, updated_at = :at "
+            + "WHERE email = :email AND state = 'STARTED'")
+    void confirmCollections(String email, Instant at);
+
     @Query("UPDATE account_deletion_sagas SET state = 'COMPLETED', updated_at = :at "
-            + "WHERE email = :email AND state = 'STARTED' AND memes_purged AND comments_purged")
+            + "WHERE email = :email AND state = 'STARTED' AND memes_purged AND comments_purged "
+            + "AND collections_purged")
     long completeFullyConfirmed(String email, Instant at);
 
     List<AccountDeletionSagaEntity> findByStateAndCreatedAtBefore(String state, Instant cutoff);

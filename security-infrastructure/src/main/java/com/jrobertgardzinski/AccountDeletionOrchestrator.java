@@ -78,8 +78,8 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
     }
 
     /**
-     * One content service ("memes" or "comments") confirmed its purge; the deletion finishes only
-     * when the LAST missing confirmation arrives. Duplicates and strays are no-ops.
+     * One content service ("memes", "comments" or "collections") confirmed its purge; the deletion
+     * finishes only when the LAST missing confirmation arrives. Duplicates and strays are no-ops.
      */
     public void completePurge(String email, String participant) {
         if (!sagas.confirm(email, participant, Instant.now(clock))) {

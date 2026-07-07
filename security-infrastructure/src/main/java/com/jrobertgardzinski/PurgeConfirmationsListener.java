@@ -15,9 +15,10 @@ import java.util.Map;
 
 /**
  * The saga's ears: purge confirmations arrive from microservice-memes on {@code memes-events}
- * (which also carries MEME_DELETED lifecycle events - ignored here) and from
- * microservice-comments on {@code comments-events}. Each USER_CONTENT_PURGED event records that
- * participant's confirmation; the orchestrator completes the deletion when both are in.
+ * (which also carries MEME_DELETED lifecycle events - ignored here), from microservice-comments on
+ * {@code comments-events}, and from microservice-user-collections on {@code usercollections-events}.
+ * Each USER_CONTENT_PURGED event records that participant's confirmation; the orchestrator completes
+ * the deletion when all three are in.
  */
 @KafkaListener(groupId = "security", offsetReset = OffsetReset.EARLIEST)
 @Requires(notEnv = "test")
@@ -44,6 +45,11 @@ class PurgeConfirmationsListener {
     @Topic("comments-events")
     void fromComments(String payload, @MessageHeader("X-Correlation-Id") @Nullable String cid) {
         confirmIfPurged(payload, "comments", cid);
+    }
+
+    @Topic("usercollections-events")
+    void fromCollections(String payload, @MessageHeader("X-Correlation-Id") @Nullable String cid) {
+        confirmIfPurged(payload, "collections", cid);
     }
 
     private void confirmIfPurged(String payload, String participant, String cid) {
