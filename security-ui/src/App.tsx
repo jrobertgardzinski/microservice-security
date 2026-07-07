@@ -206,6 +206,10 @@ export function App() {
   };
 
   const signOut = () => {
+    // end the session server-side too — with a same-origin deployment the refresh cookie rides
+    // along and the session family dies; cross-origin (no cookie) it is an idempotent no-op
+    void fetch(`${SECURITY}/logout`, { method: 'POST', credentials: 'include', keepalive: true })
+      .catch(() => { /* signing out locally must never hang on the network */ });
     setToken('');
     setMe('');
     setRoles([]);

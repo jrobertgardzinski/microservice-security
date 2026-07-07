@@ -54,13 +54,16 @@ Feature'y czysto drutowe dostają jawny tag i zostają przy wejściach JVM.
 - Runnery JVM: nie filtruj (JVM napędza wszystko jak dotąd) — tagi są dla UI.
 - Dowód kroku 0: `./run-e2e.sh` dalej 22/22 (te same 3 feature'y łapią się przez tag).
 
-**Decyzje tagowania (podjęte, nie negocjuj):**
+**Decyzje tagowania (podjęte; korekta 2026-07-07 po kroku 1):**
 - `@http-only`: `authorize.feature` (introspekcja — brak UI), `refresh-session.feature`
   i `reuse-detection.feature` (mechanika cookie/rotacji — przeglądarka robi to sama,
   scenariusze sterują drutem), `federated-sign-in.feature` (taniec z fake providerem —
-  UI-owa strona jest już kryta e2e galerii w memes).
+  UI-owa strona jest już kryta e2e galerii w memes), **`logout.feature`** (KOREKTA:
+  unieważnienie sesji jedzie na cookie refresh, którego cross-originowe dev UI nie trzyma —
+  fetch bez credentials/SameSite; sign-out w UI mimo to woła POST /logout, co przy
+  serwowaniu same-origin unieważnia naprawdę).
 - `@ui`: register, authenticate, mfa (są), verify-email, reset-password, change-password,
-  change-email, logout, list-sessions, revoke-all-sessions, delete-account.
+  change-email, list-sessions, revoke-all-sessions, delete-account.
 
 **Krok 1..N — po JEDNYM feature na commit, w tej kolejności** (od najmniejszego przyrostu
 ekranu do największego):

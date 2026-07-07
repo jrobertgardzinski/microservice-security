@@ -1,3 +1,7 @@
+# @http-only, not @ui: session revocation rides the refresh COOKIE, which a cross-origin dev UI
+# (vite:4200 -> service:8180, fetch without credentials) never holds — the wire glue owns these
+# rules. The UI sign-out still POSTs /logout so a same-origin deployment revokes for real.
+@http-only
 Feature: Logging out
 
   LOGGING OUT ends the current session: its REFRESH TOKEN can no longer be REFRESHED and its access
