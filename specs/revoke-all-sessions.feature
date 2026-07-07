@@ -1,3 +1,4 @@
+@ui
 Feature: Revoking all sessions
 
   A USER can log out everywhere at once: revoking all sessions ends every session the

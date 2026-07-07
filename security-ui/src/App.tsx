@@ -48,6 +48,8 @@ export function App() {
   const [newPassword, setNewPassword] = useState('');
   // e-mail change (signed in): the confirmation link goes to the NEW address
   const [newEmail, setNewEmail] = useState('');
+  // every active session of the account (family id + refresh expiry)
+  const [sessions, setSessions] = useState<{ family: string; expiresAt: string }[]>([]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -107,6 +109,27 @@ export function App() {
     setFloor({ required: meBody.requiredFactors ?? 1, have: meBody.haveFactors ?? 1 });
     setMode('me');
     void loadFactors(accessToken);
+    void loadSessions(accessToken);
+  };
+
+  const loadSessions = async (accessToken: string) => {
+    const r = await fetch(`${SECURITY}/sessions`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (r.ok) setSessions((await r.json()).sessions ?? []);
+  };
+
+  const revokeAllSessions = async () => {
+    reset();
+    const r = await fetch(`${SECURITY}/sessions/revoke-all`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (r.ok) {
+      // our own session died with the rest — back to the door
+      signOut();
+      setNotice('Signed out everywhere.');
+    } else {
+      setNotice(`Could not revoke the sessions (${r.status}).`);
+    }
   };
 
   const signIn = async () => {
@@ -373,6 +396,18 @@ export function App() {
               </button>
             </p>
           )}
+          <h4>Active sessions</h4>
+          <ul data-testid="session-list">
+            {sessions.map((s) => (
+              <li key={s.family} data-testid="session-row">
+                <code>{s.family.slice(0, 8)}…</code> — until {s.expiresAt}
+              </li>
+            ))}
+          </ul>
+          <p><button data-testid="revoke-all" onClick={() => void revokeAllSessions()}>
+            Sign out everywhere
+          </button></p>
+
           <h4>Change e-mail</h4>
           <form onSubmit={(e) => { e.preventDefault(); void requestEmailChange(); }}>
             <input data-testid="new-email" type="text" placeholder="new e-mail" autoComplete="email"

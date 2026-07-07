@@ -1,3 +1,4 @@
+@ui
 Feature: Listing active sessions
 
   A signed-in USER sees their active sessions. Each time they AUTHENTICATE a new session is created,
