@@ -224,17 +224,16 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   są scenariuszowo-unikalne (`support/account.mjs` — mutacje hasła/konta nie zatruwają
   innych feature'ów). **35 scenariuszy UI / 157 kroków zielone**; suita JVM 175 zielona.
 
-## Otwarte — porządki
+## Porządki — ZAMKNIĘTE
 
-- ~~Gałęzie remote-only: gemini-refactor / overnight/todo-cleanup / omyłkowe `origin`~~ —
-  ZAMKNIĘTE (2026-07-07): user zatwierdził kasację, ale inwentaryzacja wykazała, że te
-  gałęzie JUŻ NIE ISTNIEJĄ na żadnym remote (posprzątane wcześniej).
-- **Gałęzie remote-only, runda 2 (NOWA decyzja usera przed kasacją)** — faktyczny stan
-  remote'ów: `feature/mfa` na password/security/constraint/config/email/test-starter
-  (MFA na mainie ZROBIONE — wygląda na zmergowane/porzucone) oraz na security:
-  `development`, `interactive-documentation`, `restructure`, `simplify-modules`,
-  `smarter-factory`. Zgoda z 2026-07-07 obejmowała tylko tamte trzy nazwy — te wymagają
-  osobnego „tak".
+- ~~Gałęzie remote-only, runda 2~~ — ZROBIONE (2026-07-07, zgoda usera): skasowane WSZYSTKIE
+  gałęzie poza main w 6 repo. 4 były w pełni zmergowane (security: development/
+  interactive-documentation/simplify-modules, test-starter/feature/mfa). 6 miało „stare"
+  commity ale zbadane jako superseded: security feature/mfa (stare OTP MFA — main ma fazy
+  A–H), restructure/smarter-factory (porzucone refaktory usuwające `AuthenticationRequest`,
+  którego main używa), password/constraint/config/email feature/mfa (tytuł „Add maven
+  wrapper" mylący — wrapper JUŻ na main; reszta to stare źródła + zacommitowane `target/`).
+  Wszystkie repo mają teraz tylko main.
 
 ## Gotchas (operacyjne, warte pamięci)
 
