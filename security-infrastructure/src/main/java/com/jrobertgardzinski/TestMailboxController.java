@@ -23,13 +23,16 @@ final class TestMailboxController {
     private final CapturingEmailVerificationNotifier verificationMails;
     private final CapturingEmailCodeChannel signInCodes;
     private final CapturingPasswordResetNotifier resetMails;
+    private final CapturingRegistrationNoticeNotifier notices;
 
     TestMailboxController(CapturingEmailVerificationNotifier verificationMails,
                           CapturingEmailCodeChannel signInCodes,
-                          CapturingPasswordResetNotifier resetMails) {
+                          CapturingPasswordResetNotifier resetMails,
+                          CapturingRegistrationNoticeNotifier notices) {
         this.verificationMails = verificationMails;
         this.signInCodes = signInCodes;
         this.resetMails = resetMails;
+        this.notices = notices;
     }
 
     @Get(value = "/verification-token", produces = MediaType.APPLICATION_JSON)
@@ -47,6 +50,14 @@ final class TestMailboxController {
         return token == null
                 ? HttpResponse.notFound(Map.of("error", "NO_MAIL_FOR_" + email))
                 : HttpResponse.ok(Map.of("token", token));
+    }
+
+    /** Whether an "already registered / someone used your address" notice was mailed there. */
+    @Get(value = "/notice", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<Map<String, String>> notice(@QueryValue String email) {
+        return notices.noticedEmails().contains(email)
+                ? HttpResponse.ok(Map.of("noticed", email))
+                : HttpResponse.notFound(Map.of("error", "NO_NOTICE_FOR_" + email));
     }
 
     /** The last one-time sign-in / enrolment code "mailed" to an address (the AUTH_CODE mail). */

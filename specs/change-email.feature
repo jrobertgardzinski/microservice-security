@@ -1,3 +1,4 @@
+@ui
 Feature: Changing the email address
 
   A signed-in USER changes their EMAIL by proving ownership of the new one: a verification link goes
@@ -44,6 +45,9 @@ Feature: Changing the email address
     The next federated sign-in re-links through the ordinary verified-account auto-link;
     until then the identity opens nothing.
 
+    # federated linking has no UI surface in this harness (the OAuth dance needs the stub IdP);
+    # the JVM glue drives this example over the wire
+    @http-only
     Example:
       Given the USER also signs in through "google" as subject "subject-7"
       And the USER has AUTHENTICATED

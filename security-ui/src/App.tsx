@@ -46,17 +46,32 @@ export function App() {
   // password change (signed in): prove the current one, pick the next
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  // e-mail change (signed in): the confirmation link goes to the NEW address
+  const [newEmail, setNewEmail] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const mailed = params.get('verify');
     const reset = params.get('reset');
-    if (!mailed && !reset) return;
+    const change = params.get('change');
+    if (!mailed && !reset && !change) return;
     history.replaceState(null, '', location.pathname);
     if (reset) {
       // the link only carries the token; the new password is typed on the reset screen
       setResetToken(reset);
       setMode('reset');
+      return;
+    }
+    if (change) {
+      void fetch(`${SECURITY}/confirm-email-change`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: change }),
+      }).then((r) =>
+        setNotice(r.ok
+          ? 'E-mail changed — sign in with your new address.'
+          : 'This change link was already used or has expired.'),
+      );
       return;
     }
     void fetch(`${SECURITY}/verify-email`, {
@@ -270,6 +285,20 @@ export function App() {
     }
   };
 
+  const requestEmailChange = async () => {
+    reset();
+    const r = await fetch(`${SECURITY}/account/email/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ newEmail }),
+    });
+    // 202 whatever the address's fate — the truth goes by mail (anti-enumeration)
+    setNotice(r.status === 202
+      ? 'Check the new address — we sent a confirmation link.'
+      : `Could not request the change (${r.status}).`);
+    if (r.status === 202) setNewEmail('');
+  };
+
   const signOut = () => {
     // end the session server-side too — with a same-origin deployment the refresh cookie rides
     // along and the session family dies; cross-origin (no cookie) it is an idempotent no-op
@@ -344,6 +373,13 @@ export function App() {
               </button>
             </p>
           )}
+          <h4>Change e-mail</h4>
+          <form onSubmit={(e) => { e.preventDefault(); void requestEmailChange(); }}>
+            <input data-testid="new-email" type="text" placeholder="new e-mail" autoComplete="email"
+                   value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+            <button data-testid="change-email-submit" type="submit">Send confirmation link</button>
+          </form>
+
           <h4>Change password</h4>
           <form onSubmit={(e) => { e.preventDefault(); void changePassword(); }}>
             <input data-testid="current-password" type="password" placeholder="current password"

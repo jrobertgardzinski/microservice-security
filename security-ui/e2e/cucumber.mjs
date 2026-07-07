@@ -4,7 +4,7 @@
 // rotation, introspection, the OAuth dance) that browsers do implicitly and the JVM runners own.
 export default {
   paths: ['../specs/*.feature'],
-  tags: '@ui',
+  tags: '@ui and not @http-only',
   import: ['e2e/support/world.mjs', 'e2e/steps/*.mjs'],
   format: ['progress'],
   publishQuiet: true,

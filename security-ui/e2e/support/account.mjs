@@ -7,11 +7,18 @@
 export const credentials = { email: '', password: '' };
 
 let scenarioCounter = 0;
+let baseEmail = '';
 
 /** A fresh, this-scenario-only variant of the Gherkin address; remembers it as THE account. */
 export function uniqueAccount(email, password) {
   scenarioCounter += 1;
+  baseEmail = email;
   credentials.email = email.replace('@', `${scenarioCounter}@`);
   credentials.password = password;
   return credentials;
+}
+
+/** Maps a Gherkin address to the live one: the Background's address means THIS scenario's account. */
+export function resolveEmail(email) {
+  return email === baseEmail ? credentials.email : email;
 }
