@@ -131,8 +131,16 @@ public class WebauthnFactor implements AuthenticationFactor {
         try {
             byte[] authenticatorData = URL.decode(field(proof, "authenticatorData"));
             byte[] signature = URL.decode(field(proof, "signature"));
-            // authenticatorData begins with the SHA-256 of the relying-party id
+            // authenticatorData is rpIdHash(32) + flags(1) + signCount(4) + ...
+            if (authenticatorData.length < 37) {
+                return false;
+            }
+            // it begins with the SHA-256 of the relying-party id
             if (!Arrays.equals(Arrays.copyOfRange(authenticatorData, 0, 32), sha256(rpId.getBytes(StandardCharsets.UTF_8)))) {
+                return false;
+            }
+            // the User Present bit MUST be set — a signature alone is not a sign-in gesture (WebAuthn §7.2)
+            if ((authenticatorData[32] & 0x01) == 0) {
                 return false;
             }
             PublicKey key = publicKeyFrom(field(enrolment.secretMaterial(), "publicKey"));

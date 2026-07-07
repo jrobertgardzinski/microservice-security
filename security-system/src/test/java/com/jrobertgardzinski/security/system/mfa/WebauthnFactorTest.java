@@ -107,6 +107,24 @@ class WebauthnFactorTest {
         assertFalse(factor.verify(enrolment, Optional.of(challenge), assertionProof(authenticatorData, signature, clientData)));
     }
 
+    @Test
+    @DisplayName("an assertion without the User Present flag is refused, even correctly signed")
+    void refuses_without_user_presence() throws Exception {
+        EnrolledFactor enrolment = new EnrolledFactor(Email.of("alice@example.com"),
+                FactorType.WEBAUTHN, "passkey", 1,
+                "{\"credentialId\":\"cred-1\",\"publicKey\":\"" + b64(keyPair.getPublic().getEncoded()) + "\"}");
+        Challenge challenge = factor.issueChallenge(enrolment).orElseThrow();
+        String clientData = clientDataJson("webauthn.get", challenge.publicData());
+        byte[] authenticatorData = authenticatorData();
+        authenticatorData[32] = 0x00;   // no User Present bit — a signature with no gesture
+        Signature ecdsa = Signature.getInstance("SHA256withECDSA");
+        ecdsa.initSign(keyPair.getPrivate());
+        ecdsa.update(concat(authenticatorData, sha256(clientData.getBytes(StandardCharsets.UTF_8))));
+
+        assertFalse(factor.verify(enrolment, Optional.of(challenge),
+                assertionProof(authenticatorData, ecdsa.sign(), clientData)));
+    }
+
     private static String clientDataJson(String type, String challengeNonce) {
         return "{\"type\":\"" + type + "\",\"challenge\":\"" + challengeNonce + "\",\"origin\":\"" + ORIGIN + "\"}";
     }
