@@ -100,6 +100,10 @@ class AuthenticationTest {
             public int unusedCount(com.jrobertgardzinski.email.domain.Email userEmail) {
                 return 0;
             }
+
+            @Override
+            public void removeAll(com.jrobertgardzinski.email.domain.Email userEmail) {
+            }
         };
     }
 

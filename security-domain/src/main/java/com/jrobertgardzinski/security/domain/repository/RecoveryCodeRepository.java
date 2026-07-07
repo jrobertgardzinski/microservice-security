@@ -18,4 +18,7 @@ public interface RecoveryCodeRepository {
 
     /** How many codes remain unspent — the UI's "you have N left". */
     int unusedCount(Email userEmail);
+
+    /** Remove every code a user has — the teardown when the account is deleted. */
+    void removeAll(Email userEmail);
 }

@@ -2,6 +2,8 @@ package com.jrobertgardzinski.security.system.account;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
+import com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -19,22 +21,32 @@ class DeleteAccountTest {
 
     private UserRepository userRepository;
     private AuthorizationDataRepository authorizationDataRepository;
+    private EnrolledFactorRepository enrolledFactorRepository;
+    private RecoveryCodeRepository recoveryCodeRepository;
     private DeleteAccount deleteAccount;
 
     @BeforeTry
     void init() {
         userRepository = Mockito.mock(UserRepository.class);
         authorizationDataRepository = Mockito.mock(AuthorizationDataRepository.class);
-        deleteAccount = new DeleteAccount(userRepository, authorizationDataRepository);
+        enrolledFactorRepository = Mockito.mock(EnrolledFactorRepository.class);
+        recoveryCodeRepository = Mockito.mock(RecoveryCodeRepository.class);
+        deleteAccount = new DeleteAccount(userRepository, authorizationDataRepository,
+                enrolledFactorRepository, recoveryCodeRepository);
     }
 
     @Example
-    @Label("Closing the account revokes the sessions and deletes the user")
-    void revokes_sessions_and_deletes_the_user() {
+    @Label("Closing the account revokes sessions, wipes MFA factors and recovery codes, then deletes the user")
+    void wipes_everything_then_deletes_the_user() {
         deleteAccount.execute(EMAIL);
 
-        InOrder inOrder = Mockito.inOrder(authorizationDataRepository, userRepository);
+        // the secrets (factor material, recovery-code hashes) must be gone BEFORE the user row is —
+        // and by the time the row is deleted, nothing of the account survives
+        InOrder inOrder = Mockito.inOrder(authorizationDataRepository, enrolledFactorRepository,
+                recoveryCodeRepository, userRepository);
         inOrder.verify(authorizationDataRepository).revokeAllSessions(EMAIL);
+        inOrder.verify(enrolledFactorRepository).removeAll(EMAIL);
+        inOrder.verify(recoveryCodeRepository).removeAll(EMAIL);
         inOrder.verify(userRepository).deleteByEmail(EMAIL);
     }
 }

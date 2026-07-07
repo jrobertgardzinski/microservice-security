@@ -42,4 +42,9 @@ final class JdbcRecoveryCodeRepository implements RecoveryCodeRepository {
     public int unusedCount(Email userEmail) {
         return (int) repository.countByUserEmailAndUsedFalse(userEmail.value());
     }
+
+    @Override
+    public void removeAll(Email userEmail) {
+        repository.deleteByUserEmail(userEmail.value());
+    }
 }

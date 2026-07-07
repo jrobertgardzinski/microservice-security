@@ -376,8 +376,11 @@ public class BeanFactory {
     }
 
     @Singleton
-    DeleteAccount deleteAccount(UserRepository userRepository, AuthorizationDataRepository authorizationDataRepository) {
-        return new DeleteAccount(userRepository, authorizationDataRepository);
+    DeleteAccount deleteAccount(UserRepository userRepository, AuthorizationDataRepository authorizationDataRepository,
+                                com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactorRepository,
+                                com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository recoveryCodeRepository) {
+        return new DeleteAccount(userRepository, authorizationDataRepository,
+                enrolledFactorRepository, recoveryCodeRepository);
     }
 
     @Singleton
