@@ -3,6 +3,10 @@
 Tylko otwarte rzeczy. Historia zrobionego = git log.
 (Stara wersja z pełnym logiem faz: git log tego pliku.)
 
+**Plan pracy z instrukcjami wykonawczymi: [docs/opus-playbook.md](docs/opus-playbook.md)**
+(2026-07-07; kolejność: S1 UI-e2e dla wszystkich specs → S2 link federacyjny przy
+change-email → S3 WebAuthn → S4/S5 zablokowane na usera).
+
 ## Stan (2026-07-02) — kontekst, nie backlog
 
 **13 feature'ów w `specs/`**, każdy napędzany czarną skrzynką przez HTTP (+ warstwa application
