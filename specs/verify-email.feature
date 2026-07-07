@@ -1,3 +1,4 @@
+@ui
 Feature: Verifying an email address
 
   A USER proves they own their EMAIL by following a verification link sent to it. The link

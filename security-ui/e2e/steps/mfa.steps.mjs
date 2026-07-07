@@ -27,8 +27,8 @@ async function mailedSignInCode(world) {
   return (await response.json()).code;
 }
 
-/** Reach the signed-in home whatever the account has enrolled by now. */
-async function signInCompletingMfa(world) {
+/** Reach the signed-in home whatever the account has enrolled by now (shared across glue). */
+export async function signInCompletingMfa(world) {
   await signInPasswordStep(world);
   const factorStep = world.page.getByTestId('mfa-screen');
   const home = world.page.getByTestId('signed-in-email');

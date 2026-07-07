@@ -9,7 +9,8 @@ import { expect } from 'playwright/test';
 const WRONG_PASSWORD = 'WrongButStrongPassword1!';
 const UNKNOWN_EMAIL = 'other@example.com';
 
-let credentials = { email: '', password: '' };
+// shared with other features' glue (verify-email reads who the Background registered)
+export const credentials = { email: '', password: '' };
 let policy = { maxFailures: 3, maxBlockMinutes: 10 };
 
 async function signInThroughUi(page, email, password) {
@@ -27,7 +28,7 @@ async function failToAuthenticate(page, times) {
 }
 
 Given('a registered USER {string} with password {string}', async function (email, password) {
-  credentials = { email, password };
+  credentials.email = email; credentials.password = password;
   await this.page.getByTestId('tab-signup').click();
   await this.page.getByTestId('email').fill(email);
   await this.page.getByTestId('password').fill(password);
@@ -48,7 +49,7 @@ Given('a registered USER {string} with password {string}', async function (email
 
 Given('a registered USER {string} with password {string} whose EMAIL is not verified yet',
   async function (email, password) {
-    credentials = { email, password };
+    credentials.email = email; credentials.password = password;
     await this.page.getByTestId('tab-signup').click();
     await this.page.getByTestId('email').fill(email);
     await this.page.getByTestId('password').fill(password);
