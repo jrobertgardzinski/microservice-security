@@ -4,11 +4,11 @@ Tylko otwarte rzeczy. Historia zrobionego = git log.
 (Stara wersja z pełnym logiem faz: git log tego pliku.)
 
 **Plan pracy z instrukcjami wykonawczymi: [docs/opus-playbook.md](docs/opus-playbook.md)**
-(2026-07-07; S1 i S2 ZROBIONE. S3 WebAuthn: analiza DOMKNIĘTA — reguła stopu portu
-zadziałała, projekt skorygowany i rozpisany wykonawczo w playbooku: zero CBOR/zależności
-(SPKI z `getPublicKey()`), bez migracji (credential w `secretMaterial`), dwie addytywne
-korekty portu — `enrolledMaterial` default + `challengeData` w 202; implementacja =
-kroki a–e. S4/S5 zablokowane na usera.)
+(2026-07-07; S1, S2, S3 ZROBIONE. S3 WebAuthn WDROŻONY W CAŁOŚCI (kroki a–e):
+wire (`Challenge.publicData`→`challengeData` w 202, port `enrolledMaterial`),
+`WebauthnFactor` (czysty JDK, SPKI, zero CBOR/migracji), UI (create/get + auto-krok),
+e2e na wirtualnym authenticatorze; Faza H w docs/mfa-design.md. 178 testów JVM +
+36 e2e zielone. S5 zamknięte (gałęzie już nie istniały; runda 2 czeka). S4 na userze.)
 
 ## Stan (2026-07-02) — kontekst, nie backlog
 
@@ -139,6 +139,18 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
     fetch `r.ok` true dla 202 → gałąź MFA martwa po rebuildzie na Reacta (signIn + submitFactor).
     Poza zakresem e2e security-ui: TOTP (MfaHttpTest+smoke), step-up przy delete (galeria+smoke;
     security-ui nie ma UI delete).
+  - ~~FAZA H — WebAuthn / passkeys~~ — ZROBIONE (2026-07-07, S3 playbooka): flagowy dowód
+    plug-and-play — czynnik INNEGO KSZTAŁTU (podpis, nie kod) dodany BEZ biblioteki i BEZ
+    migracji, egzekutor łańcucha nietknięty. Dwie addytywne korekty portu: `enrolledMaterial`
+    default (sekret przychodzi z proofem — klucz publiczny generuje przeglądarka) i
+    `Challenge.publicData`→`challengeData` w czterech 202 (klient dostaje nonce do podpisu).
+    `WebauthnFactor` czysto JDK: SPKI z `getPublicKey()` (zero CBOR/COSE), assertion =
+    `SHA256withECDSA` nad `authenticatorData‖SHA256(clientDataJSON)`; credential w
+    `EnrolledFactor.secretMaterial`. UI: `navigator.credentials.create/get` (enroll w jednym
+    geście, sign-in automatyczny). Testy: WebauthnFactorTest (klucz P-256 gra przeglądarkę),
+    MfaHttpTest (enroll→sign-in po drucie + podrobiony assertion), mfa-webauthn.feature e2e na
+    wirtualnym authenticatorze Chromium. Gotcha: dwukropki URL w defaulcie `@Value` → backticki.
+    Faza H w [docs/mfa-design.md](docs/mfa-design.md). 178 JVM + 36 e2e zielone.
 - **Step-up auth** — WPISANE W PROJEKT MFA (faza E, [docs/mfa-design.md](docs/mfa-design.md)):
   ten sam egzekutor łańcucha odpalony na żywej sesji → jednorazowy znacznik `elevated`; polityka
   per akcja w configu NONE/SECOND_FACTORS/FULL_CHAIN (delete-account=FULL_CHAIN,

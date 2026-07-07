@@ -248,6 +248,37 @@ Each phase is a green, self-contained slice (build + tests pass), à la the rest
 - **G — UI polish + specs.** React enrolment manager + multi-step sign-in; e2e over the new specs
   as the third entry point; compose smoke walks a password→TOTP sign-in and a role-floor gate.
 
+## Phase H — WebAuthn / passkeys (added 2026-07-07): what the port survived
+
+The flagship test of the plug-and-play claim: a factor of a genuinely different *shape* — a
+signature, not a code — added with **no library and no schema change**, and the chain executor
+untouched. Two things the earlier port did NOT anticipate had to give, and both gave *additively*
+(every existing factor kept working, unchanged):
+
+1. **The secret arrives with the confirming proof, not at enrolment start.** Code/TOTP factors
+   know their secret at `beginEnrolment` (a target, a generated seed). A passkey's real secret is
+   the *public key the browser generates* — it only exists in the confirming attestation. So the
+   port gained a default `enrolledMaterial(pendingMaterial, proof)` (identity for everyone else;
+   WebAuthn distils `{credentialId, publicKey}` from the proof after `verify` passes), and
+   `EnrolFactor.confirm` stores that instead of the pending material.
+2. **The sign-in leg must hand the client something to sign.** Code factors send their challenge
+   out of band (mail/SMS); nothing crosses the 202. A passkey needs the *nonce* in the response.
+   So `Challenge` gained a nullable `publicData` (null for code factors, a base64url nonce for
+   WebAuthn) surfaced as `challengeData` on all four MFA 202 shapes — a deliberate, additive wire
+   change. Verification still runs against `codeHash`; `publicData` is only the outbound hint.
+
+Everything else is the factor itself, pure JDK: the browser hands over the credential's **SPKI**
+public key directly (`AuthenticatorAttestationResponse.getPublicKey()`), so there is **no CBOR/COSE
+to parse**; an assertion is an ordinary `SHA256withECDSA` signature over
+`authenticatorData || SHA256(clientDataJSON)`. The credential JSON lives in
+`EnrolledFactor.secretMaterial` — **no migration**. Config under `security.webauthn.*` (rp-id,
+rp-name, allow-listed origins, challenge TTL). Verified at every layer: `WebauthnFactorTest`
+(a P-256 keypair plays the browser; enrolment stores the key, a real assertion passes, a tampered
+one and a foreign origin are refused), `MfaHttpTest` (the whole enrol→sign-in over the wire, a
+tampered assertion refused), and `mfa-webauthn.feature` e2e through Chromium's virtual authenticator.
+A gotcha worth remembering: a Micronaut `@Value` default containing URL colons is parsed as nested
+defaults — wrap it in backticks (the codebase's own convention).
+
 ## Decisions (settled 2026-07-05)
 
 1. **Factor counting → total chain incl. the first.** 2FA = password + 1, 3FA = password + 2.
