@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 // before the app boots); a human on the dev server gets the stack's default
 const SECURITY = (window as unknown as { SECURITY_URL?: string }).SECURITY_URL ?? 'http://localhost:8080';
 
-type Mode = 'signin' | 'signup' | 'inbox' | 'mfa' | 'me';
+type Mode = 'signin' | 'signup' | 'inbox' | 'mfa' | 'me' | 'forgot' | 'reset';
 type Factor = { type: string; label: string };
 
 const prettify = (code: string) => code.toLowerCase().replaceAll('_', ' ');
@@ -41,11 +41,21 @@ export function App() {
   // recovery codes: shown exactly once, right after generation; only the count is retrievable later
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [recoveryUnused, setRecoveryUnused] = useState<number | null>(null);
+  // password reset: the token arrives in the link (?reset=...), the new password in the form
+  const [resetToken, setResetToken] = useState('');
 
   useEffect(() => {
-    const mailed = new URLSearchParams(location.search).get('verify');
-    if (!mailed) return;
+    const params = new URLSearchParams(location.search);
+    const mailed = params.get('verify');
+    const reset = params.get('reset');
+    if (!mailed && !reset) return;
     history.replaceState(null, '', location.pathname);
+    if (reset) {
+      // the link only carries the token; the new password is typed on the reset screen
+      setResetToken(reset);
+      setMode('reset');
+      return;
+    }
     void fetch(`${SECURITY}/verify-email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -205,6 +215,39 @@ export function App() {
     }
   };
 
+  const requestReset = async () => {
+    reset();
+    const r = await fetch(`${SECURITY}/reset-password/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    setNotice(r.status === 202
+      ? 'If that address has an account, a reset link is on its way.'
+      : r.status === 429
+        ? 'Too many reset requests — try again later.'
+        : `Could not request a reset (${r.status}).`);
+  };
+
+  const completeReset = async () => {
+    reset();
+    const r = await fetch(`${SECURITY}/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: resetToken, password }),
+    });
+    if (r.ok) {
+      setPassword('');
+      switchTo('signin');
+      setNotice('Password reset — sign in with your new password.');
+    } else {
+      const body: { status?: string } = await r.json().catch(() => ({}));
+      setNotice(body.status === 'WEAK_PASSWORD'
+        ? 'That password is too weak — pick a stronger one.'
+        : 'This reset link was already used or has expired.');
+    }
+  };
+
   const signOut = () => {
     // end the session server-side too — with a same-origin deployment the refresh cookie rides
     // along and the session family dies; cross-origin (no cookie) it is an idempotent no-op
@@ -298,6 +341,31 @@ export function App() {
         </>
       )}
 
+      {mode === 'forgot' && (
+        <>
+          <h3 data-testid="forgot-screen">Forgot your password?</h3>
+          <p>Tell us your e-mail and we will send a reset link.</p>
+          <form onSubmit={(e) => { e.preventDefault(); void requestReset(); }}>
+            <input data-testid="forgot-email" type="text" placeholder="e-mail" autoComplete="email"
+                   value={email} onChange={(e) => setEmail(e.target.value)} />
+            <button data-testid="forgot-submit" type="submit">Send reset link</button>
+          </form>
+          <button data-testid="back-to-signin" onClick={() => switchTo('signin')}>Back to sign in</button>
+        </>
+      )}
+
+      {mode === 'reset' && (
+        <>
+          <h3 data-testid="reset-screen">Choose a new password</h3>
+          <form onSubmit={(e) => { e.preventDefault(); void completeReset(); }}>
+            <input data-testid="reset-password" type="password" placeholder="new password"
+                   autoComplete="new-password"
+                   value={password} onChange={(e) => setPassword(e.target.value)} />
+            <button data-testid="reset-submit" type="submit">Set new password</button>
+          </form>
+        </>
+      )}
+
       {mode === 'inbox' && (
         <>
           <h3 data-testid="inbox-screen">Check your mailbox</h3>
@@ -322,6 +390,10 @@ export function App() {
                    value={password} onChange={(e) => setPassword(e.target.value)} />
             <button data-testid="submit" type="submit">{mode === 'signup' ? 'Create account' : 'Sign in'}</button>
           </form>
+          {mode === 'signin' && (
+            <p><button data-testid="forgot-password" className="linkish"
+                       onClick={() => switchTo('forgot')}>Forgot password?</button></p>
+          )}
         </>
       )}
 

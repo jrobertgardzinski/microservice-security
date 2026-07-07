@@ -1,3 +1,4 @@
+@ui
 Feature: Resetting a forgotten password
 
   A USER who forgot their password requests a reset link, then sets a new password with the
@@ -12,7 +13,9 @@ Feature: Resetting a forgotten password
     RESET*        -> ResetPassword
 
   Background:
-    Given a registered USER "user@example.com" with password "OldPassword1!"
+    # a dedicated account: the UI harness persists accounts across scenarios, and this feature
+    # changes the password — sharing user@example.com would poison later features' sign-ins
+    Given a registered USER "forgetful@example.com" with password "OldPassword1!"
 
   Rule: A valid RESET TOKEN sets a new password
 

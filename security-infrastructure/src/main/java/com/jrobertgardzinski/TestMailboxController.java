@@ -22,16 +22,28 @@ final class TestMailboxController {
 
     private final CapturingEmailVerificationNotifier verificationMails;
     private final CapturingEmailCodeChannel signInCodes;
+    private final CapturingPasswordResetNotifier resetMails;
 
     TestMailboxController(CapturingEmailVerificationNotifier verificationMails,
-                          CapturingEmailCodeChannel signInCodes) {
+                          CapturingEmailCodeChannel signInCodes,
+                          CapturingPasswordResetNotifier resetMails) {
         this.verificationMails = verificationMails;
         this.signInCodes = signInCodes;
+        this.resetMails = resetMails;
     }
 
     @Get(value = "/verification-token", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map<String, String>> verificationToken(@QueryValue String email) {
         String token = verificationMails.lastTokenFor(email);
+        return token == null
+                ? HttpResponse.notFound(Map.of("error", "NO_MAIL_FOR_" + email))
+                : HttpResponse.ok(Map.of("token", token));
+    }
+
+    /** The last password-reset token "mailed" to an address. */
+    @Get(value = "/reset-token", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<Map<String, String>> resetToken(@QueryValue String email) {
+        String token = resetMails.lastTokenFor(email);
         return token == null
                 ? HttpResponse.notFound(Map.of("error", "NO_MAIL_FOR_" + email))
                 : HttpResponse.ok(Map.of("token", token));
