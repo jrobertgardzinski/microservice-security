@@ -113,6 +113,48 @@ class MfaHttpTest {
     }
 
     @Test
+    @DisplayName("WebAuthn (passkey) enrols a signature credential and signs in with an assertion over the drut")
+    void webauthn_enrols_and_signs_in() throws Exception {
+        String email = "passkey-user@example.com";
+        String token = registerVerifyAuthenticate(email);
+        java.security.KeyPair key = p256();
+
+        // enrol: start returns creation options (challenge nonce), confirm seals it with a signed
+        // attestation carrying the credential's public key — the browser's job, played here
+        HttpResponse<Map> start = exchange(HttpRequest.POST("/account/factors/WEBAUTHN/enroll/start", Map.of())
+                .header("Authorization", "Bearer " + token));
+        assertEquals(HttpStatus.ACCEPTED, start.getStatus());
+        String enrolNonce = webauthnField((String) start.getBody(Map.class).orElseThrow().get("display"), "challenge");
+        String publicKey = b64url(key.getPublic().getEncoded());
+        String attestation = "{\"type\":\"webauthn.create\",\"credentialId\":\"passkey-1\",\"publicKey\":\""
+                + publicKey + "\",\"clientDataJSON\":\"" + b64url(clientData("webauthn.create", enrolNonce)) + "\"}";
+        assertEquals(HttpStatus.OK, exchange(HttpRequest.POST("/account/factors/WEBAUTHN/enroll/confirm",
+                Map.of("code", attestation)).header("Authorization", "Bearer " + token)).getStatus());
+
+        // sign in: password → 202 carries the challengeData (nonce) → a signed assertion → session
+        Map<?, ?> first = exchange(HttpRequest.POST("/authenticate",
+                Map.of("email", email, "password", PASSWORD))).getBody(Map.class).orElseThrow();
+        assertEquals("WEBAUTHN", first.get("nextFactor"));
+        String signInNonce = (String) first.get("challengeData");
+        assertEquals(false, signInNonce == null, "the 202 must hand the client a challenge to sign");
+
+        String assertion = webauthnAssertion(key, signInNonce);
+        HttpResponse<Map> done = exchange(HttpRequest.POST("/authenticate/factor",
+                Map.of("mfaTicket", first.get("mfaTicket"), "proof", assertion)));
+        assertEquals(HttpStatus.OK, done.getStatus());
+        assertEquals(email, exchange(HttpRequest.GET("/me")
+                .header("Authorization", "Bearer " + done.getBody(Map.class).orElseThrow().get("accessToken")))
+                .getBody(Map.class).orElseThrow().get("email"));
+
+        // a tampered assertion (flip the last signature byte) is refused
+        Map<?, ?> again = exchange(HttpRequest.POST("/authenticate",
+                Map.of("email", email, "password", PASSWORD))).getBody(Map.class).orElseThrow();
+        String forged = webauthnAssertion(key, (String) again.get("challengeData")).replaceFirst("(.)\"}$", "X\"}");
+        assertEquals(HttpStatus.UNAUTHORIZED, exchange(HttpRequest.POST("/authenticate/factor",
+                Map.of("mfaTicket", again.get("mfaTicket"), "proof", forged))).getStatus());
+    }
+
+    @Test
     @DisplayName("a recovery code stands in for the factor once — generated while signed in, spent at sign-in, dead after")
     void recovery_code_signs_in_once() {
         String email = "recovery-user@example.com";
@@ -158,6 +200,55 @@ class MfaHttpTest {
         return (int) exchange(HttpRequest.GET("/account/recovery-codes")
                 .header("Authorization", "Bearer " + token))
                 .getBody(Map.class).orElseThrow().get("unused");
+    }
+
+    // --- WebAuthn test helpers: this test plays the browser (build + sign), the server verifies ---
+
+    private static final java.util.Base64.Encoder B64URL = java.util.Base64.getUrlEncoder().withoutPadding();
+    private static final String WEBAUTHN_RP_ID = "localhost";
+    private static final String WEBAUTHN_ORIGIN = "http://localhost:4200";
+
+    private static java.security.KeyPair p256() throws Exception {
+        java.security.KeyPairGenerator g = java.security.KeyPairGenerator.getInstance("EC");
+        g.initialize(new java.security.spec.ECGenParameterSpec("secp256r1"));
+        return g.generateKeyPair();
+    }
+
+    private static byte[] clientData(String type, String challengeNonce) {
+        return ("{\"type\":\"" + type + "\",\"challenge\":\"" + challengeNonce + "\",\"origin\":\""
+                + WEBAUTHN_ORIGIN + "\"}").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    private static String webauthnAssertion(java.security.KeyPair key, String challengeNonce) throws Exception {
+        byte[] cd = clientData("webauthn.get", challengeNonce);
+        byte[] authData = new byte[37];
+        System.arraycopy(sha256(WEBAUTHN_RP_ID.getBytes(java.nio.charset.StandardCharsets.UTF_8)), 0, authData, 0, 32);
+        authData[32] = 0x05;   // UP + UV
+        byte[] message = new byte[authData.length + 32];
+        System.arraycopy(authData, 0, message, 0, authData.length);
+        System.arraycopy(sha256(cd), 0, message, authData.length, 32);
+        java.security.Signature ecdsa = java.security.Signature.getInstance("SHA256withECDSA");
+        ecdsa.initSign(key.getPrivate());
+        ecdsa.update(message);
+        return "{\"type\":\"webauthn.get\",\"credentialId\":\"passkey-1\",\"authenticatorData\":\""
+                + b64url(authData) + "\",\"signature\":\"" + b64url(ecdsa.sign())
+                + "\",\"clientDataJSON\":\"" + b64url(cd) + "\"}";
+    }
+
+    /** Read a flat string field from the enrol display JSON (challenge nonce). */
+    private static String webauthnField(String json, String key) {
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("\"" + key + "\"\\s*:\\s*\"([^\"]*)\"").matcher(json);
+        assertEquals(true, m.find(), "no " + key + " in " + json);
+        return m.group(1);
+    }
+
+    private static byte[] sha256(byte[] input) throws Exception {
+        return java.security.MessageDigest.getInstance("SHA-256").digest(input);
+    }
+
+    private static String b64url(byte[] bytes) {
+        return B64URL.encodeToString(bytes);
     }
 
     private static String secretFromOtpauth(String uri) {

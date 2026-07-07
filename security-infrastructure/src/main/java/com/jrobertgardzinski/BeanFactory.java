@@ -163,10 +163,12 @@ public class BeanFactory {
     com.jrobertgardzinski.security.system.mfa.WebauthnFactor webauthnFactor(Clock clock,
             @io.micronaut.context.annotation.Value("${security.webauthn.rp-id:localhost}") String rpId,
             @io.micronaut.context.annotation.Value("${security.webauthn.rp-name:Security}") String rpName,
-            @io.micronaut.context.annotation.Value("${security.webauthn.origins:http://localhost:4200,http://localhost:8080}")
-                    java.util.List<String> origins,
+            @io.micronaut.context.annotation.Value("${security.webauthn.origins:`http://localhost:4200,http://localhost:8080`}")
+                    String origins,
             @io.micronaut.context.annotation.Value("${security.webauthn.challenge-ttl-minutes:5}") int ttlMinutes) {
-        return new com.jrobertgardzinski.security.system.mfa.WebauthnFactor(clock, rpId, rpName, origins, ttlMinutes);
+        java.util.List<String> allowed = java.util.Arrays.stream(origins.split(","))
+                .map(String::trim).filter(o -> !o.isBlank()).toList();
+        return new com.jrobertgardzinski.security.system.mfa.WebauthnFactor(clock, rpId, rpName, allowed, ttlMinutes);
     }
 
     /** Which factor methods this deployment offers = which factor beans are wired. */
