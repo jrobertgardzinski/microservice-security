@@ -44,4 +44,9 @@ final class JdbcFederatedIdentityRepository implements FederatedIdentityReposito
     public void unlinkAll(Email userEmail) {
         repository.deleteByUserEmail(userEmail.value());
     }
+
+    @Override
+    public void relinkAll(Email fromEmail, Email toEmail) {
+        repository.repointUserEmail(fromEmail.value(), toEmail.value());
+    }
 }

@@ -60,7 +60,7 @@ class ConfirmEmailChangeTest {
 
         confirmEmailChange.execute(TOKEN);
 
-        Mockito.verify(federatedIdentityRepository).unlinkAll(OLD);
+        Mockito.verify(federatedIdentityRepository).relinkAll(OLD, NEW);
     }
 
     @Example

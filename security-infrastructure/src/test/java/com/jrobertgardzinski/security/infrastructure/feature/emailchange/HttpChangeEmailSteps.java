@@ -116,11 +116,12 @@ public class HttpChangeEmailSteps {
         federatedIdentities().link(provider, subject, com.jrobertgardzinski.email.domain.Email.of(email));
     }
 
-    @Then("the {string} identity {string} no longer opens any account")
-    public void identityNoLongerOpensAnyAccount(String provider, String subject) {
-        org.junit.jupiter.api.Assertions.assertTrue(
-                federatedIdentities().findUserBy(provider, subject).isEmpty(),
-                "the federated link must die with the old address — the provider vouched for it");
+    @Then("the {string} identity {string} opens the account {string}")
+    public void identityOpensTheAccount(String provider, String subject, String email) {
+        org.junit.jupiter.api.Assertions.assertEquals(email,
+                federatedIdentities().findUserBy(provider, subject)
+                        .map(com.jrobertgardzinski.email.domain.Email::value).orElse(null),
+                "the federated link follows the account — the subject is the person, not the address");
     }
 
     private com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository federatedIdentities() {

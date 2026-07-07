@@ -17,10 +17,19 @@ public interface FederatedIdentityRepository {
     void link(String provider, String subject, Email userEmail);
 
     /**
-     * Severs every federated link of this account. Called when the account's email changes: the
-     * provider vouched for the OLD address, so the link must not follow the account to the new
-     * one — the user re-links naturally at their next federated sign-in (auto-link on a verified
-     * account), and until then the identity opens nothing.
+     * Severs every federated link of this account — the teardown when the account is deleted. A
+     * stale link must not survive the account: if the freed address were later registered by
+     * someone else, the old owner's provider identity would open the successor's account.
      */
     void unlinkAll(Email userEmail);
+
+    /**
+     * Re-points every federated link of this account to its new address. Called when the account's
+     * email changes: the link is keyed by the provider's durable {@code subject} — the same person,
+     * the same Google account — so it follows the account. (Severing instead would orphan the
+     * identity: the provider keeps reporting its own OLD address, so the auto-link at the next
+     * sign-in would never find the moved account — and could even find a stranger who registered
+     * the freed address.)
+     */
+    void relinkAll(Email fromEmail, Email toEmail);
 }

@@ -34,4 +34,9 @@ public final class InMemoryFederatedIdentityRepository implements FederatedIdent
     public void unlinkAll(Email userEmail) {
         userBySubject.values().removeIf(userEmail.value()::equals);
     }
+
+    @Override
+    public void relinkAll(Email fromEmail, Email toEmail) {
+        userBySubject.replaceAll((key, email) -> fromEmail.value().equals(email) ? toEmail.value() : email);
+    }
 }

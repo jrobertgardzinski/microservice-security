@@ -58,6 +58,10 @@ public class FederatedSignInSteps {
         public void unlinkAll(Email userEmail) {
             links.values().removeIf(userEmail.value()::equals);
         }
+
+        public void relinkAll(Email fromEmail, Email toEmail) {
+            links.replaceAll((key, email) -> fromEmail.value().equals(email) ? toEmail.value() : email);
+        }
     };
     private final com.jrobertgardzinski.security.application.feature.support.InMemoryPasswordlessAccountRepository passwordless =
             new com.jrobertgardzinski.security.application.feature.support.InMemoryPasswordlessAccountRepository();

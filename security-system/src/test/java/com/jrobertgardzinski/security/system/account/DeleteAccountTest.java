@@ -3,6 +3,7 @@ package com.jrobertgardzinski.security.system.account;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
+import com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository;
 import com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import io.qameta.allure.Epic;
@@ -23,6 +24,7 @@ class DeleteAccountTest {
     private AuthorizationDataRepository authorizationDataRepository;
     private EnrolledFactorRepository enrolledFactorRepository;
     private RecoveryCodeRepository recoveryCodeRepository;
+    private FederatedIdentityRepository federatedIdentityRepository;
     private DeleteAccount deleteAccount;
 
     @BeforeTry
@@ -31,8 +33,9 @@ class DeleteAccountTest {
         authorizationDataRepository = Mockito.mock(AuthorizationDataRepository.class);
         enrolledFactorRepository = Mockito.mock(EnrolledFactorRepository.class);
         recoveryCodeRepository = Mockito.mock(RecoveryCodeRepository.class);
+        federatedIdentityRepository = Mockito.mock(FederatedIdentityRepository.class);
         deleteAccount = new DeleteAccount(userRepository, authorizationDataRepository,
-                enrolledFactorRepository, recoveryCodeRepository);
+                enrolledFactorRepository, recoveryCodeRepository, federatedIdentityRepository);
     }
 
     @Example
@@ -43,10 +46,11 @@ class DeleteAccountTest {
         // the secrets (factor material, recovery-code hashes) must be gone BEFORE the user row is —
         // and by the time the row is deleted, nothing of the account survives
         InOrder inOrder = Mockito.inOrder(authorizationDataRepository, enrolledFactorRepository,
-                recoveryCodeRepository, userRepository);
+                recoveryCodeRepository, federatedIdentityRepository, userRepository);
         inOrder.verify(authorizationDataRepository).revokeAllSessions(EMAIL);
         inOrder.verify(enrolledFactorRepository).removeAll(EMAIL);
         inOrder.verify(recoveryCodeRepository).removeAll(EMAIL);
+        inOrder.verify(federatedIdentityRepository).unlinkAll(EMAIL);
         inOrder.verify(userRepository).deleteByEmail(EMAIL);
     }
 }

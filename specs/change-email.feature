@@ -40,10 +40,12 @@ Feature: Changing the email address
       Then the CHANGE request is quietly refused, indistinguishable from a fresh one
       And the owner of "occupied@example.com" is notified by mail
 
-  Rule: FEDERATED LINKS die with the old EMAIL — the provider vouched for the address, not the account
+  Rule: FEDERATED LINKS follow the account — the subject is the person, not the address
 
-    The next federated sign-in re-links through the ordinary verified-account auto-link;
-    until then the identity opens nothing.
+    The link is keyed by the provider's durable subject: the same Google account belongs to the
+    same person after the change. Severing it instead would orphan the identity (the provider
+    keeps reporting its own old address, so the auto-link would never find the moved account —
+    and could even find a stranger who registered the freed one).
 
     # federated linking has no UI surface in this harness (the OAuth dance needs the stub IdP);
     # the JVM glue drives this example over the wire
@@ -53,4 +55,4 @@ Feature: Changing the email address
       And the USER has AUTHENTICATED
       When the USER requests to CHANGE the EMAIL to "fresh@example.com"
       And the USER CONFIRMS the EMAIL CHANGE with the token from the link
-      Then the "google" identity "subject-7" no longer opens any account
+      Then the "google" identity "subject-7" opens the account "fresh@example.com"
