@@ -214,9 +214,15 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
 
 ## Otwarte — porządki
 
-- **Gałęzie remote-only poza rewritem autorów** (decyzja usera przed skasowaniem):
-  `password:gemini-refactor`, `microservice-security:overnight/todo-cleanup` oraz omyłkowa
-  gałąź `origin` na kilku remote'ach.
+- ~~Gałęzie remote-only: gemini-refactor / overnight/todo-cleanup / omyłkowe `origin`~~ —
+  ZAMKNIĘTE (2026-07-07): user zatwierdził kasację, ale inwentaryzacja wykazała, że te
+  gałęzie JUŻ NIE ISTNIEJĄ na żadnym remote (posprzątane wcześniej).
+- **Gałęzie remote-only, runda 2 (NOWA decyzja usera przed kasacją)** — faktyczny stan
+  remote'ów: `feature/mfa` na password/security/constraint/config/email/test-starter
+  (MFA na mainie ZROBIONE — wygląda na zmergowane/porzucone) oraz na security:
+  `development`, `interactive-documentation`, `restructure`, `simplify-modules`,
+  `smarter-factory`. Zgoda z 2026-07-07 obejmowała tylko tamte trzy nazwy — te wymagają
+  osobnego „tak".
 
 ## Gotchas (operacyjne, warte pamięci)
 
