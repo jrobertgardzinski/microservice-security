@@ -7,6 +7,7 @@ import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
 import com.jrobertgardzinski.security.domain.vo.Source;
+import com.jrobertgardzinski.security.system.mfa.PendingAuthentication;
 import com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore;
 
 import java.util.List;
@@ -61,8 +62,9 @@ public class Authentication {
                     if (factors.isEmpty()) {
                         yield new AuthenticationResult.Authenticated(generateSession.create(valid.email()));
                     }
-                    String ticket = pendingStore.open(mfaChain.begin(valid.email(), factors));
-                    yield new AuthenticationResult.MfaRequired(ticket, factors.get(0).type());
+                    PendingAuthentication pending = mfaChain.begin(valid.email(), factors);
+                    String ticket = pendingStore.open(pending);
+                    yield new AuthenticationResult.MfaRequired(ticket, factors.get(0).type(), pending.challengeData());
                 }
                 case AuthenticationEvent.Invalid _ -> {
                     updateBruteForceRecords.execute(source);

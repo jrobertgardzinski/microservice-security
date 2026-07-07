@@ -12,7 +12,7 @@ public sealed interface ContinueAuthenticationResult {
 
     record Completed(SessionTokens session) implements ContinueAuthenticationResult {}
 
-    record NextFactor(FactorType type) implements ContinueAuthenticationResult {}
+    record NextFactor(FactorType type, String challengeData) implements ContinueAuthenticationResult {}
 
     record WrongProof(int attemptsLeft) implements ContinueAuthenticationResult {}
 

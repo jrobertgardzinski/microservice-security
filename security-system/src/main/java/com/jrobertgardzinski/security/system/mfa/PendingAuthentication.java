@@ -30,6 +30,11 @@ public record PendingAuthentication(Email email, List<EnrolledFactor> remaining,
         return Optional.ofNullable(currentChallenge);
     }
 
+    /** The current factor's public challenge data to hand the client (a WebAuthn nonce), or null. */
+    public String challengeData() {
+        return currentChallenge == null ? null : currentChallenge.publicData();
+    }
+
     public boolean isExpired(Clock clock) {
         return expiresAt.isBefore(LocalDateTime.now(clock));
     }

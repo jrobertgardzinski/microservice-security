@@ -49,8 +49,7 @@ final class StepUpController {
                     HttpResponse.ok(Map.of("status", "ELEVATED"));
             case StepUp.Result.FactorRequired next ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.ACCEPTED)
-                            .body(Map.of("status", "FACTOR_REQUIRED",
-                                    "stepUpTicket", next.ticket(), "nextFactor", next.nextFactor().value()));
+                            .body(MfaBody.stepUp(next.ticket(), next.nextFactor().value(), next.challengeData()));
             case StepUp.Result.WrongPassword wrong ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.UNAUTHORIZED)
                             .body(Map.of("status", "WRONG_PASSWORD"));

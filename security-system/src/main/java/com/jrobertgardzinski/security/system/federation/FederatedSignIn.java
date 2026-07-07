@@ -97,8 +97,10 @@ public class FederatedSignIn {
             return new FederatedSignInResult.SignedIn(sessions.create(
                     SessionTokens.createFor(account, config, clock, accessTokenMint), SessionFamily.start()));
         }
-        String ticket = pendingStore.open(mfaChain.begin(account, factors));
-        return new FederatedSignInResult.MfaRequired(ticket, factors.get(0).type());
+        com.jrobertgardzinski.security.system.mfa.PendingAuthentication pending =
+                mfaChain.begin(account, factors);
+        String ticket = pendingStore.open(pending);
+        return new FederatedSignInResult.MfaRequired(ticket, factors.get(0).type(), pending.challengeData());
     }
 
     private Email claimByEmail(ProviderIdentity identity) {

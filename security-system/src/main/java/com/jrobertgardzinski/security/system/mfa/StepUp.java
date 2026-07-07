@@ -26,7 +26,7 @@ public class StepUp {
 
     public sealed interface Result {
         record Elevated() implements Result {}
-        record FactorRequired(String ticket, FactorType nextFactor) implements Result {}
+        record FactorRequired(String ticket, FactorType nextFactor, String challengeData) implements Result {}
         record WrongPassword() implements Result {}
         record WrongProof(int attemptsLeft) implements Result {}
         record TooManyAttempts() implements Result {}
@@ -70,8 +70,9 @@ public class StepUp {
             elevation.elevate(accessToken);   // nothing further to prove
             return new Result.Elevated();
         }
-        String ticket = store.open(new StepUpStore.StepUpPending(email, accessToken, chain.begin(email, enrolled)));
-        return new Result.FactorRequired(ticket, enrolled.get(0).type());
+        PendingAuthentication pending = chain.begin(email, enrolled);
+        String ticket = store.open(new StepUpStore.StepUpPending(email, accessToken, pending));
+        return new Result.FactorRequired(ticket, enrolled.get(0).type(), pending.challengeData());
     }
 
     public Result submitFactor(String ticket, String proof) {
@@ -95,9 +96,9 @@ public class StepUp {
             elevation.elevate(pending.accessToken());
             return new Result.Elevated();
         }
-        store.replace(ticket, new StepUpStore.StepUpPending(pending.email(), pending.accessToken(),
-                chain.advanceTo(pending.chain(), tail)));
-        return new Result.FactorRequired(ticket, tail.get(0).type());
+        PendingAuthentication advanced = chain.advanceTo(pending.chain(), tail);
+        store.replace(ticket, new StepUpStore.StepUpPending(pending.email(), pending.accessToken(), advanced));
+        return new Result.FactorRequired(ticket, tail.get(0).type(), advanced.challengeData());
     }
 
     private boolean passwordMatches(Email email, String passwordAttempt) {

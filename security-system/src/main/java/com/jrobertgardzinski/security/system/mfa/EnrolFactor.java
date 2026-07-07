@@ -55,7 +55,10 @@ public class EnrolFactor {
         if (!factor.get().verify(candidate, Optional.ofNullable(enrolment.get().challenge()), proof)) {
             return new Result.WrongProof();
         }
-        factors.enrol(candidate);
+        // most factors store what enrolment produced; a factor whose real secret only arrives with
+        // the confirming proof (WebAuthn's public key) distils it here, after verify has passed
+        String stored = factor.get().enrolledMaterial(enrolment.get().secretMaterial(), proof);
+        factors.enrol(candidate(user, type, stored));
         pending.remove(user, type);
         return new Result.Enrolled(type);
     }

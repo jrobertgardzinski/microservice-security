@@ -124,7 +124,8 @@ final class OauthController {
             // the account has enrolled factors: hand the ticket back so the UI can finish the chain
             // through /authenticate/factor, exactly like a password sign-in
             case FederatedSignInResult.MfaRequired mfa -> backTo(flow.returnUrl(),
-                    "#mfaTicket=" + encode(mfa.ticket()) + "&nextFactor=" + encode(mfa.nextFactor().value()));
+                    "#mfaTicket=" + encode(mfa.ticket()) + "&nextFactor=" + encode(mfa.nextFactor().value())
+                            + (mfa.challengeData() == null ? "" : "&challengeData=" + encode(mfa.challengeData())));
             case FederatedSignInResult.Refused refused ->
                     backTo(flow.returnUrl(), "#oauthError=" + encode(refused.reason()));
         };

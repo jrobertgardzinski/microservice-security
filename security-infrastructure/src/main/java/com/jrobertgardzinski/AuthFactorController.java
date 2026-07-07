@@ -46,8 +46,7 @@ final class AuthFactorController {
                             .cookie(refreshCookies.issue(completed.session().plainRefreshToken()));
             case ContinueAuthenticationResult.NextFactor next ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.ACCEPTED)
-                            .body(Map.of("status", "MFA_REQUIRED", "mfaTicket", ticket,
-                                    "nextFactor", next.type().value()));
+                            .body(MfaBody.of(ticket, next.type().value(), next.challengeData()));
             case ContinueAuthenticationResult.WrongProof wrong ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.UNAUTHORIZED)
                             .body(Map.of("status", "WRONG_CODE", "attemptsLeft", wrong.attemptsLeft()));

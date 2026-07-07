@@ -65,7 +65,7 @@ public class CodeFactor implements AuthenticationFactor {
     private Challenge sendCodeTo(String target) {
         String code = randomCode();
         channel.sendCode(target, code);
-        return new Challenge(hasher.hash(code), LocalDateTime.now(clock).plusMinutes(config.codeTtlMinutes()));
+        return Challenge.secret(hasher.hash(code), LocalDateTime.now(clock).plusMinutes(config.codeTtlMinutes()));
     }
 
     private String randomCode() {

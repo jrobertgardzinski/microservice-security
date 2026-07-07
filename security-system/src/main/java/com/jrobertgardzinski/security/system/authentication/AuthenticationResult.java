@@ -15,5 +15,5 @@ public sealed interface AuthenticationResult {
      * presents proofs against {@code ticket} until the chain completes; the first factor's
      * challenge (if any) has already been issued.
      */
-    record MfaRequired(String ticket, FactorType nextFactor) implements AuthenticationResult {}
+    record MfaRequired(String ticket, FactorType nextFactor, String challengeData) implements AuthenticationResult {}
 }

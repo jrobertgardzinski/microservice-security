@@ -53,7 +53,8 @@ public class ContinueAuthentication {
             store.close(ticket);
             return new ContinueAuthenticationResult.Completed(generateSession.create(pending.email()));
         }
-        store.replace(ticket, chain.advanceTo(pending, tail));
-        return new ContinueAuthenticationResult.NextFactor(tail.get(0).type());
+        PendingAuthentication advanced = chain.advanceTo(pending, tail);
+        store.replace(ticket, advanced);
+        return new ContinueAuthenticationResult.NextFactor(tail.get(0).type(), advanced.challengeData());
     }
 }

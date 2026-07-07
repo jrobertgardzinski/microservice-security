@@ -36,4 +36,15 @@ public interface AuthenticationFactor {
 
     /** Whether {@code proof} satisfies this factor for the enrolment (and the challenge, if any). */
     boolean verify(EnrolledFactor enrolment, Optional<Challenge> challenge, String proof);
+
+    /**
+     * What to persist as the factor's secret once enrolment is CONFIRMED. Most factors store what
+     * {@link #beginEnrolment} produced ({@code pendingMaterial}) unchanged — the default. A factor
+     * whose real secret only arrives with the confirming proof (WebAuthn: the browser generates the
+     * credential, so the public key is in the attestation) overrides this to distil it from
+     * {@code proof} after {@link #verify} has passed.
+     */
+    default String enrolledMaterial(String pendingMaterial, String proof) {
+        return pendingMaterial;
+    }
 }

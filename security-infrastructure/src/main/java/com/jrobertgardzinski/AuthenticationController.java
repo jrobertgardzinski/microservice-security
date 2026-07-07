@@ -83,9 +83,7 @@ public class AuthenticationController {
             // The refresh token is withheld until the chain completes (see AuthFactorController).
             case AuthenticationResult.MfaRequired mfa ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.ACCEPTED)
-                            .body(Map.of("status", "MFA_REQUIRED",
-                                    "mfaTicket", mfa.ticket(),
-                                    "nextFactor", mfa.nextFactor().value()));
+                            .body(MfaBody.of(mfa.ticket(), mfa.nextFactor().value(), mfa.challengeData()));
         };
     }
 

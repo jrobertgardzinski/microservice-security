@@ -12,7 +12,7 @@ public sealed interface FederatedSignInResult {
      * client presents proofs against {@code ticket} (the same {@code /authenticate/factor} endpoint
      * the password chain uses) until the chain completes.
      */
-    record MfaRequired(String ticket, FactorType nextFactor) implements FederatedSignInResult {}
+    record MfaRequired(String ticket, FactorType nextFactor, String challengeData) implements FederatedSignInResult {}
 
     record Refused(String reason) implements FederatedSignInResult {}
 }
