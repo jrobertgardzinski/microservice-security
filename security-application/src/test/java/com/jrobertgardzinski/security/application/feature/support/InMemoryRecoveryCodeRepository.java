@@ -30,4 +30,9 @@ public final class InMemoryRecoveryCodeRepository implements RecoveryCodeReposit
         return (int) byUser.getOrDefault(userEmail.value(), Map.of())
                 .values().stream().filter(spent -> !spent).count();
     }
+
+    @Override
+    public void removeAll(Email userEmail) {
+        byUser.remove(userEmail.value());
+    }
 }
