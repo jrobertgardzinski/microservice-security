@@ -1,0 +1,14 @@
+<configuration>
+    <!-- The stack's shared log line (observability/README.md in the aggregator repo):
+         ISO timestamp, level, the request's cid (CorrelationIdFilter -> MDC), the OTel
+         agent's trace_id (jumps straight to Tempo), logger, message. One format across
+         every service, so one Loki query greps a request through all of them. -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [cid=%X{cid:-}] [trace=%X{trace_id:-}] %logger{24} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

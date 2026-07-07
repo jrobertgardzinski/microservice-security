@@ -96,7 +96,9 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.16</version>
+            <!-- version from the Micronaut BOM: a hand-pinned 1.5.16 classic next to the
+                 BOM's 1.5.32 core made logback's model processor drop the appender ref
+                 (root logger silently lost its output) -->
             <scope>runtime</scope>
         </dependency>
 
