@@ -6,7 +6,7 @@
 import { Given, Then, When } from '@cucumber/cucumber';
 import { expect } from 'playwright/test';
 import { UI } from '../support/world.mjs';
-import { credentials } from './authenticate.steps.mjs';
+import { credentials } from '../support/account.mjs';
 
 async function resetTokenFor(world, email) {
   const response = await world.backdoor(`/test/mailbox/reset-token?email=${encodeURIComponent(email)}`);
@@ -40,8 +40,17 @@ When('the USER RESETS the password to {string} with a garbage RESET TOKEN',
     await typeNewPassword(this, newPassword);
   });
 
+// shared by reset-password and change-password: prove a password from the sign-in screen,
+// whatever screen the scenario left off on
+async function backToSignIn(world) {
+  if (await world.page.getByTestId('sign-out').isVisible()) {
+    await world.page.getByTestId('sign-out').click();
+  }
+  await world.page.getByTestId('tab-signin').click();
+}
+
 Then('the USER can AUTHENTICATE with {string}', async function (password) {
-  await expect(this.page.getByTestId('notice')).toContainText('Password reset');
+  await backToSignIn(this);
   await this.page.getByTestId('email').fill(credentials.email);
   await this.page.getByTestId('password').fill(password);
   await this.page.getByTestId('submit').click();
@@ -50,7 +59,7 @@ Then('the USER can AUTHENTICATE with {string}', async function (password) {
 });
 
 Then('the USER cannot AUTHENTICATE with {string}', async function (password) {
-  await this.page.getByTestId('tab-signin').click();
+  await backToSignIn(this);
   await this.page.getByTestId('email').fill(credentials.email);
   await this.page.getByTestId('password').fill(password);
   await this.page.getByTestId('submit').click();

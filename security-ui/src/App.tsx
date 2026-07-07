@@ -43,6 +43,9 @@ export function App() {
   const [recoveryUnused, setRecoveryUnused] = useState<number | null>(null);
   // password reset: the token arrives in the link (?reset=...), the new password in the form
   const [resetToken, setResetToken] = useState('');
+  // password change (signed in): prove the current one, pick the next
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -248,6 +251,25 @@ export function App() {
     }
   };
 
+  const changePassword = async () => {
+    reset();
+    const r = await fetch(`${SECURITY}/account/password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    if (r.ok) {
+      setCurrentPassword('');
+      setNewPassword('');
+      setNotice('Password changed.');
+    } else {
+      const body: { status?: string } = await r.json().catch(() => ({}));
+      setNotice(body.status === 'WEAK_PASSWORD'
+        ? 'That password is too weak — pick a stronger one.'
+        : 'Wrong current password.');
+    }
+  };
+
   const signOut = () => {
     // end the session server-side too — with a same-origin deployment the refresh cookie rides
     // along and the session family dies; cross-origin (no cookie) it is an idempotent no-op
@@ -322,6 +344,16 @@ export function App() {
               </button>
             </p>
           )}
+          <h4>Change password</h4>
+          <form onSubmit={(e) => { e.preventDefault(); void changePassword(); }}>
+            <input data-testid="current-password" type="password" placeholder="current password"
+                   autoComplete="current-password"
+                   value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+            <input data-testid="new-password" type="password" placeholder="new password"
+                   autoComplete="new-password"
+                   value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            <button data-testid="change-password-submit" type="submit">Change password</button>
+          </form>
           <p><button data-testid="sign-out" onClick={signOut}>Sign out</button></p>
         </>
       )}

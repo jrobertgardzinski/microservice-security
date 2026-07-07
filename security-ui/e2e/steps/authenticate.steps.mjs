@@ -9,8 +9,8 @@ import { expect } from 'playwright/test';
 const WRONG_PASSWORD = 'WrongButStrongPassword1!';
 const UNKNOWN_EMAIL = 'other@example.com';
 
-// shared with other features' glue (verify-email reads who the Background registered)
-export const credentials = { email: '', password: '' };
+import { credentials, uniqueAccount } from '../support/account.mjs';
+
 let policy = { maxFailures: 3, maxBlockMinutes: 10 };
 
 async function signInThroughUi(page, email, password) {
@@ -28,16 +28,16 @@ async function failToAuthenticate(page, times) {
 }
 
 Given('a registered USER {string} with password {string}', async function (email, password) {
-  credentials.email = email; credentials.password = password;
+  uniqueAccount(email, password);
   await this.page.getByTestId('tab-signup').click();
-  await this.page.getByTestId('email').fill(email);
+  await this.page.getByTestId('email').fill(credentials.email);
   await this.page.getByTestId('password').fill(password);
   await this.page.getByTestId('submit').click();
   await expect(this.page.getByTestId('inbox-screen')).toBeVisible();
   await this.page.getByTestId('back-to-signin').click();
   // "registered" implies completed onboarding: confirm the mailed token (a repeat scenario finds
   // the token already consumed and the address already verified — both are fine)
-  const token = await this.verificationTokenFor(email);
+  const token = await this.verificationTokenFor(credentials.email);
   if (token) {
     await this.backdoor('/verify-email', {
       method: 'POST',
@@ -49,9 +49,9 @@ Given('a registered USER {string} with password {string}', async function (email
 
 Given('a registered USER {string} with password {string} whose EMAIL is not verified yet',
   async function (email, password) {
-    credentials.email = email; credentials.password = password;
+    uniqueAccount(email, password);
     await this.page.getByTestId('tab-signup').click();
-    await this.page.getByTestId('email').fill(email);
+    await this.page.getByTestId('email').fill(credentials.email);
     await this.page.getByTestId('password').fill(password);
     await this.page.getByTestId('submit').click();
     await expect(this.page.getByTestId('inbox-screen')).toBeVisible();

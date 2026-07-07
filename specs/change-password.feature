@@ -1,3 +1,4 @@
+@ui
 Feature: Changing the password
 
   A signed-in USER changes their password by proving the current one. Afterwards they AUTHENTICATE

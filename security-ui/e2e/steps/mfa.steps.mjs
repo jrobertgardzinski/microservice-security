@@ -8,8 +8,8 @@
 
 import { Given, Then, When } from '@cucumber/cucumber';
 import { expect } from 'playwright/test';
+import { credentials, uniqueAccount } from '../support/account.mjs';
 
-let credentials = { email: '', password: '' };
 let recoveryCodes = [];
 let spentRecoveryCode = '';
 
@@ -45,16 +45,16 @@ async function signOut(world) {
 }
 
 Given('a verified USER {string} with password {string}', async function (email, password) {
-  credentials = { email, password };
+  uniqueAccount(email, password);
   await this.page.getByTestId('tab-signup').click();
-  await this.page.getByTestId('email').fill(email);
+  await this.page.getByTestId('email').fill(credentials.email);
   await this.page.getByTestId('password').fill(password);
   await this.page.getByTestId('submit').click();
   await expect(this.page.getByTestId('inbox-screen')).toBeVisible();
   await this.page.getByTestId('back-to-signin').click();
   // a repeat scenario re-registers the same address: the quiet anti-enumeration register absorbs
   // it and no fresh token is mailed — the address is already verified, which is all this step wants
-  const token = await this.verificationTokenFor(email);
+  const token = await this.verificationTokenFor(credentials.email);
   if (token) {
     await this.backdoor('/verify-email', {
       method: 'POST',

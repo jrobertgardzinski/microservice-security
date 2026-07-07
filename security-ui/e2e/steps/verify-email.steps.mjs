@@ -6,7 +6,7 @@
 import { Given, Then, When } from '@cucumber/cucumber';
 import { expect } from 'playwright/test';
 import { UI } from '../support/world.mjs';
-import { credentials } from './authenticate.steps.mjs';
+import { credentials } from '../support/account.mjs';
 import { signInCompletingMfa } from './mfa.steps.mjs';
 
 Given('the USER requested EMAIL VERIFICATION', async function () {
