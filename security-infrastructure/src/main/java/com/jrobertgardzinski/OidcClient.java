@@ -113,7 +113,7 @@ final class OidcClient {
         if (provider.issuer() != null && !provider.issuer().equals(claims.get("iss"))) {
             throw new OauthDanceFailed("issuer mismatch: " + claims.get("iss"));
         }
-        if (!provider.clientId().equals(claims.get("aud"))) {
+        if (!audienceMatches(provider.clientId(), claims)) {
             throw new OauthDanceFailed("the id_token was minted for another audience");
         }
         long expiry = ((Number) claims.getOrDefault("exp", 0)).longValue();
@@ -263,6 +263,23 @@ final class OidcClient {
             }
             throw new OauthDanceFailed("the provider is unreachable: " + e.getMessage());
         }
+    }
+
+    /**
+     * OIDC lets {@code aud} be a single string or an array (Keycloak, for one, adds {@code account}
+     * beside the client). A string must equal our client id; an array must contain it AND, per
+     * OIDC Core 3.1.3.7, {@code azp} — present whenever there are multiple audiences — must name us.
+     */
+    private static boolean audienceMatches(String clientId, Map<String, Object> claims) {
+        Object aud = claims.get("aud");
+        if (clientId.equals(aud)) {
+            return true;
+        }
+        if (aud instanceof List<?> audiences && audiences.contains(clientId)) {
+            Object azp = claims.get("azp");
+            return azp == null || clientId.equals(azp);
+        }
+        return false;
     }
 
     private Map<String, Object> decodeJson(String base64Url) {

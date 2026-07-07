@@ -115,11 +115,42 @@ exercises ID_TOKEN, `github` exercises USERINFO (`/userinfo` on the stub).
 
 ## Email change & federated identities
 
-A confirmed email change **severs every federated link** of the account
-(`ConfirmEmailChange` → `FederatedIdentityRepository.unlinkAll`): the provider
-vouched for the OLD address, so the link must not silently follow the account
-to a new one. Nothing is re-pointed automatically — at the user's next
-federated sign-in the ordinary rules apply (the account is verified, so the
-identity auto-links again). Until then the identity opens nothing.
-Pinned by the "FEDERATED LINKS die with the old EMAIL" rule in
-`specs/change-email.feature` and `ConfirmEmailChangeTest`.
+A confirmed email change **re-points every federated link** to the new address
+(`ConfirmEmailChange` → `FederatedIdentityRepository.relinkAll`): the link is
+keyed by the provider's durable `subject` — the same person, the same Google
+account — so it follows the account. (The earlier design severed the links and
+relied on auto-relink at the next sign-in; that was an illusion — the provider
+keeps reporting its own old address, so the auto-link would never find the
+moved account, and could even find a stranger who registered the freed one.)
+On account **deletion** the links are severed for good (`unlinkAll`), so no
+stale identity can open whatever account later claims the freed address.
+Pinned by the "FEDERATED LINKS follow the account" rule in
+`specs/change-email.feature`, `ConfirmEmailChangeTest` and `DeleteAccountTest`.
+
+## Keycloak (a real, self-hosted OIDC provider)
+
+The compose stack runs a real Keycloak next to the stub (`keycloak:` service,
+realm `portfolio` imported from `keycloak/realm-portfolio.json`; demo account
+`kc-demo@example.com` / `StrongPassword1!`). The provider plugs in with env
+alone — the dance code is identical to Google's:
+
+```yaml
+SECURITY_OAUTH_PROVIDERS_KEYCLOAK_ISSUER:        http://localhost:8180/realms/portfolio
+SECURITY_OAUTH_PROVIDERS_KEYCLOAK_AUTHORIZE_URL: http://localhost:8180/realms/portfolio/protocol/openid-connect/auth
+SECURITY_OAUTH_PROVIDERS_KEYCLOAK_TOKEN_URL:     http://keycloak:8080/realms/portfolio/protocol/openid-connect/token
+SECURITY_OAUTH_PROVIDERS_KEYCLOAK_CLIENT_ID:     security-portfolio
+SECURITY_OAUTH_PROVIDERS_KEYCLOAK_CLIENT_SECRET: portfolio-secret
+SECURITY_OAUTH_PROVIDERS_KEYCLOAK_REDIRECT_URI:  http://localhost:8080/oauth/callback
+SECURITY_OAUTH_PROVIDERS_KEYCLOAK_LABEL:         Keycloak
+```
+
+Two Keycloak-specific gotchas, both handled:
+
+- **Issuer vs channels.** The browser visits `localhost:8180`, security
+  exchanges the code at `keycloak:8080` — but the id_token carries ONE `iss`.
+  `KC_HOSTNAME` pins it to the browser-visible URL, so it matches the
+  configured `issuer` regardless of which channel a request used.
+- **`aud` may be an array.** Keycloak can mint `aud` as an array (e.g. with
+  `account` beside the client). The validator accepts a string equal to our
+  client id, or an array containing it with `azp` naming us (OIDC Core
+  3.1.3.7); anything else is refused. Pinned in `OauthFlowHttpTest`.

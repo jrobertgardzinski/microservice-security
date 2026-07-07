@@ -24,6 +24,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -158,6 +159,35 @@ class OauthFlowHttpTest {
     }
 
     @Test
+    @DisplayName("a Keycloak-shaped id_token signs in: aud as an array, azp naming the client")
+    void an_array_audience_with_azp_signs_in() {
+        Map<String, String> authorize = startFlow();
+        nextIdToken.set(idToken(Map.of(
+                "iss", issuer(), "aud", List.of("test-client", "account"), "azp", "test-client",
+                "sub", "kc-sub-1", "email", "keycloaker@example.com", "email_verified", true,
+                "exp", Instant.now().getEpochSecond() + 300, "nonce", authorize.get("nonce"))));
+        HttpResponse<?> back = exchange("/oauth/callback?state=" + authorize.get("state") + "&code=c-kc");
+
+        assertEquals(HttpStatus.FOUND, back.getStatus());
+        assertTrue(back.getHeaders().get("Location").startsWith(RETURN_URL + "#accessToken="),
+                "an array aud that contains the client (azp agreeing) is a valid audience");
+    }
+
+    @Test
+    @DisplayName("an array audience whose azp names someone else is refused")
+    void an_array_audience_with_foreign_azp_is_refused() {
+        Map<String, String> authorize = startFlow();
+        nextIdToken.set(idToken(Map.of(
+                "iss", issuer(), "aud", List.of("test-client", "account"), "azp", "someone-else",
+                "sub", "kc-sub-2", "email", "mitm@example.com", "email_verified", true,
+                "exp", Instant.now().getEpochSecond() + 300, "nonce", authorize.get("nonce"))));
+        HttpResponse<?> back = exchange("/oauth/callback?state=" + authorize.get("state") + "&code=c-kx");
+
+        assertEquals(HttpStatus.FOUND, back.getStatus());
+        assertTrue(back.getHeaders().get("Location").endsWith("#oauthError=SIGN_IN_FAILED"));
+    }
+
+    @Test
     @DisplayName("a nonce mismatch or an unvouched email bounces back with an error, no session")
     void bad_assertions_do_not_sign_in() {
         Map<String, String> first = startFlow();
@@ -280,7 +310,7 @@ class OauthFlowHttpTest {
     private String idToken(Map<String, Object> claims) {
         String header = b64(("{\"alg\":\"HS256\",\"typ\":\"JWT\"}").getBytes(StandardCharsets.UTF_8));
         String payload = b64(claims.entrySet().stream()
-                .map(e -> "\"" + e.getKey() + "\":" + (e.getValue() instanceof String s ? "\"" + s + "\"" : e.getValue()))
+                .map(e -> "\"" + e.getKey() + "\":" + jsonValue(e.getValue()))
                 .collect(Collectors.joining(",", "{", "}")).getBytes(StandardCharsets.UTF_8));
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
@@ -290,6 +320,17 @@ class OauthFlowHttpTest {
         } catch (Exception impossible) {
             throw new IllegalStateException(impossible);
         }
+    }
+
+    private static String jsonValue(Object value) {
+        if (value instanceof String s) {
+            return "\"" + s + "\"";
+        }
+        if (value instanceof List<?> list) {   // an array claim, e.g. Keycloak's aud
+            return list.stream().map(OauthFlowHttpTest::jsonValue)
+                    .collect(Collectors.joining(",", "[", "]"));
+        }
+        return String.valueOf(value);
     }
 
     private static String b64(byte[] bytes) {
