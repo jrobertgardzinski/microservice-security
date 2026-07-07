@@ -1,20 +1,19 @@
 import { useEffect, useState } from 'react';
 import { assertPasskey, enrolPasskey } from './webauthn';
-
-// the e2e harness points the app at its own test-env service (Playwright injects window.SECURITY_URL
-// before the app boots); a human on the dev server gets the stack's default
-const SECURITY = (window as unknown as { SECURITY_URL?: string }).SECURITY_URL ?? 'http://localhost:8080';
-
-type Mode = 'signin' | 'signup' | 'inbox' | 'mfa' | 'me' | 'forgot' | 'reset';
-type Factor = { type: string; label: string };
-
-const prettify = (code: string) => code.toLowerCase().replaceAll('_', ' ');
+import { Factor, Mode, SECURITY, Session, factorLabel, prettify } from './lib';
+import { AccountScreen } from './AccountScreen';
+import { MfaScreen } from './MfaScreen';
+import { ForgotScreen, InboxScreen, ResetScreen, SignInUpScreen } from './EntryScreens';
 
 /**
  * The auth service's own face: sign in (single- or multi-factor), create an account, the "check
  * your mailbox" screen, confirming a mailed verification link, managing sign-in factors, and /me.
  * Deliberately plain — its real job is being the specs' third entry point (the cucumber-js +
  * Playwright glue drives the same features the JVM runners do). React, like the meme gallery.
+ *
+ * <p>This component owns ALL state and behaviour; the screens (AccountScreen, MfaScreen, the
+ * entry screens) are presentational and receive it grouped by concern. The data-testids that the
+ * e2e glue clicks live in the screen files.
  */
 export function App() {
   const [mode, setMode] = useState<Mode>('signin');
@@ -51,7 +50,7 @@ export function App() {
   // e-mail change (signed in): the confirmation link goes to the NEW address
   const [newEmail, setNewEmail] = useState('');
   // every active session of the account (family id + refresh expiry)
-  const [sessions, setSessions] = useState<{ family: string; expiresAt: string }[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   // account deletion: irreversible, so it demands a fresh step-up (password, then factors)
   const [deleting, setDeleting] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
@@ -226,9 +225,6 @@ export function App() {
       setNotice(`Registration failed (${r.status}).`);
     }
   };
-
-  const factorLabel = (type: string) =>
-    ({ EMAIL_CODE: 'e-mail code', SMS_CODE: 'SMS code', TOTP: 'authenticator app', WEBAUTHN: 'passkey' } as Record<string, string>)[type] ?? type;
 
   const loadFactors = async (accessToken: string) => {
     const r = await fetch(`${SECURITY}/account/factors`, { headers: { Authorization: `Bearer ${accessToken}` } });
@@ -438,199 +434,61 @@ export function App() {
   return (
     <div className="card">
       {mode === 'me' && (
-        <>
-          <h3>Signed in</h3>
-          <p>You are <b data-testid="signed-in-email">{me}</b> ({roles.join(', ')}).</p>
-
-          {!compliant && (
-            <p data-testid="mfa-required" className="notice">
-              Your role needs {floor.required} sign-in factors — you have {floor.have}. Add another
-              below to unlock everything.
-            </p>
-          )}
-
-          <h4>Sign-in factors</h4>
-          <ul data-testid="factor-list">
-            {factors.map((f) => <li key={f.type}>{f.label}</li>)}
-            {factors.length === 0 && <li><i>password only</i></li>}
-          </ul>
-          {!enrollingType && offered.filter((t) => !factors.some((f) => f.type === t)).map((type) => (
-            <div key={type}>
-              {type === 'SMS_CODE' && (
-                <input data-testid="enroll-phone" placeholder="+48…"
-                       value={enrollTarget} onChange={(e) => setEnrollTarget(e.target.value)} />
-              )}
-              <button data-testid={`add-${type}`} onClick={() => void startEnrol(type)}>
-                Add {factorLabel(type)}
-              </button>
-            </div>
-          ))}
-          {enrollingType && (
-            <div>
-              {enrollDisplay && (
-                <p data-testid="enroll-otpauth" style={{ wordBreak: 'break-all', fontSize: '0.8rem' }}>
-                  Scan this in your authenticator app: <code>{enrollDisplay}</code>
-                </p>
-              )}
-              <input data-testid="enroll-code"
-                     placeholder={enrollDisplay ? 'code from your app' : 'code we sent you'}
-                     value={enrolCode} onChange={(e) => setEnrolCode(e.target.value)} />
-              <button data-testid="enroll-submit" onClick={() => void confirmEnrol()}>Confirm</button>
-            </div>
-          )}
-          <h4>Recovery codes</h4>
-          {recoveryCodes.length > 0 ? (
-            <div data-testid="recovery-codes">
-              <p className="notice">
-                Save these now — they will never be shown again. Each signs you in once when a
-                factor is out of reach.
-              </p>
-              <ul style={{ columns: 2, fontFamily: 'monospace' }}>
-                {recoveryCodes.map((c) => <li key={c}>{c}</li>)}
-              </ul>
-            </div>
-          ) : (
-            <p data-testid="recovery-count">
-              {recoveryUnused ? `${recoveryUnused} unused code(s) left.` : 'None yet.'}{' '}
-              <button data-testid="generate-recovery" onClick={() => void generateRecoveryCodes()}>
-                Generate {recoveryUnused ? 'a fresh batch (replaces the old one)' : 'recovery codes'}
-              </button>
-            </p>
-          )}
-          <h4>Active sessions</h4>
-          <ul data-testid="session-list">
-            {sessions.map((s) => (
-              <li key={s.family} data-testid="session-row">
-                <code>{s.family.slice(0, 8)}…</code> — until {s.expiresAt}
-              </li>
-            ))}
-          </ul>
-          <p><button data-testid="revoke-all" onClick={() => void revokeAllSessions()}>
-            Sign out everywhere
-          </button></p>
-
-          <h4>Change e-mail</h4>
-          <form onSubmit={(e) => { e.preventDefault(); void requestEmailChange(); }}>
-            <input data-testid="new-email" type="text" placeholder="new e-mail" autoComplete="email"
-                   value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
-            <button data-testid="change-email-submit" type="submit">Send confirmation link</button>
-          </form>
-
-          <h4>Change password</h4>
-          <form onSubmit={(e) => { e.preventDefault(); void changePassword(); }}>
-            <input data-testid="current-password" type="password" placeholder="current password"
-                   autoComplete="current-password"
-                   value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
-            <input data-testid="new-password" type="password" placeholder="new password"
-                   autoComplete="new-password"
-                   value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-            <button data-testid="change-password-submit" type="submit">Change password</button>
-          </form>
-          <h4>Danger zone</h4>
-          {!deleting ? (
-            <p><button data-testid="delete-account" onClick={() => setDeleting(true)}>
-              Delete my account…
-            </button></p>
-          ) : (
-            <div>
-              <p className="notice">This cannot be undone — prove it is you.</p>
-              <input data-testid="delete-password" type="password" placeholder="your password"
-                     autoComplete="current-password"
-                     value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} />
-              <button data-testid="delete-start" onClick={() => void startDelete()}>Continue</button>
-              {deleteTicket && (
-                <div>
-                  <input data-testid="delete-code" placeholder="code we sent you"
-                         value={deleteCode} onChange={(e) => setDeleteCode(e.target.value)} />
-                  <button data-testid="delete-submit" onClick={() => void submitDeleteCode()}>
-                    Confirm deletion
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-          <p><button data-testid="sign-out" onClick={signOut}>Sign out</button></p>
-        </>
+        <AccountScreen
+          identity={{ me, roles, compliant, floor }}
+          factors={{
+            have: factors, offered,
+            enrollingType, enrollDisplay, enrollTarget, enrolCode,
+            setEnrollTarget, setEnrolCode,
+            startEnrol: (type) => void startEnrol(type),
+            confirmEnrol: () => void confirmEnrol(),
+          }}
+          recovery={{
+            codes: recoveryCodes, unused: recoveryUnused,
+            generate: () => void generateRecoveryCodes(),
+          }}
+          sessions={{ list: sessions, revokeAll: () => void revokeAllSessions() }}
+          emailChange={{ newEmail, setNewEmail, request: () => void requestEmailChange() }}
+          passwordChange={{
+            currentPassword, newPassword, setCurrentPassword, setNewPassword,
+            change: () => void changePassword(),
+          }}
+          deletion={{
+            deleting, password: deletePassword, ticket: deleteTicket, code: deleteCode,
+            setDeleting, setPassword: setDeletePassword, setCode: setDeleteCode,
+            start: () => void startDelete(),
+            submitCode: () => void submitDeleteCode(),
+          }}
+          onSignOut={signOut}
+        />
       )}
 
       {mode === 'mfa' && (
-        <>
-          <h3 data-testid="mfa-screen">One more step</h3>
-          {nextFactor === 'WEBAUTHN' ? (
-            <>
-              <p data-testid="passkey-prompt">Confirm with your passkey to finish signing in.</p>
-              <button data-testid="passkey-retry" onClick={() => void submitPasskey()}>Use passkey</button>
-            </>
-          ) : (
-            <>
-              <p>We sent a {prettify(nextFactor)} to your e-mail — enter it to finish signing in.</p>
-              <form onSubmit={(e) => { e.preventDefault(); void submitFactor(code); }}>
-                <input data-testid="mfa-code" placeholder="sign-in code" value={code}
-                       onChange={(e) => setCode(e.target.value)} autoFocus />
-                <button data-testid="mfa-submit" type="submit">Sign in</button>
-              </form>
-              <p data-testid="recovery-hint" style={{ fontSize: '0.85rem', opacity: 0.8 }}>
-                Lost access? Type one of your recovery codes instead — it works once.
-              </p>
-            </>
-          )}
-        </>
+        <MfaScreen
+          nextFactor={nextFactor}
+          code={code}
+          setCode={setCode}
+          submitFactor={(proof) => void submitFactor(proof)}
+          submitPasskey={() => void submitPasskey()}
+        />
       )}
 
       {mode === 'forgot' && (
-        <>
-          <h3 data-testid="forgot-screen">Forgot your password?</h3>
-          <p>Tell us your e-mail and we will send a reset link.</p>
-          <form onSubmit={(e) => { e.preventDefault(); void requestReset(); }}>
-            <input data-testid="forgot-email" type="text" placeholder="e-mail" autoComplete="email"
-                   value={email} onChange={(e) => setEmail(e.target.value)} />
-            <button data-testid="forgot-submit" type="submit">Send reset link</button>
-          </form>
-          <button data-testid="back-to-signin" onClick={() => switchTo('signin')}>Back to sign in</button>
-        </>
+        <ForgotScreen email={email} setEmail={setEmail}
+                      requestReset={() => void requestReset()} switchTo={switchTo} />
       )}
 
       {mode === 'reset' && (
-        <>
-          <h3 data-testid="reset-screen">Choose a new password</h3>
-          <form onSubmit={(e) => { e.preventDefault(); void completeReset(); }}>
-            <input data-testid="reset-password" type="password" placeholder="new password"
-                   autoComplete="new-password"
-                   value={password} onChange={(e) => setPassword(e.target.value)} />
-            <button data-testid="reset-submit" type="submit">Set new password</button>
-          </form>
-        </>
+        <ResetScreen password={password} setPassword={setPassword}
+                     completeReset={() => void completeReset()} />
       )}
 
-      {mode === 'inbox' && (
-        <>
-          <h3 data-testid="inbox-screen">Check your mailbox</h3>
-          <p>We sent a mail to <b>{email}</b> — follow it to continue.</p>
-          <button data-testid="back-to-signin" onClick={() => switchTo('signin')}>Back to sign in</button>
-        </>
-      )}
+      {mode === 'inbox' && <InboxScreen email={email} switchTo={switchTo} />}
 
       {(mode === 'signin' || mode === 'signup') && (
-        <>
-          <nav>
-            <button data-testid="tab-signin" className={mode === 'signin' ? 'active' : ''}
-                    onClick={() => switchTo('signin')}>Sign in</button>
-            <button data-testid="tab-signup" className={mode === 'signup' ? 'active' : ''}
-                    onClick={() => switchTo('signup')}>Create account</button>
-          </nav>
-          <form onSubmit={(e) => { e.preventDefault(); void (mode === 'signup' ? signUp() : signIn()); }}>
-            <input data-testid="email" type="text" placeholder="e-mail" autoComplete="email"
-                   value={email} onChange={(e) => setEmail(e.target.value)} />
-            <input data-testid="password" type="password" placeholder="password"
-                   autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                   value={password} onChange={(e) => setPassword(e.target.value)} />
-            <button data-testid="submit" type="submit">{mode === 'signup' ? 'Create account' : 'Sign in'}</button>
-          </form>
-          {mode === 'signin' && (
-            <p><button data-testid="forgot-password" className="linkish"
-                       onClick={() => switchTo('forgot')}>Forgot password?</button></p>
-          )}
-        </>
+        <SignInUpScreen mode={mode} email={email} password={password}
+                        setEmail={setEmail} setPassword={setPassword} switchTo={switchTo}
+                        signIn={() => void signIn()} signUp={() => void signUp()} />
       )}
 
       {notice && <p data-testid="notice" className="notice">{notice}</p>}
