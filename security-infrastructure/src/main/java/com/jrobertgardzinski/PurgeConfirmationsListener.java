@@ -4,9 +4,12 @@ import io.micronaut.configuration.kafka.annotation.KafkaListener;
 import io.micronaut.configuration.kafka.annotation.OffsetReset;
 import io.micronaut.configuration.kafka.annotation.Topic;
 import io.micronaut.context.annotation.Requires;
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.json.JsonMapper;
+import io.micronaut.messaging.annotation.MessageHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.util.Map;
 
@@ -34,16 +37,27 @@ class PurgeConfirmationsListener {
     }
 
     @Topic("memes-events")
-    void fromMemes(String payload) {
-        confirmIfPurged(payload, "memes");
+    void fromMemes(String payload, @MessageHeader("X-Correlation-Id") @Nullable String cid) {
+        confirmIfPurged(payload, "memes", cid);
     }
 
     @Topic("comments-events")
-    void fromComments(String payload) {
-        confirmIfPurged(payload, "comments");
+    void fromComments(String payload, @MessageHeader("X-Correlation-Id") @Nullable String cid) {
+        confirmIfPurged(payload, "comments", cid);
     }
 
-    private void confirmIfPurged(String payload, String participant) {
+    private void confirmIfPurged(String payload, String participant, String cid) {
+        if (cid != null) {
+            MDC.put("cid", cid);   // continue the trace the originating request started
+        }
+        try {
+            handle(payload, participant);
+        } finally {
+            MDC.remove("cid");
+        }
+    }
+
+    private void handle(String payload, String participant) {
         Map<?, ?> event;
         try {
             event = json.readValue(payload, Map.class);

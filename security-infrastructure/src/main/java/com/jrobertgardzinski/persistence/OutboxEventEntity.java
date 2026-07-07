@@ -18,5 +18,8 @@ record OutboxEventEntity(
         String eventKey,
         String payload,
         Instant createdAt,
-        @Nullable Instant publishedAt) {
+        @Nullable Instant publishedAt,
+        // the correlation id of the request that wrote this event — forwarded as a Kafka header at
+        // drain time so the async consumer logs the same cid; null for events written outside a request
+        @Nullable String cid) {
 }

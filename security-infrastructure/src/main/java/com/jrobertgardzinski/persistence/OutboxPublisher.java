@@ -4,10 +4,13 @@ import io.micronaut.configuration.kafka.annotation.KafkaClient;
 import io.micronaut.configuration.kafka.annotation.KafkaKey;
 import io.micronaut.configuration.kafka.annotation.Topic;
 import io.micronaut.context.annotation.Requires;
+import io.micronaut.core.annotation.Nullable;
+import io.micronaut.messaging.annotation.MessageHeader;
 import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import javax.sql.DataSource;
 import java.time.Clock;
@@ -29,7 +32,8 @@ class OutboxPublisher {
     @KafkaClient
     @Requires(notEnv = "test")
     interface EventsProducer {
-        void send(@Topic String topic, @KafkaKey String key, String payload);
+        void send(@Topic String topic, @KafkaKey String key,
+                  @MessageHeader("X-Correlation-Id") @Nullable String cid, String payload);
     }
 
     private final OutboxEventJdbcRepository outbox;
@@ -46,11 +50,16 @@ class OutboxPublisher {
     void drain() {
         for (OutboxEventEntity event : outbox.findByPublishedAtIsNullOrderByCreatedAt()) {
             try {
-                producer.send(event.topic(), event.eventKey(), event.payload());
+                if (event.cid() != null) {
+                    MDC.put("cid", event.cid());   // the drain log carries the originating request's cid
+                }
+                producer.send(event.topic(), event.eventKey(), event.cid(), event.payload());
                 outbox.markPublished(event.id(), Instant.now(clock));
             } catch (RuntimeException brokerDown) {
                 LOG.warn("outbox drain interrupted (will retry): {}", brokerDown.getMessage());
                 return; // keep ordering: stop at the first failure, retry next tick
+            } finally {
+                MDC.remove("cid");
             }
         }
     }
