@@ -21,5 +21,8 @@ record OutboxEventEntity(
         @Nullable Instant publishedAt,
         // the correlation id of the request that wrote this event — forwarded as a Kafka header at
         // drain time so the async consumer logs the same cid; null for events written outside a request
-        @Nullable String cid) {
+        @Nullable String cid,
+        // the W3C traceparent of that request's span — re-established at drain so the published event
+        // continues the same distributed trace; null when there was no active span
+        @Nullable String traceparent) {
 }

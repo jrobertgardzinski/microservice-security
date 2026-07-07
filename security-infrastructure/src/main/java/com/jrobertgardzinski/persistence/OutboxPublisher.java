@@ -7,6 +7,12 @@ import io.micronaut.context.annotation.Requires;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.messaging.annotation.MessageHeader;
 import io.micronaut.scheduling.annotation.Scheduled;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.api.trace.TraceFlags;
+import io.opentelemetry.api.trace.TraceState;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +59,11 @@ class OutboxPublisher {
                 if (event.cid() != null) {
                     MDC.put("cid", event.cid());   // the drain log carries the originating request's cid
                 }
-                producer.send(event.topic(), event.eventKey(), event.cid(), event.payload());
+                // re-establish the originating request's span as the parent, so the agent injects a
+                // traceparent that continues that trace instead of starting a disconnected one
+                try (Scope ignored = parentScope(event.traceparent())) {
+                    producer.send(event.topic(), event.eventKey(), event.cid(), event.payload());
+                }
                 outbox.markPublished(event.id(), Instant.now(clock));
             } catch (RuntimeException brokerDown) {
                 LOG.warn("outbox drain interrupted (will retry): {}", brokerDown.getMessage());
@@ -62,5 +72,19 @@ class OutboxPublisher {
                 MDC.remove("cid");
             }
         }
+    }
+
+    /** The stored traceparent as a current OTel scope (its span becomes the parent), or a no-op. */
+    private static Scope parentScope(String traceparent) {
+        if (traceparent == null) {
+            return Scope.noop();
+        }
+        String[] parts = traceparent.split("-");
+        if (parts.length != 4) {
+            return Scope.noop();
+        }
+        SpanContext parent = SpanContext.createFromRemoteParent(
+                parts[1], parts[2], TraceFlags.fromHex(parts[3], 0), TraceState.getDefault());
+        return parent.isValid() ? Context.root().with(Span.wrap(parent)).makeCurrent() : Scope.noop();
     }
 }
