@@ -4,7 +4,11 @@ Tylko otwarte rzeczy. Historia zrobionego = git log.
 (Stara wersja z pełnym logiem faz: git log tego pliku.)
 
 **Plan pracy z instrukcjami wykonawczymi: [docs/opus-playbook.md](docs/opus-playbook.md)**
-(2026-07-07; S1 i S2 ZROBIONE — dalej: S3 WebAuthn; S4/S5 zablokowane na usera).
+(2026-07-07; S1 i S2 ZROBIONE. S3 WebAuthn: analiza DOMKNIĘTA — reguła stopu portu
+zadziałała, projekt skorygowany i rozpisany wykonawczo w playbooku: zero CBOR/zależności
+(SPKI z `getPublicKey()`), bez migracji (credential w `secretMaterial`), dwie addytywne
+korekty portu — `enrolledMaterial` default + `challengeData` w 202; implementacja =
+kroki a–e. S4/S5 zablokowane na usera.)
 
 ## Stan (2026-07-02) — kontekst, nie backlog
 

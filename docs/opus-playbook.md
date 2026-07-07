@@ -140,6 +140,51 @@ change & federated identities", 5–10 zdań).
 
 ## S3. WebAuthn/passkeys jako trzeci czynnik plug-and-play (flagowe, duże)
 
+**USTALENIA Z ANALIZY 2026-07-07 (Fable) — reguła stopu zadziałała zgodnie z planem.**
+Port PRZEŻYWA, ale wymaga dwóch JAWNYCH, addytywnych korekt (nie hacków). Wykonuj wg tego,
+sekcja poniżej („zakres minimalny") pozostaje ważna tam, gdzie nie koliduje:
+
+1. **ZERO CBOR i zero zależności**: NIE parsuj attestationObject. Przeglądarka wystawia
+   klucz wprost: `AuthenticatorAttestationResponse.getPublicKey()` → **SPKI DER** i
+   `getPublicKeyAlgorithm()` (−7=ES256). Enrolment-proof = JSON-string
+   `{credentialId, publicKey(b64url SPKI), algorithm, clientDataJSON(b64url)}` — kontrakt
+   endpointów bez zmian (proof zawsze był stringiem). Assertion przy logowaniu = JSON-string
+   `{credentialId, clientDataJSON, authenticatorData, signature}` (wszystko b64url);
+   weryfikacja czystym JDK: parse authenticatorData ręcznie (rpIdHash 32B + flags 1B +
+   signCount 4B), podpis `SHA256withECDSA` nad `authenticatorData || SHA256(clientDataJSON)`
+   kluczem z SPKI (`KeyFactory EC`). **Żadnej migracji V14**: credential JSON mieszka w
+   `EnrolledFactor.secretMaterial` — repozytorium już to persystuje.
+2. **Korekta portu #1 (enrolment)**: `AuthenticationFactor` dostaje
+   `default String enrolledMaterial(String pendingMaterial, String proof) { return pendingMaterial; }`
+   — a `EnrolFactor.confirm` zapisuje `factor.enrolledMaterial(pending, proof)` zamiast
+   surowego pending. Default zachowuje wszystkie istniejące czynniki; WebAuthn nadpisuje
+   (wyciąga credential z proofa PO pozytywnym verify; verify przy confirm sprawdza podpis
+   challenge'u z clientDataJSON przeciw `Challenge.codeHash`).
+3. **Korekta portu #2 (sign-in, ŚWIADOMA zmiana drutu)**: klient musi dostać nonce.
+   `issueChallenge` WebAuthn mintuje losowy nonce → `Challenge(sha256(nonce), expiry)`
+   (schemat Challenge bez zmian), ale SUROWY nonce musi wyjechać w 202. Dodaj pole
+   `String challengeData` (nullable) do TRZECH rekordów wyników:
+   `AuthenticationResult.MfaRequired`, `FederatedSignInResult.MfaRequired`,
+   `StepUp.Result.FactorRequired` — oraz przewlecz w `MfaChain` (skąd pochodzi challenge),
+   kontrolerach (`/authenticate`, `/authenticate/factor`, `/oauth/callback` fragment,
+   `/account/step-up[.../factor]`) jako pole `challengeData` w body 202, i w
+   `EnrolFactor.Result.Started.display` (creation options JSON dla enrolmentu już ma
+   swój kanał — `display`). Aktualizuj bots/... nie — aktualizuj `MfaHttpTest`,
+   `StepUpHttpTest` i UI obu aplikacji (pole ignorowane przez stare czynniki = null).
+   W clientDataJSON challenge NIE jest hashem — porównuj `sha256(base64urlDecode(
+   clientData.challenge))` z `codeHash`; verify sprawdza też `type`
+   (`webauthn.get`/`webauthn.create`), `origin` (config: `security.webauthn.origins`,
+   default localhost:4200/8080) i `rpIdHash`.
+4. **E2e**: Playwright CDP `WebAuthn.enable` + `addVirtualAuthenticator` (ctap2/internal,
+   automaticPresenceSimulation) — scenariusz w mfa.feature taguj `@ui`; JVM-owy odpowiednik
+   w MfaHttpTest z nagranym fixture z wirtualnego authenticatora (zapisz payloady z sesji
+   e2e do zasobów testowych) LUB zbuduj assertion w teście własnym kluczem EC (prościej:
+   wygeneruj keypair w teście, złóż clientDataJSON+authenticatorData ręcznie, podpisz).
+5. Kolejność: (a) port+EnrolFactor+rekordy+kontrolery z challengeData (testy JVM zielone,
+   stare czynniki nietknięte — challengeData=null); (b) `WebauthnFactor` + unit na własnym
+   kluczu EC; (c) UI enrolment/sign-in (`navigator.credentials.create/get`, mapowanie
+   b64url); (d) e2e z wirtualnym authenticatorem; (e) mfa-design.md sekcja „Phase H".
+
 **Cel:** dowód architektury z `docs/mfa-design.md` — nowa metoda = nowy adapter,
 zero zmian w rdzeniu. Po TOTP naturalny następny czynnik: WebAuthn (passkeys).
 
