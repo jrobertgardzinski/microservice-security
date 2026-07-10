@@ -215,6 +215,29 @@
             <version>4.6.17</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <!-- the closing loop: a REAL token this service mints, verified through the REAL
+                 library every offline consumer uses — the JWT's shape can no longer drift away
+                 from its verifiers -->
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>offline-jwt</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- ObjectMapper handed to the offline-jwt verifier in tests -->
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- the request pact-jvm replays (mutated to carry the real bearer); comes with the
+                 pact provider, declared for the dependency analyzer -->
+            <groupId>org.apache.httpcomponents.core5</groupId>
+            <artifactId>httpcore5</artifactId>
+            <version>5.3.4</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

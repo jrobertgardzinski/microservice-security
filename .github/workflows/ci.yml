@@ -50,8 +50,13 @@ jobs:
         with:
           repository: jrobertgardzinski/infrastructure-micronaut-clock
           path: infrastructure-micronaut-clock
+      - uses: actions/checkout@v4
+        with:
+          repository: jrobertgardzinski/offline-jwt
+          path: offline-jwt
 
-      # the consumers whose committed pacts the provider tests verify (checkout only, no build)
+      # offline-jwt is also a consumer (the JWKS pact) and a test dependency (the round-trip);
+      # the other consumers are checkout only, no build
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/microservice-email
@@ -78,7 +83,7 @@ jobs:
 
       - name: Install the shared libraries (dependency order)
         run: |
-          for lib in test-starter constraint config adjustable-clock email password infrastructure-micronaut-clock; do
+          for lib in test-starter constraint config adjustable-clock email password infrastructure-micronaut-clock offline-jwt; do
             mvn -B -q --no-transfer-progress -f "$lib/pom.xml" install -DskipTests
           done
 
