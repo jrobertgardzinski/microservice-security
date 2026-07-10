@@ -192,10 +192,45 @@
             <version>4.6.17</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <!-- the consumer's half of the saga-confirmation contracts: this service states which
+                 USER_CONTENT_PURGED fields it reads; the pacts (../pacts, committed) are verified
+                 by the three participants' provider tests -->
+            <groupId>au.com.dius.pact.consumer</groupId>
+            <artifactId>junit5</artifactId>
+            <version>4.6.17</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- MessagePactBuilder and the dsl live here (declared for the dependency analyzer) -->
+            <groupId>au.com.dius.pact</groupId>
+            <artifactId>consumer</artifactId>
+            <version>4.6.17</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- @Pact, Message, PactSpecVersion live here (declared for the dependency analyzer) -->
+            <groupId>au.com.dius.pact.core</groupId>
+            <artifactId>model</artifactId>
+            <version>4.6.17</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <!-- the confirmation contract test writes its pacts to the repo root
+                             (committed) so the participants' provider tests can verify them from
+                             a sibling checkout -->
+                        <pact.rootDir>${project.basedir}/../pacts</pact.rootDir>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>io.micronaut.maven</groupId>
                 <artifactId>micronaut-maven-plugin</artifactId>
