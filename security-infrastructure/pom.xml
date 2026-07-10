@@ -175,6 +175,23 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- the producer's half of the cross-service contracts: verifies the consumers' committed
+             pacts (mail-requests, content-commands) against the REAL producer code; skipped
+             gracefully when the consumer repos are not checked out next to this one -->
+        <dependency>
+            <groupId>au.com.dius.pact.provider</groupId>
+            <artifactId>junit5</artifactId>
+            <version>4.6.17</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- @PactVerifyProvider lives here (junit5 above pulls it in; declared for the
+                 dependency analyzer) -->
+            <groupId>au.com.dius.pact</groupId>
+            <artifactId>provider</artifactId>
+            <version>4.6.17</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -46,7 +46,8 @@ final class OutboxEmailCodeChannel implements CodeChannel {
                     "id", UUID.randomUUID().toString(),
                     "type", "AUTH_CODE",
                     "to", target,
-                    "code", code)));
+                    "code", code,
+                    "version", 1)));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

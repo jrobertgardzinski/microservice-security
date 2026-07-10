@@ -40,6 +40,7 @@
                         <systemPropertyVariables>
                             <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
                             <jqwik.database>${project.build.directory}/.jqwik-database</jqwik.database>
+                            <pact_do_not_track>true</pact_do_not_track>
                         </systemPropertyVariables>
                     </configuration>
                 </plugin>

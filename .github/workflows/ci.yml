@@ -1,0 +1,86 @@
+name: CI
+
+# microservice-security depends on the shared SNAPSHOT libraries, so CI checks them out (all
+# public) and installs them in dependency order before building the service — independent per-push
+# feedback without the whole workspace reactor. The consumer repos are checked out too, pacts
+# included, so the provider verification (mail-requests, content-commands) runs here as well: a
+# push that breaks a consumer's contract goes red in THIS repo. The reactor CI (in the aggregator
+# repo) still validates everything together.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: microservice-security
+
+      # the shared libraries this service builds against
+      - uses: actions/checkout@v4
+        with:
+          repository: jrobertgardzinski/test-starter
+          path: test-starter
+      - uses: actions/checkout@v4
+        with:
+          repository: jrobertgardzinski/libs   # the constraint lib lives in repo "libs"
+          path: constraint
+      - uses: actions/checkout@v4
+        with:
+          repository: jrobertgardzinski/config
+          path: config
+      - uses: actions/checkout@v4
+        with:
+          repository: jrobertgardzinski/adjustable-clock
+          path: adjustable-clock
+      - uses: actions/checkout@v4
+        with:
+          repository: jrobertgardzinski/email
+          path: email
+      - uses: actions/checkout@v4
+        with:
+          repository: jrobertgardzinski/password
+          path: password
+      - uses: actions/checkout@v4
+        with:
+          repository: jrobertgardzinski/infrastructure-micronaut-clock
+          path: infrastructure-micronaut-clock
+
+      # the consumers whose committed pacts the provider tests verify (checkout only, no build)
+      - uses: actions/checkout@v4
+        with:
+          repository: jrobertgardzinski/microservice-email
+          path: microservice-email
+      - uses: actions/checkout@v4
+        with:
+          repository: jrobertgardzinski/microservice-memes
+          path: microservice-memes
+      - uses: actions/checkout@v4
+        with:
+          repository: jrobertgardzinski/microservice-comments
+          path: microservice-comments
+      - uses: actions/checkout@v4
+        with:
+          repository: jrobertgardzinski/microservice-user-collections
+          path: microservice-user-collections
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Install the shared libraries (dependency order)
+        run: |
+          for lib in test-starter constraint config adjustable-clock email password infrastructure-micronaut-clock; do
+            mvn -B -q --no-transfer-progress -f "$lib/pom.xml" install -DskipTests
+          done
+
+      - name: Build and test (including pact provider verification)
+        run: mvn -B --no-transfer-progress -f microservice-security/pom.xml clean verify

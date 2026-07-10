@@ -56,7 +56,8 @@ class OutboxMailNotifiers {
         return email -> append(Map.of(
                 "id", UUID.randomUUID().toString(),
                 "type", "ALREADY_REGISTERED",
-                "to", email.value()));
+                "to", email.value(),
+                "version", 1));
     }
 
     private void append(String type, Email email, String linkBase, AbstractToken token) {
@@ -64,12 +65,15 @@ class OutboxMailNotifiers {
                 "id", UUID.randomUUID().toString(),
                 "type", type,
                 "to", email.value(),
-                "link", linkBase + token.value()));
+                "link", linkBase + token.value(),
+                "version", 1));
     }
 
-    private void append(Map<String, String> event) {
+    // "version" is the envelope's escape hatch for a breaking change (ADR 0004 in the workspace):
+    // within version 1 fields are only ever ADDED and consumers ignore what they don't know
+    private void append(Map<String, ?> event) {
         try {
-            outbox.append(TOPIC, event.get("to"), json.writeValueAsString(event));
+            outbox.append(TOPIC, (String) event.get("to"), json.writeValueAsString(event));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

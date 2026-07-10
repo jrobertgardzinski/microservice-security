@@ -68,7 +68,8 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
                 "id", UUID.randomUUID().toString(),
                 "sagaId", sagaId.toString(),
                 "type", "PURGE_USER_CONTENT",
-                "email", email.value()));
+                "email", email.value(),
+                "version", 1));
         if (purgeChoices.memesRule().isPresent() && purgeChoices.commentsRule().isPresent()) {
             command.put("policy", Map.of(
                     "memes", purgeChoices.memesRule().get(),
@@ -103,7 +104,7 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
 
     private void appendMail(String type, String to) {
         outbox.append(MAIL_TOPIC, to, write(Map.<String, Object>of(
-                "id", UUID.randomUUID().toString(), "type", type, "to", to)));
+                "id", UUID.randomUUID().toString(), "type", type, "to", to, "version", 1)));
     }
 
     private String write(Map<String, ?> payload) {
