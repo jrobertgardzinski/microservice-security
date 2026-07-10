@@ -13,12 +13,16 @@ micronaut:
       enabled: true
       configurations:
         # the meme gallery UI (served by microservice-memes) signs users in against this service;
-        # 4200 is security's own Angular UI on its dev server (the specs' third entry point)
+        # 4200 is security's own UI on its dev server (the specs' third entry point); 8093 is the
+        # collections UI (react-native-web — its separate origin is what exercises CORS) and 5173
+        # its Vite dev server
         ui:
           allowed-origins:
             - http://localhost:8083
             - http://localhost:8084
             - http://localhost:4200
+            - http://localhost:8093
+            - http://localhost:5173
 endpoints:
   health:
     enabled: true

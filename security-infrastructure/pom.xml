@@ -225,10 +225,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <!-- ObjectMapper handed to the offline-jwt verifier in tests -->
+            <!-- ObjectMapper handed to the offline-jwt verifier in tests. Deliberately NOT
+                 test-scoped: Flyway's plugin registry needs jackson-databind at runtime and used
+                 to get it transitively — a direct test-scope declaration would out-rank that and
+                 evict it from target/lib (found the hard way: the container died on startup) -->
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <!-- the request pact-jvm replays (mutated to carry the real bearer); comes with the
@@ -346,7 +348,16 @@
                                 <ignoredUnusedDeclaredDependency>org.flywaydb:*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.testcontainers:*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.yaml:*</ignoredUnusedDeclaredDependency>
+                                <!-- main code never touches ObjectMapper, but Flyway's plugin
+                                     registry needs it at runtime and tests hand it to the
+                                     offline-jwt verifier — see the dependency's own comment -->
+                                <ignoredUnusedDeclaredDependency>com.fasterxml.jackson.core:jackson-databind</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
+                            <ignoredNonTestScopedDependencies combine.children="append">
+                                <!-- same story: compile scope on purpose (runtime need + test
+                                     compile visibility); the analyzer sees only the test usage -->
+                                <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-databind</ignoredNonTestScopedDependency>
+                            </ignoredNonTestScopedDependencies>
                         </configuration>
                     </execution>
                 </executions>
