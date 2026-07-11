@@ -15,19 +15,19 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Verifies microservice-memes' committed pact — the saga participant's view of the
- * {@code content-commands} it purges on — against the REAL orchestrator (see
- * {@link SecurityEventPacts}). Skipped, not failed, when the consumer repo is not checked out
- * next to this one.
+ * Verifies microservice-offboarding's committed pact — the portal orchestrator's view of the
+ * {@code ACCOUNT_DELETION_REQUESTED} fact it opens sagas on — against the REAL fact-producing
+ * code (see {@link SecurityEventPacts}). Skipped, not failed, when the consumer repo is not
+ * checked out next to this one.
  */
 @Provider("microservice-security")
-@PactFolder("../../microservice-memes/pacts")
+@PactFolder("../../microservice-offboarding/pacts")
 @EnabledIf(value = "consumerPactsCheckedOut",
-        disabledReason = "microservice-memes is not checked out next to this repo")
-class MemesPurgeCommandPactProviderTest {
+        disabledReason = "microservice-offboarding is not checked out next to this repo")
+class OffboardingFactsPactProviderTest {
 
     static boolean consumerPactsCheckedOut() {
-        return Files.isDirectory(Path.of("../../microservice-memes/pacts"));
+        return Files.isDirectory(Path.of("../../microservice-offboarding/pacts"));
     }
 
     @BeforeEach
@@ -37,7 +37,7 @@ class MemesPurgeCommandPactProviderTest {
 
     @TestTemplate
     @ExtendWith(PactVerificationInvocationContextProvider.class)
-    void everyCommandShapeTheParticipantReliesOn(PactVerificationContext context) {
+    void everyFactShapeThePortalReliesOn(PactVerificationContext context) {
         context.verifyInteraction();
     }
 }

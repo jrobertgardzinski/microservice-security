@@ -99,38 +99,34 @@ public class HttpDeleteAccountSteps {
         assertEquals("ELEVATED", elevated.getBody(Map.class).orElseThrow().get("status"));
     }
 
-    @Then("the purge command carries that choice")
-    public void thePurgeCommandCarriesTheChoice() {
+    @Then("the announced deletion carries that choice")
+    public void theAnnouncedDeletionCarriesTheChoice() {
         InMemoryOutboxAppender outbox = server.getApplicationContext().getBean(InMemoryOutboxAppender.class);
-        String command = outbox.appended().stream()
-                .filter(event -> event.topic().equals("content-commands") && event.key().equals(email))
+        String fact = outbox.appended().stream()
+                .filter(event -> event.topic().equals("security-events") && event.key().equals(email))
                 .reduce((first, second) -> second)
-                .orElseThrow(() -> new AssertionError("no purge command in the outbox"))
+                .orElseThrow(() -> new AssertionError("no deletion fact in the outbox"))
                 .payload();
         org.junit.jupiter.api.Assertions.assertTrue(
-                command.contains("KEEP_POPULAR_ANONYMIZED:100"),
-                "expected the wizard's choice in the command, got: " + command);
+                fact.contains("KEEP_POPULAR_ANONYMIZED:100"),
+                "expected the wizard's choice in the announced fact, got: " + fact);
     }
 
-    @When("only the meme service confirmed the content purge")
-    public void onlyTheMemeServiceConfirmed() {
-        // the orchestrator method the Kafka listener calls on a USER_CONTENT_PURGED event
-        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).completePurge(email, "memes");
+    @When("the portal confirms the content purge")
+    public void thePortalConfirmsTheContentPurge() {
+        // the orchestrator method the Kafka listener calls on a PORTAL_CONTENT_PURGED outcome
+        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).completePurge(email);
     }
 
-    @When("the comments service confirms the content purge too")
-    public void theCommentsServiceConfirmsToo() {
-        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).completePurge(email, "comments");
+    @When("the portal reports the content purge failed")
+    public void thePortalReportsTheContentPurgeFailed() {
+        // ...and on a PORTAL_PURGE_FAILED outcome
+        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).compensate(email);
     }
 
-    @When("the collections service confirms the content purge too")
-    public void theCollectionsServiceConfirmsToo() {
-        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).completePurge(email, "collections");
-    }
-
-    @When("the content purge does not confirm within the time limit")
-    public void thePurgeDoesNotConfirmInTime() {
-        client.exchange(HttpRequest.POST("/test/clock/advance", Map.of("duration", "PT3M")));
+    @When("no portal outcome arrives within the time limit")
+    public void noPortalOutcomeArrivesInTime() {
+        client.exchange(HttpRequest.POST("/test/clock/advance", Map.of("duration", "PT6M")));
         server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).compensateOverdue();
     }
 

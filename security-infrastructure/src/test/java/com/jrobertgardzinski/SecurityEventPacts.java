@@ -15,7 +15,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -73,7 +72,7 @@ public class SecurityEventPacts {
     @PactVerifyProvider("an account deleted mail request")
     public String anAccountDeletedMailRequest() {
         CapturingOutbox outbox = new CapturingOutbox();
-        orchestrator(outbox).completePurge("leaver@example.com", "memes");
+        orchestrator(outbox).completePurge("leaver@example.com");
         return outbox.only("mail-requests");
     }
 
@@ -84,30 +83,30 @@ public class SecurityEventPacts {
         return outbox.only("mail-requests");
     }
 
-    // --- saga commands, as memes / comments / user-collections consume them --------------------
+    // --- the deletion fact, as the portal's orchestrator (offboarding) consumes it --------------
 
-    @PactVerifyProvider("a purge user content command")
-    public String aPurgeUserContentCommand() {
+    @PactVerifyProvider("an account deletion requested fact")
+    public String anAccountDeletionRequestedFact() {
         CapturingOutbox outbox = new CapturingOutbox();
         orchestrator(outbox).begin(Email.of("leaver@example.com"), PurgeChoices.serviceDefaults());
-        return outbox.only("content-commands");
+        return outbox.only("security-events");
     }
 
-    @PactVerifyProvider("a purge user content command with an explicit policy")
-    public String aPurgeUserContentCommandWithAnExplicitPolicy() {
+    @PactVerifyProvider("an account deletion requested fact with policy choices")
+    public String anAccountDeletionRequestedFactWithPolicyChoices() {
         CapturingOutbox outbox = new CapturingOutbox();
         orchestrator(outbox).begin(Email.of("leaver@example.com"),
-                new PurgeChoices(Optional.of("DELETE"), Optional.of("ANONYMIZE_AUTHOR")));
-        return outbox.only("content-commands");
+                new PurgeChoices(java.util.Map.of("memes", "DELETE", "comments", "ANONYMIZE_AUTHOR")));
+        return outbox.only("security-events");
     }
 
-    /** The real orchestrator over a stubbed saga store: confirmations complete, timeouts expire. */
+    /** The real orchestrator over a stubbed saga store: outcomes latch, timeouts expire. */
     private static AccountDeletionOrchestrator orchestrator(OutboxAppender outbox) {
         AccountDeletionSagaStore sagas = mock(AccountDeletionSagaStore.class);
-        when(sagas.confirm(any(), any(), any())).thenReturn(true);
+        when(sagas.complete(any(), any())).thenReturn(true);
         when(sagas.compensateOverdue(any(), any())).thenReturn(List.of("leaver@example.com"));
         return new AccountDeletionOrchestrator(sagas, outbox, mock(DeleteAccount.class),
-                mock(UserRepository.class), JSON, Clock.systemUTC(), Duration.ofMinutes(2));
+                mock(UserRepository.class), JSON, Clock.systemUTC(), Duration.ofMinutes(5), true);
     }
 
     /** Captures what the producer appended; the payload on the expected topic IS the message. */

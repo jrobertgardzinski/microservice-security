@@ -6,10 +6,8 @@ import jakarta.inject.Singleton;
 import javax.sql.DataSource;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,29 +16,23 @@ import java.util.concurrent.ConcurrentHashMap;
 @Requires(missingBeans = DataSource.class)
 class InMemoryAccountDeletionSagaStore implements AccountDeletionSagaStore {
 
-    private record Saga(UUID id, String email, String state, Set<String> confirmed, Instant createdAt) {}
+    private record Saga(UUID id, String email, String state, Instant createdAt) {}
 
     private final Map<UUID, Saga> sagas = new ConcurrentHashMap<>();
 
     @Override
     public void start(UUID sagaId, String email, Instant at) {
-        sagas.put(sagaId, new Saga(sagaId, email, "STARTED", new HashSet<>(), at));
+        sagas.put(sagaId, new Saga(sagaId, email, "STARTED", at));
     }
 
     @Override
-    public synchronized boolean confirm(String email, String participant, Instant at) {
-        for (Saga saga : sagas.values()) {
-            if (saga.email().equals(email) && saga.state().equals("STARTED")) {
-                saga.confirmed().add(participant);
-                if (saga.confirmed().containsAll(Set.of("memes", "comments"))) {
-                    sagas.put(saga.id(), new Saga(saga.id(), saga.email(), "COMPLETED",
-                            saga.confirmed(), saga.createdAt()));
-                    return true;
-                }
-                return false;
-            }
-        }
-        return false;
+    public synchronized boolean complete(String email, Instant at) {
+        return transition(email, "COMPLETED");
+    }
+
+    @Override
+    public synchronized boolean compensate(String email, Instant at) {
+        return transition(email, "COMPENSATED");
     }
 
     @Override
@@ -48,11 +40,20 @@ class InMemoryAccountDeletionSagaStore implements AccountDeletionSagaStore {
         List<String> emails = new ArrayList<>();
         for (Saga saga : sagas.values()) {
             if (saga.state().equals("STARTED") && saga.createdAt().isBefore(cutoff)) {
-                sagas.put(saga.id(), new Saga(saga.id(), saga.email(), "COMPENSATED",
-                        saga.confirmed(), saga.createdAt()));
+                sagas.put(saga.id(), new Saga(saga.id(), saga.email(), "COMPENSATED", saga.createdAt()));
                 emails.add(saga.email());
             }
         }
         return emails;
+    }
+
+    private boolean transition(String email, String to) {
+        for (Saga saga : sagas.values()) {
+            if (saga.email().equals(email) && saga.state().equals("STARTED")) {
+                sagas.put(saga.id(), new Saga(saga.id(), saga.email(), to, saga.createdAt()));
+                return true;
+            }
+        }
+        return false;
     }
 }

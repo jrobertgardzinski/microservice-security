@@ -14,7 +14,6 @@ import io.micronaut.http.annotation.Post;
 import io.micronaut.core.annotation.Nullable;
 
 import java.util.Optional;
-
 import java.util.Map;
 
 /**
@@ -57,14 +56,15 @@ final class DeleteAccountController {
     }
 
     /**
-     * The wizard's choice: {@code {"purge": {"memes": "...", "comments": "..."}}}, both axes or
-     * none. The rule strings stay opaque here — their vocabulary belongs to the meme service.
+     * The wizard's choice: {@code {"purge": {"memes": "...", "comments": "..."}}} — any axes, or
+     * none. Both the axis names and the rule strings stay opaque here: their vocabulary belongs
+     * to the content services, and identity only ferries the map into the deletion fact.
      */
     private static PurgeChoices purgeChoices(Map<String, Map<String, String>> body) {
         Map<String, String> purge = body == null ? null : body.get("purge");
-        if (purge == null || purge.get("memes") == null || purge.get("comments") == null) {
+        if (purge == null || purge.isEmpty()) {
             return PurgeChoices.serviceDefaults();
         }
-        return new PurgeChoices(Optional.of(purge.get("memes")), Optional.of(purge.get("comments")));
+        return new PurgeChoices(purge);
     }
 }

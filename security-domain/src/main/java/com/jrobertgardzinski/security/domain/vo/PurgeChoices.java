@@ -1,16 +1,22 @@
 package com.jrobertgardzinski.security.domain.vo;
 
-import java.util.Optional;
+import java.util.Map;
 
 /**
  * The leaver's choice of what happens to their content elsewhere, made in the deletion wizard and
- * carried through the saga. The rules are opaque strings here on purpose — their vocabulary
- * (delete / anonymise / keep-popular thresholds) belongs to the content services, and this service
- * only ferries the choice. Empty axes mean "whatever the content service's deployment default is".
+ * ferried through the offboarding saga. Both the axis NAMES (memes, comments, …) and the rules
+ * are opaque here on purpose — their vocabulary belongs to the content services and their
+ * orchestrator; identity only carries the map. An empty map means "whatever each content
+ * service's deployment default is". (This used to name the portal's axes as fields — foreign
+ * domain inside an identity value object, and the reason the saga was extracted.)
  */
-public record PurgeChoices(Optional<String> memesRule, Optional<String> commentsRule) {
+public record PurgeChoices(Map<String, String> rules) {
+
+    public PurgeChoices {
+        rules = Map.copyOf(rules);
+    }
 
     public static PurgeChoices serviceDefaults() {
-        return new PurgeChoices(Optional.empty(), Optional.empty());
+        return new PurgeChoices(Map.of());
     }
 }

@@ -1,0 +1,62 @@
+{
+  "consumer": {
+    "name": "microservice-security"
+  },
+  "messages": [
+    {
+      "contents": {
+        "email": "leaver@example.com",
+        "type": "PORTAL_CONTENT_PURGED"
+      },
+      "description": "a portal content purged announcement",
+      "matchingRules": {
+        "body": {
+          "$.email": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "type"
+              }
+            ]
+          }
+        }
+      },
+      "metaData": {
+        "contentType": "application/json"
+      }
+    },
+    {
+      "contents": {
+        "email": "leaver@example.com",
+        "type": "PORTAL_PURGE_FAILED"
+      },
+      "description": "a portal purge failed announcement",
+      "matchingRules": {
+        "body": {
+          "$.email": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "type"
+              }
+            ]
+          }
+        }
+      },
+      "metaData": {
+        "contentType": "application/json"
+      }
+    }
+  ],
+  "metadata": {
+    "pact-jvm": {
+      "version": "4.6.17"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "microservice-offboarding"
+  }
+}
