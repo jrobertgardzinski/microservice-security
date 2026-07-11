@@ -1,12 +1,13 @@
-// UI glue for mfa-webauthn.feature: a real passkey through the browser, using Chromium's virtual
-// authenticator (CDP WebAuthn). The UI does the WebAuthn dance; the test only stands up a fake
-// authenticator, enrols, and signs in — exactly what a user with a platform passkey would do.
+// UI glue for mfa-passkey.feature: a real passkey through the browser, using Chromium's virtual
+// authenticator (CDP WebAuthn). THIS is where the protocol's name belongs — the spec speaks the
+// user's language ("a device that can hold passkeys"), the glue does the WebAuthn dance: it
+// stands up a fake authenticator, enrols, and signs in — exactly what a platform passkey does.
 
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from 'playwright/test';
 import { credentials } from '../support/account.mjs';
 
-Given('the USER has a virtual authenticator', async function () {
+Given('the USER has a device that can hold PASSKEYS', async function () {
   const client = await this.page.context().newCDPSession(this.page);
   await client.send('WebAuthn.enable');
   await client.send('WebAuthn.addVirtualAuthenticator', {

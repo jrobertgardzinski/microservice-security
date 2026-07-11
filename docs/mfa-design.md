@@ -275,7 +275,7 @@ to parse**; an assertion is an ordinary `SHA256withECDSA` signature over
 rp-name, allow-listed origins, challenge TTL). Verified at every layer: `WebauthnFactorTest`
 (a P-256 keypair plays the browser; enrolment stores the key, a real assertion passes, a tampered
 one and a foreign origin are refused), `MfaHttpTest` (the whole enrol→sign-in over the wire, a
-tampered assertion refused), and `mfa-webauthn.feature` e2e through Chromium's virtual authenticator.
+tampered assertion refused), and `mfa-passkey.feature` e2e through Chromium's virtual authenticator.
 A gotcha worth remembering: a Micronaut `@Value` default containing URL colons is parsed as nested
 defaults — wrap it in backticks (the codebase's own convention).
 

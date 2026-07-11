@@ -148,7 +148,7 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
     `SHA256withECDSA` nad `authenticatorData‖SHA256(clientDataJSON)`; credential w
     `EnrolledFactor.secretMaterial`. UI: `navigator.credentials.create/get` (enroll w jednym
     geście, sign-in automatyczny). Testy: WebauthnFactorTest (klucz P-256 gra przeglądarkę),
-    MfaHttpTest (enroll→sign-in po drucie + podrobiony assertion), mfa-webauthn.feature e2e na
+    MfaHttpTest (enroll→sign-in po drucie + podrobiony assertion), mfa-passkey.feature e2e na
     wirtualnym authenticatorze Chromium. Gotcha: dwukropki URL w defaulcie `@Value` → backticki.
     Faza H w [docs/mfa-design.md](docs/mfa-design.md). 178 JVM + 36 e2e zielone.
 - **Step-up auth** — WPISANE W PROJEKT MFA (faza E, [docs/mfa-design.md](docs/mfa-design.md)):
