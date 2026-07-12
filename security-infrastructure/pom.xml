@@ -29,7 +29,7 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>email-security-system</artifactId>
+            <artifactId>email-security-usecase</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
@@ -37,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>password-security-system</artifactId>
+            <artifactId>password-security-usecase</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
