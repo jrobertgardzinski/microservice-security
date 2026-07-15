@@ -4,14 +4,6 @@ Feature: Revoking all sessions
   A USER can log out everywhere at once: revoking all sessions ends every session the
   USER holds, so afterwards no ACCESS TOKEN authorizes and no REFRESH TOKEN can be REFRESHED.
 
-  Nouns:
-    USER          -> User
-    ACCESS TOKEN  -> AccessToken
-    REFRESH TOKEN -> RefreshToken
-  Verbs:
-    REVOKE*  -> RevokeAllSessions
-    REFRESH* -> RefreshSession
-
   Background:
     Given a registered USER "user@example.com" with password "StrongPassword1!"
 

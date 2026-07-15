@@ -7,13 +7,6 @@ Feature: Passkey sign-in
   factors use, proving the factor port is genuinely plug-and-play. (The protocol behind
   a passkey is an implementation detail and lives in the glue — the argon2 rule.)
 
-  Nouns:
-    USER    -> User
-    PASSKEY -> EnrolledFactor
-  Verbs:
-    AUTHENTICAT* -> Authentication
-    ENROL*       -> EnrolFactor
-
   Background:
     Given a verified USER "passkey@example.com" with password "StrongPassword1!"
     And the USER has a device that can hold PASSKEYS

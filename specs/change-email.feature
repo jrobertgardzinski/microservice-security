@@ -5,14 +5,6 @@ Feature: Changing the email address
   to the new EMAIL, and confirming the token applies the change. Afterwards they AUTHENTICATE under
   the new EMAIL and no longer under the old one. An unknown token is rejected.
 
-  Nouns:
-    USER  -> User
-    EMAIL -> Email
-  Verbs:
-    AUTHENTICATE* -> Authentication
-    CHANGE*       -> RequestEmailChange
-    CONFIRM*      -> ConfirmEmailChange
-
   Background:
     Given a registered USER "user@example.com" with password "StrongPassword1!"
 

@@ -4,11 +4,6 @@ Feature: Refreshing a session
   A USER keeps their session alive by REFRESHING it. A session that has expired,
   or that no longer exists, cannot be REFRESHED — the USER must AUTHENTICATE again.
 
-  Nouns:
-    USER -> User
-  Verbs:
-    REFRESH* -> RefreshSession
-
   Background:
     Given a registered USER "user@example.com"
 

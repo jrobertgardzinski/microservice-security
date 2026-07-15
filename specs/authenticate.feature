@@ -4,12 +4,6 @@ Feature: Authentication
   Repeated failed AUTHENTICATION attempts from the same source temporarily
   block that source, to protect accounts from password guessing.
 
-  Nouns:
-    USER        -> User
-    CREDENTIALS -> Credentials
-  Verbs:
-    AUTHENTICAT* -> Authentication
-
   Background:
     Given a registered USER "user@example.com" with password "StrongPassword1!"
     And AUTHENTICATION attempts from one source are limited by this policy:

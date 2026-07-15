@@ -6,12 +6,6 @@ Feature: Registration
   quietly: the answer does not reveal that the account exists — the owner of
   the address learns what happened from a mail only they can read.
 
-  Nouns:
-    USER  -> User
-    EMAIL -> Email
-  Verbs:
-    REGISTER, REGISTERS, REGISTERED, REGISTRATION -> Register
-
   Rule: 1. A valid EMAIL and password REGISTER the USER
 
     Example:

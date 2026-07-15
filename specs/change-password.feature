@@ -4,12 +4,6 @@ Feature: Changing the password
   A signed-in USER changes their password by proving the current one. Afterwards they AUTHENTICATE
   with the new password; the old one no longer works. A wrong current password is rejected.
 
-  Nouns:
-    USER -> User
-  Verbs:
-    AUTHENTICATE* -> Authentication
-    CHANGE*       -> ChangePassword
-
   Background:
     Given a registered USER "user@example.com" with password "OldPassword1!"
 

@@ -4,10 +4,6 @@ Feature: Authorizing access with an access token
   A protected resource requires a valid, unexpired ACCESS TOKEN. The token is obtained by
   AUTHENTICATING and is presented as a Bearer token.
 
-  Nouns:
-    USER         -> User
-    ACCESS TOKEN -> AccessToken
-
   Background:
     Given a registered USER "user@example.com" with password "StrongPassword1!"
 

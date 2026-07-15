@@ -8,13 +8,6 @@ Feature: Closing the account
   retracted. Identity waits for the portal's single outcome: only "content purged" deletes the
   USER for good; a failed purge — or silence past the safety net — rolls the closure back.
 
-  Nouns:
-    USER -> User
-  Verbs:
-    AUTHENTICATE* -> Authentication
-    DELET*        -> StartAccountDeletion
-    REGISTER*     -> Register
-
   Background:
     Given a registered USER "user@example.com" with password "StrongPassword1!"
 

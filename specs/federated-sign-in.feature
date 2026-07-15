@@ -5,13 +5,6 @@ Feature: Federated sign-in
   collapses into the first sign-in, and one ACCOUNT may hold many identities —
   a password and a provider subject are equal keys to the same ACCOUNT.
 
-  Nouns:
-    USER     -> User
-    ACCOUNT  -> User
-    PROVIDER -> ProviderIdentity
-  Verbs:
-    SIGN IN, SIGNS IN, SIGNED IN -> FederatedSignIn
-
   Rule: 1. A vouched identity SIGNS the USER IN, creating the ACCOUNT at first contact
 
     Example: first contact

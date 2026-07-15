@@ -3,12 +3,6 @@ Feature: Roles
   Every signed-in USER holds the USER role; an ADMIN may grant MODERATOR or ADMIN on top, and a
   protected who-am-I resource reports the caller's roles so other services can gate on them.
 
-  Nouns:
-    USER  -> User
-    ROLE* -> Role
-  Verbs:
-    GRANT* -> SetUserRoles
-
   Background:
     Given a registered USER "member@example.com" with password "StrongPassword1!"
     And a registered USER "admin@example.com" with password "StrongPassword1!"

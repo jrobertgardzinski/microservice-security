@@ -7,14 +7,6 @@ Feature: Logging out
   LOGGING OUT ends the current session: its REFRESH TOKEN can no longer be REFRESHED and its access
   token no longer authorizes.
 
-  Nouns:
-    USER          -> User
-    ACCESS TOKEN  -> AccessToken
-    REFRESH TOKEN -> RefreshToken
-  Verbs:
-    LOG*     -> Logout
-    REFRESH* -> RefreshSession
-
   Background:
     Given a registered USER "user@example.com" with password "StrongPassword1!"
 

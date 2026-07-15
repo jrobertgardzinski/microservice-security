@@ -5,13 +5,6 @@ Feature: Resetting a forgotten password
   RESET TOKEN from the link. Afterwards they AUTHENTICATE with the new password; the old one no
   longer works. An unknown token is rejected.
 
-  Nouns:
-    USER        -> User
-    RESET TOKEN -> PasswordResetToken
-  Verbs:
-    AUTHENTICATE* -> Authentication
-    RESET*        -> ResetPassword
-
   Background:
     # a dedicated account: the UI harness persists accounts across scenarios, and this feature
     # changes the password — sharing user@example.com would poison later features' sign-ins

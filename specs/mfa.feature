@@ -7,15 +7,6 @@ Feature: Multi-factor sign-in
   A RECOVERY CODE — GENERATED ahead of time, shown once — stands in for any FACTOR
   the USER lost access to; each one works exactly once.
 
-  Nouns:
-    USER          -> User
-    FACTOR        -> EnrolledFactor
-    CODE          -> Challenge
-    RECOVERY CODE -> RecoveryCodeRepository
-  Verbs:
-    AUTHENTICAT* -> Authentication
-    GENERAT*     -> GenerateRecoveryCodes
-
   Background:
     Given a verified USER "user@example.com" with password "StrongPassword1!"
     And the USER has enrolled the e-mail FACTOR

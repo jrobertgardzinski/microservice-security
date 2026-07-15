@@ -5,13 +5,6 @@ Feature: Refresh token theft detection
   has already been rotated away signals theft, so the whole session lineage is revoked — including
   the attacker's freshly obtained token.
 
-  Nouns:
-    USER           -> User
-    REFRESH TOKEN  -> RefreshToken
-    SESSION FAMILY -> SessionFamily
-  Verbs:
-    REFRESH* -> RefreshSession
-
   Background:
     Given a registered USER "user@example.com" with password "StrongPassword1!"
 

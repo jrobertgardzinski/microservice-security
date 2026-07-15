@@ -5,13 +5,6 @@ Feature: Verifying an email address
   carries a single-use VERIFICATION TOKEN; the matching token marks the EMAIL as verified, and
   an unknown token is rejected.
 
-  Nouns:
-    USER               -> User
-    EMAIL              -> Email
-    VERIFICATION TOKEN -> VerificationToken
-  Verbs:
-    VERIF* -> VerifyEmail
-
   Background:
     Given a registered USER "user@example.com" with password "StrongPassword1!"
 
