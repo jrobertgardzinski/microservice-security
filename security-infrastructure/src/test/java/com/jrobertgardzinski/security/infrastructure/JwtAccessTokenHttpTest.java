@@ -97,6 +97,31 @@ class JwtAccessTokenHttpTest {
     }
 
     @Test
+    @DisplayName("rotation overlap: a retired public key stays in the JWK set beside the new one")
+    void rotation_keeps_the_retired_key_in_the_jwks() throws Exception {
+        // the key pair retired by the rotation — only its PUBLIC half survives, in config
+        String retiredPublicKey = Base64.getEncoder().encodeToString(
+                java.security.KeyPairGenerator.getInstance("Ed25519").generateKeyPair()
+                        .getPublic().getEncoded());
+        server.close();
+        server = ApplicationContext.run(EmbeddedServer.class,
+                Map.of("security.jwt.previous-public-keys", retiredPublicKey), "test");
+        client = server.getApplicationContext().createBean(HttpClient.class, server.getURL()).toBlocking();
+
+        String token = registerVerifyAuthenticate("jwt-rotation@example.com").accessToken;
+        Map<String, Object> header = decodeJson(token.split("\\.")[0]);
+
+        Map<String, Object> jwks = client.retrieve(HttpRequest.GET("/.well-known/jwks.json"), Map.class);
+        List<Map<String, Object>> keys = (List<Map<String, Object>>) jwks.get("keys");
+        assertEquals(2, keys.size(), "the set carries the signing key AND the retired one");
+        assertTrue(keys.stream().anyMatch(key -> header.get("kid").equals(key.get("kid"))),
+                "fresh tokens point at the new key");
+        String retiredKid = kidOf(retiredPublicKey);
+        assertTrue(keys.stream().anyMatch(key -> retiredKid.equals(key.get("kid"))),
+                "tokens signed before the rotation still find their key until they expire");
+    }
+
+    @Test
     @DisplayName("self-contained does not mean irrevocable: logout kills the still-valid JWT instantly")
     void logout_still_revokes_instantly() {
         Session session = registerVerifyAuthenticate("jwt-leaver@example.com");
@@ -146,6 +171,13 @@ class JwtAccessTokenHttpTest {
     @SuppressWarnings("unchecked")
     private Map<String, Object> decodeJson(String base64Url) throws Exception {
         return json.readValue(Base64.getUrlDecoder().decode(base64Url), Map.class);
+    }
+
+    /** The kid the mint derives for a base64 X.509 public key: first 8 bytes of its SHA-256, hex. */
+    private static String kidOf(String publicKeyBase64) throws Exception {
+        byte[] digest = java.security.MessageDigest.getInstance("SHA-256")
+                .digest(Base64.getDecoder().decode(publicKeyBase64));
+        return HexFormat.of().formatHex(digest, 0, 8);
     }
 
     /** Rebuild the Ed25519 public key from a JWK's raw {@code x}: fixed DER prefix + 32 raw bytes. */

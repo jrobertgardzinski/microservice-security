@@ -4,7 +4,6 @@ import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -12,6 +11,10 @@ import java.util.Map;
  * once (and on an unknown {@code kid}) to verify access-token signatures offline instead of
  * calling {@code /me} — trading revocation awareness for a saved round-trip; the token's
  * {@code exp} bounds how stale they can be.
+ *
+ * <p>During a key rotation the set also carries the retired keys still inside their overlap
+ * window ({@code security.jwt.previous-public-keys}), so tokens signed before the rotation keep
+ * verifying until they expire.
  */
 @Controller("/.well-known")
 final class JwksController {
@@ -24,6 +27,6 @@ final class JwksController {
 
     @Get(value = "/jwks.json", produces = MediaType.APPLICATION_JSON)
     Map<String, Object> jwks() {
-        return Map.of("keys", List.of(mint.publicJwk()));
+        return Map.of("keys", mint.publicJwks());
     }
 }
