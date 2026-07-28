@@ -65,8 +65,8 @@ final class JdbcAuthorizationDataRepository implements AuthorizationDataReposito
     }
 
     @Override
-    public void markRotated(RefreshToken refreshToken) {
-        repository.updateStatus(TokenHashing.hash(refreshToken), SessionStatus.ROTATED.name());
+    public boolean markRotated(RefreshToken refreshToken) {
+        return repository.rotateIfActive(TokenHashing.hash(refreshToken)) > 0;
     }
 
     @Override

@@ -58,6 +58,32 @@ class RefreshSessionTest {
     }
 
     @Example
+    @Label("ReuseDetected: losing the rotation race is treated exactly like replaying a stolen token")
+    void losing_the_rotation_race_revokes_the_family() {
+        // The row still read ACTIVE when this request looked at it — and by the time it tried to
+        // rotate, somebody else already had. That "somebody" is either the user's other tab or a
+        // thief holding a copy of the same token, and from here the two are indistinguishable.
+        //
+        // Before the rotation became conditional, BOTH callers wrote ROTATED and BOTH minted a
+        // successor: one session forked into two live chains and the theft was undetectable. The
+        // conservative reading is the only safe one — a benign double refresh costs a sign-in, an
+        // undetected stolen token costs the account.
+        StoredSession session = storedSession(LocalDateTime.now(CLOCK).plusHours(1), SessionStatus.ACTIVE);
+        Mockito.when(authorizationDataRepository.findByRefreshToken(GIVEN.refreshToken))
+                .thenReturn(Optional.of(session));
+        Mockito.when(authorizationDataRepository.markRotated(GIVEN.refreshToken)).thenReturn(false);
+
+        RefreshSessionResult result = refreshSession.execute(GIVEN.request);
+
+        assertInstanceOf(RefreshSessionResult.ReuseDetected.class, result);
+        assertAll(
+                () -> Mockito.verify(authorizationDataRepository).revokeFamily(FAMILY),
+                () -> Mockito.verify(authorizationDataRepository, Mockito.never())
+                        .create(Mockito.any(), Mockito.any())
+        );
+    }
+
+    @Example
     @Label("Refreshed: an active, unexpired token rotates to a new one in the same family")
     void refreshed_when_active_and_not_expired() {
         StoredSession session = storedSession(LocalDateTime.now(CLOCK).plusHours(1), SessionStatus.ACTIVE);
@@ -66,6 +92,8 @@ class RefreshSessionTest {
                 .thenReturn(Optional.of(session));
         Mockito.when(authorizationDataRepository.create(Mockito.any(), Mockito.eq(FAMILY)))
                 .thenReturn(createdTokens);
+        // this caller wins the rotation — the conditional write changed a row
+        Mockito.when(authorizationDataRepository.markRotated(GIVEN.refreshToken)).thenReturn(true);
 
         RefreshSessionResult result = refreshSession.execute(GIVEN.request);
 

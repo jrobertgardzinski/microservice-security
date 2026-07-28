@@ -30,8 +30,21 @@ public interface AuthorizationDataRepository {
 
     Optional<AccessGrant> findByAccessToken(AccessToken accessToken);
 
-    /** Mark the session holding this refresh token as rotated; it survives for reuse detection. */
-    void markRotated(RefreshToken refreshToken);
+    /**
+     * Rotate the session holding this refresh token out, but ONLY if it is still active; the row
+     * survives for reuse detection either way.
+     *
+     * <p>Returns whether THIS caller performed the rotation. That return value is the whole point:
+     * the check and the write used to be separate statements, so two genuinely concurrent refreshes
+     * both read ACTIVE, both wrote ROTATED (the second overwriting the first without complaint) and
+     * both minted a successor — one session forked into two live chains, and a thief refreshing
+     * alongside the victim got an undetectable lineage of their own. Implementations must make this
+     * a single conditional write, so exactly one caller can win.
+     *
+     * @return {@code true} if this call rotated an ACTIVE session, {@code false} if somebody else
+     *         already had — which the caller must treat exactly like a replayed token
+     */
+    boolean markRotated(RefreshToken refreshToken);
 
     /** Revoke an entire session lineage (logout, or theft detected). */
     void revokeFamily(SessionFamily family);

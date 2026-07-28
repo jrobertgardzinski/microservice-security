@@ -51,9 +51,18 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
     }
 
     @Override
-    public void markRotated(RefreshToken refreshToken) {
-        byRefreshToken.computeIfPresent(refreshToken.value(),
-                (token, row) -> new Row(row.tokens(), row.family(), SessionStatus.ROTATED));
+    public boolean markRotated(RefreshToken refreshToken) {
+        // one atomic map operation, mirroring the conditional UPDATE the JDBC adapter runs: the
+        // flip only happens from ACTIVE, so exactly one of two concurrent callers can win
+        boolean[] rotated = {false};
+        byRefreshToken.computeIfPresent(refreshToken.value(), (token, row) -> {
+            if (row.status() != SessionStatus.ACTIVE) {
+                return row;
+            }
+            rotated[0] = true;
+            return new Row(row.tokens(), row.family(), SessionStatus.ROTATED);
+        });
+        return rotated[0];
     }
 
     @Override

@@ -28,19 +28,26 @@ import java.util.Map;
  * the real controller on the embedded server. The "signed-in user" provider state walks the real
  * flow (register, verify, authenticate); the request filter then swaps the pact's placeholder
  * bearer for the real access token it earned. Skipped, not failed, when the consumer repo is not
- * checked out next to this one.
+ * checked out in the neighbouring portal workspace.
+ *
+ * <p>The path is ../../../portal/… and not ../../… because the estate split into three
+ * workspaces on 2026-07-12 and this consumer moved to portal/. The old path pointed at
+ * shared/, which simply does not exist — so @EnabledIf disabled this verification silently and
+ * it reported GREEN (skipped, not failed) for weeks. A breaking change to the response shape
+ * would have passed a full build without one red mark. {@code SilentlySkippedPactTest} now
+ * fails if that ever happens again.
  */
 @Provider("microservice-security")
-@PactFolder("../../microservice-memes/pacts-http")
+@PactFolder("../../../portal/microservice-memes/pacts-http")
 @EnabledIf(value = "consumerPactsCheckedOut",
-        disabledReason = "microservice-memes is not checked out next to this repo")
+        disabledReason = "microservice-memes is not checked out in the portal workspace")
 class MeIntrospectionPactProviderTest {
 
     private static final String PASSWORD = "StrongPassword1!";
     private static final String PLACEHOLDER = "Bearer valid-session-token";
 
     static boolean consumerPactsCheckedOut() {
-        return Files.isDirectory(Path.of("../../microservice-memes/pacts-http"));
+        return Files.isDirectory(Path.of("../../../portal/microservice-memes/pacts-http"));
     }
 
     private static EmbeddedServer server;

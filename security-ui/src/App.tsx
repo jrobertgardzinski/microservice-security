@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { bodyOf, HttpError, messageFor, request } from './api';
 import { assertPasskey, enrolPasskey } from './webauthn';
 import { Factor, Mode, SECURITY, Session, factorLabel, prettify } from './lib';
 import { AccountScreen } from './AccountScreen';
@@ -105,7 +106,7 @@ export function App() {
   };
 
   const enterSession = async (accessToken: string) => {
-    const meResponse = await fetch(`${SECURITY}/me`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    const meResponse = await request(`${SECURITY}/me`, { headers: { Authorization: `Bearer ${accessToken}` } });
     const meBody: { email: string; roles?: string[]; mfaCompliant?: boolean; requiredFactors?: number; haveFactors?: number } =
       await meResponse.json();
     setToken(accessToken);
@@ -119,13 +120,13 @@ export function App() {
   };
 
   const loadSessions = async (accessToken: string) => {
-    const r = await fetch(`${SECURITY}/sessions`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    const r = await request(`${SECURITY}/sessions`, { headers: { Authorization: `Bearer ${accessToken}` } });
     if (r.ok) setSessions((await r.json()).sessions ?? []);
   };
 
   const revokeAllSessions = async () => {
     reset();
-    const r = await fetch(`${SECURITY}/sessions/revoke-all`, {
+    const r = await request(`${SECURITY}/sessions/revoke-all`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -140,52 +141,74 @@ export function App() {
 
   const signIn = async () => {
     reset();
-    const r = await fetch(`${SECURITY}/authenticate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    if (r.status === 202) {
-      // more factors owed — the first challenge is out; ask for the proof.
-      // (202 is "ok" to fetch, so this MUST be checked before r.ok)
-      const body: { mfaTicket: string; nextFactor: string; challengeData?: string } = await r.json();
-      setMfaTicket(body.mfaTicket);
-      setNextFactor(body.nextFactor);
-      setChallengeData(body.challengeData ?? '');
-      setCode('');
-      setMode('mfa');
-    } else if (r.ok) {
-      await enterSession((await r.json()).accessToken);
-    } else if (r.status === 403) {
-      setNotice('E-mail not verified yet — follow the link in the mail first.');
-    } else if (r.status === 429) {
-      setNotice('Too many failed attempts — this source is blocked for a while.');
-    } else {
-      setNotice('Wrong e-mail or password.');
+    try {
+      const r = await request(`${SECURITY}/authenticate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (r.status === 202) {
+        // more factors owed — the first challenge is out; ask for the proof.
+        // (202 is "ok" to fetch, so this MUST be checked before r.ok)
+        const body = await bodyOf<{ mfaTicket: string; nextFactor: string; challengeData?: string }>(r);
+        setMfaTicket(body.mfaTicket ?? '');
+        setNextFactor(body.nextFactor ?? '');
+        setChallengeData(body.challengeData ?? '');
+        setCode('');
+        setMode('mfa');
+        return;
+      }
+      if (r.ok) {
+        await enterSession((await bodyOf<{ accessToken: string }>(r)).accessToken ?? '');
+        return;
+      }
+      // Only these three statuses are answers about the CREDENTIALS. Everything else — 500, a
+      // proxy's 502, a 504 while the database is down — used to land on "Wrong e-mail or
+      // password." and send people off to reset a password that was perfectly correct.
+      throw new HttpError(r.status);
+    } catch (failure) {
+      setNotice(messageFor(failure, {
+        401: 'Wrong e-mail or password.',
+        403: 'E-mail not verified yet — follow the link in the mail first.',
+        429: 'Too many failed attempts — this source is blocked for a while.',
+      }));
     }
   };
 
   const submitFactor = async (proof: string) => {
     reset();
-    const r = await fetch(`${SECURITY}/authenticate/factor`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mfaTicket, proof }),
-    });
-    if (r.status === 202) {
-      // the chain has another link — 202 is "ok" to fetch, so check it before r.ok
-      const body: { nextFactor: string; challengeData?: string } = await r.json();
-      setNextFactor(body.nextFactor);
-      setChallengeData(body.challengeData ?? '');
-      setCode('');
-    } else if (r.ok) {
-      await enterSession((await r.json()).accessToken);
-    } else {
-      const body: { status?: string; attemptsLeft?: number } = await r.json();
-      setNotice(body.status === 'WRONG_CODE'
-        ? `Wrong code${body.attemptsLeft != null ? ` — ${body.attemptsLeft} tries left` : ''}.`
-        : 'That sign-in expired — start over.');
-      if (body.status !== 'WRONG_CODE') switchTo('signin');
+    try {
+      const r = await request(`${SECURITY}/authenticate/factor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mfaTicket, proof }),
+      });
+      if (r.status === 202) {
+        // the chain has another link — 202 is "ok" to fetch, so check it before r.ok
+        const body = await bodyOf<{ nextFactor: string; challengeData?: string }>(r);
+        setNextFactor(body.nextFactor ?? '');
+        setChallengeData(body.challengeData ?? '');
+        setCode('');
+        return;
+      }
+      if (r.ok) {
+        await enterSession((await bodyOf<{ accessToken: string }>(r)).accessToken ?? '');
+        return;
+      }
+      // bodyOf, not r.json(): this branch used to parse unconditionally, so a 502 carrying HTML
+      // threw inside the handler and the screen kept the spinner with nothing said
+      const body = await bodyOf<{ status?: string; attemptsLeft?: number }>(r);
+      if (body.status === 'WRONG_CODE') {
+        setNotice(`Wrong code${body.attemptsLeft != null ? ` — ${body.attemptsLeft} tries left` : ''}.`);
+        return;
+      }
+      if (r.status >= 500) {
+        throw new HttpError(r.status);   // not the user's doing; do not send them back to the start
+      }
+      setNotice('That sign-in expired — start over.');
+      switchTo('signin');
+    } catch (failure) {
+      setNotice(messageFor(failure, {}));
     }
   };
 
@@ -210,7 +233,7 @@ export function App() {
 
   const signUp = async () => {
     reset();
-    const r = await fetch(`${SECURITY}/register`, {
+    const r = await request(`${SECURITY}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -227,15 +250,15 @@ export function App() {
   };
 
   const loadFactors = async (accessToken: string) => {
-    const r = await fetch(`${SECURITY}/account/factors`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    const r = await request(`${SECURITY}/account/factors`, { headers: { Authorization: `Bearer ${accessToken}` } });
     if (r.ok) { const body = await r.json(); setFactors(body.have ?? []); setOffered(body.offered ?? []); }
-    const rc = await fetch(`${SECURITY}/account/recovery-codes`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    const rc = await request(`${SECURITY}/account/recovery-codes`, { headers: { Authorization: `Bearer ${accessToken}` } });
     if (rc.ok) setRecoveryUnused((await rc.json()).unused ?? 0);
   };
 
   const generateRecoveryCodes = async () => {
     setNotice(null);
-    const r = await fetch(`${SECURITY}/account/recovery-codes`, {
+    const r = await request(`${SECURITY}/account/recovery-codes`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -251,7 +274,7 @@ export function App() {
   const startEnrol = async (type: string) => {
     setNotice(null);
     const body = type === 'SMS_CODE' ? JSON.stringify({ target: enrollTarget }) : '{}';
-    const r = await fetch(`${SECURITY}/account/factors/${type}/enroll/start`, {
+    const r = await request(`${SECURITY}/account/factors/${type}/enroll/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body,
@@ -275,7 +298,7 @@ export function App() {
     try {
       const attestation = await enrolPasskey(display);
       if (!attestation) { setNotice('Passkey enrolment was cancelled.'); return; }
-      const r = await fetch(`${SECURITY}/account/factors/WEBAUTHN/enroll/confirm`, {
+      const r = await request(`${SECURITY}/account/factors/WEBAUTHN/enroll/confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ code: attestation }),
@@ -292,7 +315,7 @@ export function App() {
   };
 
   const confirmEnrol = async () => {
-    const r = await fetch(`${SECURITY}/account/factors/${enrollingType}/enroll/confirm`, {
+    const r = await request(`${SECURITY}/account/factors/${enrollingType}/enroll/confirm`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ code: enrolCode }),
@@ -308,7 +331,7 @@ export function App() {
 
   const requestReset = async () => {
     reset();
-    const r = await fetch(`${SECURITY}/reset-password/request`, {
+    const r = await request(`${SECURITY}/reset-password/request`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
@@ -322,7 +345,7 @@ export function App() {
 
   const completeReset = async () => {
     reset();
-    const r = await fetch(`${SECURITY}/reset-password`, {
+    const r = await request(`${SECURITY}/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: resetToken, password }),
@@ -341,7 +364,7 @@ export function App() {
 
   const changePassword = async () => {
     reset();
-    const r = await fetch(`${SECURITY}/account/password`, {
+    const r = await request(`${SECURITY}/account/password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ currentPassword, newPassword }),
@@ -360,7 +383,7 @@ export function App() {
 
   const requestEmailChange = async () => {
     reset();
-    const r = await fetch(`${SECURITY}/account/email/request`, {
+    const r = await request(`${SECURITY}/account/email/request`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ newEmail }),
@@ -373,49 +396,67 @@ export function App() {
   };
 
   const performDelete = async () => {
-    const r = await fetch(`${SECURITY}/account/delete`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (r.status === 202) {
-      signOut();
-      setNotice('Account closing — you are signed out everywhere.');
-    } else {
-      setNotice(`Could not close the account (${r.status}).`);
+    try {
+      const r = await request(`${SECURITY}/account/delete`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (r.status === 202) {
+        signOut();
+        setNotice('Account closing — you are signed out everywhere.');
+        return;
+      }
+      throw new HttpError(r.status);
+    } catch (failure) {
+      setNotice(messageFor(failure, {}));
     }
   };
 
   const startDelete = async () => {
     reset();
-    const r = await fetch(`${SECURITY}/account/step-up`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: 'delete-account', password: deletePassword }),
-    });
-    if (r.status === 202) {
-      // the chain has factors — 202 is "ok" to fetch, so check it before r.ok
-      setDeleteTicket((await r.json()).stepUpTicket);
-      setDeleteCode('');
-    } else if (r.ok) {
-      await performDelete();
-    } else {
-      setNotice('Wrong password.');
+    try {
+      const r = await request(`${SECURITY}/account/step-up`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'delete-account', password: deletePassword }),
+      });
+      if (r.status === 202) {
+        // the chain has factors — 202 is "ok" to fetch, so check it before r.ok
+        setDeleteTicket((await bodyOf<{ stepUpTicket: string }>(r)).stepUpTicket ?? '');
+        setDeleteCode('');
+        return;
+      }
+      if (r.ok) {
+        await performDelete();
+        return;
+      }
+      // "Wrong password." used to cover every non-2xx here, a dead backend included — a person
+      // whose password was right would retype it until they gave up
+      throw new HttpError(r.status);
+    } catch (failure) {
+      setNotice(messageFor(failure, { 401: 'Wrong password.', 403: 'Wrong password.' }));
     }
   };
 
   const submitDeleteCode = async () => {
     reset();
-    const r = await fetch(`${SECURITY}/account/step-up/factor`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stepUpTicket: deleteTicket, proof: deleteCode }),
-    });
-    if (r.status === 202) {
-      setDeleteCode('');   // another link in the chain
-    } else if (r.ok) {
-      await performDelete();
-    } else {
-      setNotice('Wrong code.');
+    try {
+      const r = await request(`${SECURITY}/account/step-up/factor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stepUpTicket: deleteTicket, proof: deleteCode }),
+      });
+      if (r.status === 202) {
+        setDeleteCode('');   // another link in the chain
+        return;
+      }
+      if (r.ok) {
+        await performDelete();
+        return;
+      }
+      throw new HttpError(r.status);
+    } catch (failure) {
+      setNotice(messageFor(failure, { 401: 'Wrong code.', 403: 'Wrong code.' }));
     }
   };
 
