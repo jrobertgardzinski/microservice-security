@@ -233,6 +233,15 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
+            <!-- jackson-core, explicitly: HttpSmsCodeChannel builds the SMS request with an
+                 ObjectMapper (it used to concatenate a JSON string from an unvalidated phone
+                 number) and therefore catches JsonProcessingException, which lives HERE rather
+                 than in databind. It arrived transitively and analyze-only rightly refused to let
+                 a compile-time dependency stay implicit. -->
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+        <dependency>
             <!-- the request pact-jvm replays (mutated to carry the real bearer); comes with the
                  pact provider, declared for the dependency analyzer -->
             <groupId>org.apache.httpcomponents.core5</groupId>
