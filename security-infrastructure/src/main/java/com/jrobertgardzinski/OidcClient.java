@@ -54,7 +54,17 @@ final class OidcClient {
         }
     }
 
-    private final HttpClient http = HttpClient.newHttpClient();
+    /**
+     * The OAuth dance runs INSIDE the user's sign-in request, so a provider that accepts the
+     * connection and then says nothing must not park a request thread indefinitely — which is
+     * exactly what a default client does: it has no timeout of any kind, at any layer. Both values
+     * are short on purpose; an identity provider that cannot answer in five seconds has failed,
+     * and telling the user so beats holding them.
+     */
+    private static final java.time.Duration CONNECT_TIMEOUT = java.time.Duration.ofSeconds(2);
+    private static final java.time.Duration REQUEST_TIMEOUT = java.time.Duration.ofSeconds(5);
+
+    private final HttpClient http = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
     private final JsonMapper json;
     private final Clock clock;
 
@@ -211,6 +221,7 @@ final class OidcClient {
                 .collect(Collectors.joining("&"));
         try {
             HttpResponse<byte[]> response = http.send(HttpRequest.newBuilder(URI.create(url))
+                            .timeout(REQUEST_TIMEOUT)
                             .header("Content-Type", "application/x-www-form-urlencoded")
                             // GitHub answers form-encoded unless JSON is asked for explicitly
                             .header("Accept", "application/json")
@@ -247,6 +258,7 @@ final class OidcClient {
     private byte[] getBytes(String url, String bearerToken) {
         try {
             HttpResponse<byte[]> response = http.send(HttpRequest.newBuilder(URI.create(url))
+                            .timeout(REQUEST_TIMEOUT)
                             .header("Authorization", "Bearer " + bearerToken)
                             .header("Accept", "application/json")
                             .GET()
