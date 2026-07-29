@@ -9,10 +9,18 @@ const enc = (buffer: ArrayBuffer): string => {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
-const dec = (base64url: string): Uint8Array => {
+// The return type names its buffer, and TypeScript 7 is why. Uint8Array became generic over the
+// buffer behind it, and the bare `Uint8Array` now means `Uint8Array<ArrayBufferLike>` — which
+// includes SharedArrayBuffer and therefore is NOT a `BufferSource`, the type WebAuthn's `challenge`
+// takes. Allocating the array here (rather than Uint8Array.from, which infers the loose type) makes
+// it genuinely ArrayBuffer-backed, so the narrower type is the truth about this value and not a cast
+// papering over the call sites.
+const dec = (base64url: string): Uint8Array<ArrayBuffer> => {
   const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
   const binary = atob(base64 + '=='.slice(0, (4 - (base64.length % 4)) % 4));
-  return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
 };
 
 interface CreationOptions {
