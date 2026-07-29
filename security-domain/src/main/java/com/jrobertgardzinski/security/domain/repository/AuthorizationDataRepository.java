@@ -57,11 +57,19 @@ public interface AuthorizationDataRepository {
      * theft-detection guarantee failing in the one case it exists for — a thief refreshing beside
      * the victim keeps a working session, and every device list and revoke says the family is gone.
      *
-     * <p>On the JDBC adapter the default below is enough, because the whole use case already runs
-     * inside one transaction ({@code RefreshController} wraps it). The in-memory adapter — which is
-     * the production wiring wherever no datasource is configured, not merely a test double — has no
-     * such boundary, and its individually-atomic methods do not add up to one: it overrides this and
-     * holds a single monitor across both, together with the two revoke operations.
+     * <p><b>A transaction is NOT enough, and this javadoc said it was for half a day.</b> The claim
+     * was that the JDBC adapter needs nothing because {@code RefreshController} wraps the whole use
+     * case in one — which is true and irrelevant. Under READ COMMITTED a concurrent
+     * {@code revokeFamily} takes its DELETE snapshot when that statement starts, blocks on the row
+     * this rotation locked, and on unblocking re-evaluates only that row: the successor inserted in
+     * the meantime is invisible to it and survives, ACTIVE, in a lineage the service has just
+     * reported as revoked. Reproduced on PostgreSQL 16 rather than argued.
+     *
+     * <p>So both adapters close it, each in its own idiom: the in-memory one — which is the
+     * production wiring wherever no datasource is configured, not merely a test double — holds a
+     * single monitor across both halves and the revokes; the JDBC one locks the lineage's rows in a
+     * separate statement before deleting them ({@code SessionJdbcRepository#lockFamily}), so the
+     * delete that follows is a new statement with a new snapshot and takes the successor too.
      *
      * @param successor supplied rather than passed, so that a caller which loses the rotation never
      *                  mints tokens it must throw away — and so the critical section demonstrably

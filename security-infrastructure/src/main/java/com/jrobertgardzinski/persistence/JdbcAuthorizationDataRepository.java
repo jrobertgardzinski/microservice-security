@@ -73,13 +73,25 @@ final class JdbcAuthorizationDataRepository implements AuthorizationDataReposito
         return repository.rotateIfActive(TokenHashing.hash(refreshToken)) > 0;
     }
 
+    /**
+     * Lock the lineage, THEN delete it — two statements on purpose.
+     *
+     * <p>One statement is not enough and a transaction does not make it enough: see
+     * {@link SessionJdbcRepository#lockFamily}. A concurrent refresh that is between its rotation
+     * and the write of its successor would otherwise leave that successor alive in a family this
+     * call has just reported as destroyed, which is theft detection failing in the one case it
+     * exists for.
+     */
     @Override
     public void revokeFamily(SessionFamily family) {
+        repository.lockFamily(family.value());
         repository.deleteByFamilyId(family.value());
     }
 
+    /** "Log out everywhere", with the same two steps for the same reason. */
     @Override
     public void revokeAllSessions(Email email) {
+        repository.lockSessionsOf(email.value());
         repository.deleteByEmail(email.value());
     }
 

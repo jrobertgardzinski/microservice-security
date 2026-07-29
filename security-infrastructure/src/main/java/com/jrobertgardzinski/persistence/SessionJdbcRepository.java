@@ -49,6 +49,33 @@ interface SessionJdbcRepository extends CrudRepository<SessionEntity, String> {
     void deleteByFamilyId(UUID familyId);
 
     /**
+     * Locks a lineage's rows before it is revoked — and it is not a formality either.
+     *
+     * <p>A plain {@code DELETE ... WHERE family_id = ?} does NOT revoke a family that a concurrent
+     * refresh is halfway through extending, and being inside a transaction does not help. Under
+     * READ COMMITTED the DELETE takes its snapshot when the STATEMENT starts; it then blocks on
+     * the row the other transaction has locked, and when that transaction commits the delete
+     * re-evaluates only that row (EvalPlanQual) — it does not rescan for the successor inserted in
+     * the meantime. The successor survives, ACTIVE, in a lineage this service has just reported as
+     * revoked. Reproduced on PostgreSQL 16, not deduced: rotate A and hold the transaction open,
+     * delete the family from a second session, commit both, and the new row B is still there.
+     *
+     * <p>Taking the lock in a SEPARATE statement first fixes it: this SELECT blocks on the same
+     * row, and the DELETE that follows is a new statement with a new snapshot, so it sees the
+     * successor and takes it too. Verified the same way.
+     *
+     * <p>The in-memory adapter closes the same race with one monitor
+     * ({@code InMemoryAuthorizationDataRepository#rotateAndCreate}); this is the database's
+     * version of that monitor. The returned rows are not used — the lock is the point.
+     */
+    @Query("SELECT refresh_token_hash FROM sessions WHERE family_id = :familyId FOR UPDATE")
+    java.util.List<String> lockFamily(UUID familyId);
+
+    /** The same lock for "log out everywhere", where the race and the consequence are identical. */
+    @Query("SELECT refresh_token_hash FROM sessions WHERE email = :email FOR UPDATE")
+    java.util.List<String> lockSessionsOf(String email);
+
+    /**
      * Retention for the session table, which nothing used to provide.
      *
      * <p>The only deletions were logout and account removal — and since no UI ever calls
