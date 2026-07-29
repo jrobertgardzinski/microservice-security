@@ -53,15 +53,27 @@ class InMemorySessionLineageTest {
         // successor is then written into it anyway — a live session inside a lineage this service
         // reports as revoked, which is the theft-detection guarantee failing in the one case it
         // exists for. The commit that announced this as fixed left every method locked separately.
-        Thread reuseDetected = new Thread(() -> repository.revokeFamily(family));
+        // The latch is what stops this test from passing for the wrong reason. Without it,
+        // "the revoker is still alive after 500ms" is equally true of a revoker the scheduler
+        // never got round to starting — so a broken lock and a busy machine would look the same,
+        // and the test would be one of the ones this whole plan exists to remove.
+        java.util.concurrent.CountDownLatch revokerRunning = new java.util.concurrent.CountDownLatch(1);
+        Thread reuseDetected = new Thread(() -> {
+            revokerRunning.countDown();
+            repository.revokeFamily(family);
+        });
         AtomicBoolean shutOut = new AtomicBoolean();
 
         Optional<SessionTokens> successor = repository.rotateAndCreate(
                 original.refreshToken(),
                 () -> {
-                    // inside the critical section: start the revoker and give it a fair chance
+                    // inside the critical section: start the revoker, wait until it is genuinely
+                    // running, and only then give it a fair chance to get in
                     reuseDetected.start();
                     try {
+                        assertTrue(revokerRunning.await(5, java.util.concurrent.TimeUnit.SECONDS),
+                                "the revoking thread never even started — this test would then"
+                                        + " prove nothing about the lock");
                         reuseDetected.join(500);
                     } catch (InterruptedException interrupted) {
                         Thread.currentThread().interrupt();
