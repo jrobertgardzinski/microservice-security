@@ -29,9 +29,11 @@ import java.util.function.LongSupplier;
  * {@code PurgeCommandsConsumer.healthy()}, offboarding has {@code KafkaLoop.healthy()}. Identity
  * had nothing, and on 2026-07-29 that stopped being merely inconsistent:
  * {@link OffboardingOutcomeListener} was given {@code stopOnExhaustedRetry}, so a run of failures
- * now STOPS the container rather than skipping the record. That is the right trade — an unread
- * outcome a restart will replay beats one silently discarded — but it exchanges a silent data loss
- * for a silent stop, and a stop nobody can see is only better in principle.
+ * no longer skips the record — it PAUSES that partition for good (see {@link #abandonedPartitions}
+ * for what the setting really does; the first version of this class, and the listener's own
+ * javadoc, both said "stops the container", which is not the mechanism). That is the right trade —
+ * an unread outcome a restart will replay beats one silently discarded — but it exchanges a silent
+ * data loss for a silent standstill, and a standstill nobody can see is only better in principle.
  *
  * <p><strong>What a stopped loop costs here.</strong> {@code offboarding-events} carries the ONE
  * message that finishes an account deletion. With the loop stopped, the portal has already erased
@@ -45,8 +47,21 @@ import java.util.function.LongSupplier;
  * shares, through any dependency outage.
  *
  * <h2>How it knows</h2>
- * By asking the consumer when it last polled — {@code last-poll-seconds-ago} from Kafka's own
- * {@code consumer-metrics}. Two other candidates were tried first and are wrong:
+ * Two questions, because this service can stand still in two different ways and neither signal sees
+ * the other's failure:
+ * <ul>
+ *   <li><b>has it given up on a partition?</b> — {@code isPaused}, see {@link #abandonedPartitions}.
+ *       This is the state {@code stopOnExhaustedRetry} actually produces, and the poll counter is
+ *       blind to it: the loop carries on polling the partitions it did not abandon;</li>
+ *   <li><b>is the loop turning at all?</b> — {@code last-poll-seconds-ago}, below. This catches a
+ *       dead consumer thread or a handler wedged inside one record, which leaves no partition
+ *       paused.</li>
+ * </ul>
+ * The first version of this lamp asked only the second question, on the strength of a javadoc that
+ * described a mechanism the framework does not have — so it reported "polling, last poll 0s ago"
+ * through the exact failure it was built for.
+ *
+ * <p>On the poll counter specifically: two other candidates were tried first and are wrong:
  * <ul>
  *   <li>{@code ConsumerRegistry.getConsumerIds()} never drops a stopped consumer (nothing removes
  *       it from the processor's map), so "the id is registered" proves the bean exists and nothing
@@ -159,6 +174,14 @@ class OffboardingListenerHealth implements HealthIndicator {
         Map<String, Object> states = new LinkedHashMap<>();
         boolean stalled = false;
         for (String id : listening) {
+            Set<org.apache.kafka.common.TopicPartition> abandoned = abandonedPartitions(id);
+            if (!abandoned.isEmpty()) {
+                stalled = true;
+                states.put(id, "gave up on " + abandoned + " after the retries were spent — those"
+                        + " partitions are paused for good, the outcome of a deletion sits there"
+                        + " unread, and only a restart replays it");
+                continue;
+            }
             Optional<Duration> sinceLastPoll = sinceLastPoll(id);
             if (sinceLastPoll.isEmpty()) {
                 stalled = true;
@@ -178,6 +201,39 @@ class OffboardingListenerHealth implements HealthIndicator {
         return Publishers.just(HealthResult.builder(NAME, stalled ? HealthStatus.DOWN : HealthStatus.UP)
                 .details(states)
                 .build());
+    }
+
+    /**
+     * The partitions this consumer has GIVEN UP on — the state the lamp was built for, and the one
+     * it could not see until 2026-07-29 evening.
+     *
+     * <p>The first version watched only the poll counter, on the strength of a javadoc claiming
+     * that {@code stopOnExhaustedRetry} "STOPS the container". It does not. In micronaut-kafka
+     * 6.1.0 it does exactly three things — {@code seek} back to the failed offset,
+     * {@code handleException} once, and {@code pause} that one partition — and then the poll loop
+     * carries on for ever. {@code last-poll-seconds-ago} keeps resetting, so the lamp reported
+     * "polling, last poll 0s ago" while the record that finishes an account deletion sat unread.
+     * A signal that cannot see the failure it was written for is worse than none, because it is
+     * believed.
+     *
+     * <p>{@code isPaused} is the clean discriminator, and that is a property of the framework
+     * rather than a guess: a retry's backoff pause is applied to the Kafka consumer directly, while
+     * {@code stopOnExhaustedRetry} goes through {@code ConsumerState#pause}, which records the
+     * partition in {@code pauseRequests} — and {@code resumeTopicPartitions} filters exactly those
+     * out, so they are never resumed. {@code ConsumerRegistry#isPaused} requires the partition to
+     * be in BOTH sets, so it answers true for "given up on" and false for "backing off between
+     * attempts". No timer, no tolerance, no window in which the answer is ambiguous.
+     */
+    private Set<org.apache.kafka.common.TopicPartition> abandonedPartitions(String id) {
+        try {
+            return consumers.getConsumerAssignment(id).stream()
+                    .filter(partition -> consumers.isPaused(id, Set.of(partition)))
+                    .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+        } catch (RuntimeException gone) {
+            // the consumer was closed between the id listing and this call; the poll-counter branch
+            // below reports that case, and reporting it twice would only muddy the details
+            return Set.of();
+        }
     }
 
     /** Every registered consumer whose subscription includes this topic. */

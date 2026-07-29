@@ -51,3 +51,23 @@ email-service:
 kafka:
   bootstrap:
     servers: ${KAFKA_BOOTSTRAP_SERVERS:`localhost:9092`}
+  health:
+    # OFF, and this is a decision about what readiness MEANS for identity, not a convenience.
+    #
+    # micronaut-kafka contributes a cluster probe, and Micronaut puts every indicator without
+    # @Liveness into the READINESS group. Since the k8s manifest and the compose healthcheck ask
+    # /health/readiness, that made a broker blip answer "do not send me traffic" — pulling sign-in,
+    # refresh and token introspection out of the Service FOR BOTH PRODUCTS, over a fault that has
+    # nothing to do with signing in. A broker slow to start would fail the startupProbe outright and
+    # crash-loop the identity service. Measured, not argued: booted against a dead broker,
+    # /health/readiness answers 503 with `kafka DOWN` while OffboardingListenerHealth says UP.
+    #
+    # It is also the exact outcome OffboardingListenerHealth's own javadoc declares excluded ("this
+    # is deliberately NOT a broker probe... red-lighting identity because Kafka blinked would take
+    # sign-in away from both products"). That sentence is about the lamp; this line is what makes it
+    # true of the whole group.
+    #
+    # What still watches Kafka: the lamp, which reports THIS service's listener rather than the
+    # cluster, and the participants whose loops genuinely depend on the broker
+    # (comments/memes/user-collections/offboarding) — each red-lighting only itself.
+    enabled: false

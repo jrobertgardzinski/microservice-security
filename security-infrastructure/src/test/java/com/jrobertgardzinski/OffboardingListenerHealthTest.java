@@ -24,9 +24,10 @@ import static org.mockito.Mockito.when;
 
 /**
  * The lamp identity did not have, and the reason it now needs one:
- * {@link OffboardingOutcomeListener} STOPS its container when its retries are spent, so the
- * failure mode this service can produce is a listener that is neither dead nor working — and
- * every other participant of the saga could already report exactly that.
+ * {@link OffboardingOutcomeListener} gives up on a partition when its retries are spent —
+ * {@code stopOnExhaustedRetry} pauses it for good rather than stopping the container, which is a
+ * listener neither dead nor working, and every other participant of the saga could already report
+ * exactly that.
  *
  * <p>Each case below is a real situation. A loop with nothing to read (the normal state of
  * {@code offboarding-events}, which is silent for days between deletions) must read as ALIVE — get
@@ -134,10 +135,61 @@ class OffboardingListenerHealthTest {
         HealthResult reported = health(lamp);
 
         assertEquals(HealthStatus.DOWN, reported.getStatus(),
-                "this is what stopOnExhaustedRetry produces, and the portal has already erased the"
-                        + " user's content by the time the outcome it is not reading arrives");
+                "a loop that stopped polling at all — a dead consumer thread, a wedged handler."
+                        + " The OTHER standstill this service can produce, a partition given up on"
+                        + " after the retries are spent, leaves the poll counter healthy and is"
+                        + " caught by the paused-partition branch instead");
         assertTrue(String.valueOf(details(reported).get(CONSUMER)).contains("no poll for"),
                 String.valueOf(reported.getDetails()));
+    }
+
+    /** The partition this consumer is assigned, and whether it has been given up on. */
+    private void assignedPartition(boolean pausedForGood) {
+        org.apache.kafka.common.TopicPartition partition =
+                new org.apache.kafka.common.TopicPartition(OffboardingListenerHealth.TOPIC, 0);
+        when(registry.getConsumerAssignment(CONSUMER)).thenReturn(Set.of(partition));
+        when(registry.isPaused(CONSUMER, Set.of(partition))).thenReturn(pausedForGood);
+    }
+
+    @Test
+    @DisplayName("a partition given up on after the retries are spent is DOWN, even though the loop still polls")
+    void an_abandoned_partition_is_down() {
+        // THE case this lamp exists for, and the one it could not see until this branch existed.
+        // stopOnExhaustedRetry does not stop the container: it seeks, logs once and pauses that one
+        // partition, which resumeTopicPartitions then refuses to resume. The loop keeps turning on
+        // whatever else it holds, so the poll counter stays healthy — 0s ago, for ever — while the
+        // message that finishes an account deletion sits unread and the portal has already erased
+        // the user's content.
+        aConsumerLastPolling(Duration.ofMillis(200));
+        assignedPartition(true);
+        OffboardingListenerHealth lamp = lamp();
+        elapse(Duration.ofHours(6));
+
+        HealthResult reported = health(lamp);
+
+        assertEquals(HealthStatus.DOWN, reported.getStatus(),
+                "the poll counter says this consumer is perfectly alive, and it is — for every"
+                        + " partition except the one carrying the outcome nobody will now read");
+        assertTrue(String.valueOf(details(reported).get(CONSUMER)).contains("gave up on"),
+                String.valueOf(reported.getDetails()));
+        assertTrue(String.valueOf(details(reported).get(CONSUMER)).contains("restart"),
+                "and the detail says what an operator is supposed to DO about it: "
+                        + reported.getDetails());
+    }
+
+    @Test
+    @DisplayName("a partition merely backing off between retries is not 'given up on'")
+    void a_partition_between_retries_is_up() {
+        // The discriminator is not "paused" but WHICH pause. A retry's backoff pauses the partition
+        // on the Kafka consumer; giving up records it in pauseRequests as well, and isPaused wants
+        // both. Without that distinction this lamp would go red every time a database hiccup sent
+        // one outcome into its retry budget — a false alarm on the healthiest possible recovery.
+        aConsumerLastPolling(Duration.ofMillis(200));
+        assignedPartition(false);
+        OffboardingListenerHealth lamp = lamp();
+        elapse(Duration.ofHours(6));
+
+        assertEquals(HealthStatus.UP, health(lamp).getStatus());
     }
 
     @Test

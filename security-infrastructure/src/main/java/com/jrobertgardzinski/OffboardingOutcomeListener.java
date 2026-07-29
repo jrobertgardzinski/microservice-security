@@ -43,17 +43,21 @@ import java.util.Map;
  * ({@link OffsetStrategy#SYNC} — micronaut's retry strategies are inert while offsets
  * auto-commit). Redelivery is safe by construction: the claim on the outcome id is taken inside
  * the same transaction as the work, so a rollback releases it and a replay is a first attempt
- * again. If the retries are exhausted the container STOPS rather than skips: the offset is never
- * committed, so a restart replays the record, which beats discarding it.
+ * again.
  *
- * <p><b>What that costs, stated rather than glossed over.</b> A stopped container here is NOT
- * reported anywhere. Every other participant of this saga carries a readiness lamp for its listener
- * loop — {@code SagaListenersHealth} in memes and comments, {@code PurgeCommandsConsumer.healthy()}
- * in user-collections, {@code KafkaLoop.healthy()} in offboarding — and this service has none, so a
- * listener that has stopped looks exactly like one that is idle: {@code /health} green, the pod
- * Ready, and account deletions quietly not closing until somebody restarts it. Stopping is still
- * the better of the two available failures, and the gap is recorded as work rather than described
- * as a feature.
+ * <p><b>What {@code stopOnExhaustedRetry} actually does, corrected.</b> This javadoc said "the
+ * container STOPS rather than skips" for half a day, and that is not what happens. In
+ * micronaut-kafka 6.1.0 the setting does three things and no more: {@code seek} back to the failed
+ * offset, one {@code handleException}, and {@code pause} on that ONE partition. The container keeps
+ * running and the poll loop keeps turning; the partition is simply never resumed, because
+ * {@code resumeTopicPartitions} skips everything in {@code pauseRequests}.
+ *
+ * <p>The guarantee that matters survives the correction — the offset is never committed, so a
+ * restart replays the record rather than losing it — but the mechanism is a paused partition, not
+ * a stopped service, and the difference is what a reader needs to act on. It also means the state
+ * is INVISIBLE to anything watching liveness or poll activity, which is why
+ * {@link OffboardingListenerHealth} asks {@code isPaused} instead of only reading the poll counter:
+ * that lamp reported this service as healthy through exactly this failure until it was corrected.
  */
 @KafkaListener(
         groupId = "security",
