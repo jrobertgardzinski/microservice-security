@@ -93,3 +93,26 @@ jobs:
 
       - name: Build and test (including pact provider verification)
         run: mvn -B --no-transfer-progress -f microservice-security/pom.xml clean verify
+
+  # security-ui is NOT a Maven module (unlike memes-ui, which frontend-maven-plugin builds inside
+  # the reactor), so until 2026-07-29 nothing in CI ever compiled it or ran its vitest suite. That
+  # was not a theoretical gap: five dependency bumps, react and react-dom to 19 and vite to 8 among
+  # them, had been reported green by a gate that never opened the directory. This job is what makes
+  # those greens mean something. It does not run the cucumber-js/Playwright e2e - that needs the
+  # whole identity stack up, and lives in run-e2e.sh.
+  ui:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: security-ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # the version security-ui's own toolchain needs; vite 8 requires >= 20.19
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: security-ui/package-lock.json
+      - run: npm ci
+      - run: npm run build     # tsc, so type-level breakage in a bump is caught here
+      - run: npm test          # vitest

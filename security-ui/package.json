@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "The auth service's own face \u2014 and the specs' third entry point: cucumber-js + Playwright drive the same Gherkin the JVM runners do, through this React UI.",
+  "description": "The auth service's own face — and the specs' third entry point: cucumber-js + Playwright drive the same Gherkin the JVM runners do, through this React UI.",
   "scripts": {
     "dev": "vite",
     "test": "vitest run",
@@ -13,18 +13,18 @@
     "e2e:full": "./run-e2e.sh"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^11.2.0",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
     "jsdom": "^29.1.1",
-    "playwright": "^1.50.0",
+    "playwright": "^1.62.0",
     "typescript": "~5.6.3",
-    "vite": "^6.0.7",
+    "vite": "^8.1.5",
     "vitest": "^4.1.10"
   }
 }
