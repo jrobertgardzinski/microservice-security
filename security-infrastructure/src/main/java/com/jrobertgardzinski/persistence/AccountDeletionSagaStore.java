@@ -24,4 +24,16 @@ public interface AccountDeletionSagaStore {
 
     /** STARTED older than the cutoff → COMPENSATED; returns the affected emails. */
     List<String> compensateOverdue(Instant cutoff, Instant at);
+
+    /**
+     * Whether this e-mail's most recent saga was COMPENSATED — i.e. this service gave up on the
+     * deletion, unlocked the account and apologised.
+     *
+     * <p>Asked when a SUCCESS arrives that matches no running saga, because the two reasons for
+     * that are worlds apart. A duplicate of an outcome already applied is routine. A genuine
+     * purge confirmation arriving after we compensated means the portal erased the content ANYWAY:
+     * the user keeps their account and their apology, and their memes, comments and collections are
+     * gone for good. That is not an INFO line.
+     */
+    boolean lastSagaWasCompensated(String email);
 }

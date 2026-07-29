@@ -6,6 +6,7 @@
     {
       "contents": {
         "email": "leaver@example.com",
+        "id": "6b1f0e6a-2c1e-4f1a-9a3d-0f5a8c2b7e11",
         "type": "PORTAL_CONTENT_PURGED"
       },
       "description": "a portal content purged announcement",
@@ -18,6 +19,15 @@
                 "match": "type"
               }
             ]
+          },
+          "$.id": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "regex",
+                "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+              }
+            ]
           }
         }
       },
@@ -28,6 +38,7 @@
     {
       "contents": {
         "email": "leaver@example.com",
+        "id": "9d2c4b8e-7a10-4c33-8e21-3b6f5d9a0c42",
         "type": "PORTAL_PURGE_FAILED"
       },
       "description": "a portal purge failed announcement",
@@ -38,6 +49,15 @@
             "matchers": [
               {
                 "match": "type"
+              }
+            ]
+          },
+          "$.id": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "regex",
+                "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
               }
             ]
           }

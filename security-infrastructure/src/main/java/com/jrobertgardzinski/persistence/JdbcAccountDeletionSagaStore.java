@@ -36,6 +36,13 @@ class JdbcAccountDeletionSagaStore implements AccountDeletionSagaStore {
     }
 
     @Override
+    public boolean lastSagaWasCompensated(String email) {
+        return repository.findLatestByEmail(email)
+                .map(saga -> "COMPENSATED".equals(saga.state()))
+                .orElse(false);
+    }
+
+    @Override
     public List<String> compensateOverdue(Instant cutoff, Instant at) {
         List<String> emails = new ArrayList<>();
         for (AccountDeletionSagaEntity saga : repository.findByStateAndCreatedAtBefore("STARTED", cutoff)) {

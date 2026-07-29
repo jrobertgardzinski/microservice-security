@@ -25,6 +25,11 @@ interface AccountDeletionSagaJdbcRepository extends CrudRepository<AccountDeleti
 
     List<AccountDeletionSagaEntity> findByStateAndCreatedAtBefore(String state, Instant cutoff);
 
+    /** The most recent saga for this e-mail, whatever state it reached. */
+    @Query("SELECT * FROM account_deletion_sagas WHERE email = :email"
+            + " ORDER BY created_at DESC LIMIT 1")
+    java.util.Optional<AccountDeletionSagaEntity> findLatestByEmail(String email);
+
     @Query("UPDATE account_deletion_sagas SET state = 'COMPENSATED', updated_at = :at "
             + "WHERE id = :id AND state = 'STARTED'")
     long compensate(UUID id, Instant at);

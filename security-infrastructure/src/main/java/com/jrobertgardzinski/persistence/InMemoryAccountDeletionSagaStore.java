@@ -36,6 +36,15 @@ class InMemoryAccountDeletionSagaStore implements AccountDeletionSagaStore {
     }
 
     @Override
+    public synchronized boolean lastSagaWasCompensated(String email) {
+        return sagas.values().stream()
+                .filter(saga -> saga.email().equals(email))
+                .max(java.util.Comparator.comparing(Saga::createdAt))
+                .map(saga -> "COMPENSATED".equals(saga.state()))
+                .orElse(false);
+    }
+
+    @Override
     public synchronized List<String> compensateOverdue(Instant cutoff, Instant at) {
         List<String> emails = new ArrayList<>();
         for (Saga saga : sagas.values()) {

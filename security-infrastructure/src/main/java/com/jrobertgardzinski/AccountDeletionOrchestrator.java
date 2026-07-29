@@ -99,9 +99,32 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
      * good and a goodbye mail goes out. Duplicates and strays are no-ops — the store's
      * STARTED→COMPLETED latch admits exactly one caller.
      */
+    /** Two characters and the domain: enough to recognise a report, not enough to harvest. */
+    private static String masked(String address) {
+        int at = address.indexOf('@');
+        return at <= 0 ? "***" : address.substring(0, Math.min(2, at)) + "***" + address.substring(at);
+    }
+
     public void completePurge(String email) {
         if (!sagas.complete(email, Instant.now(clock))) {
-            LOG.info("portal-purged outcome for {} matched no running deletion; ignoring", email);
+            // Two very different reasons to be here, and they used to share one INFO line.
+            //
+            // A duplicate of an outcome already applied is routine. A genuine purge confirmation
+            // arriving after we COMPENSATED is not: it means the portal erased the content anyway,
+            // after this service had given up, unlocked the account and sent an apology. The user
+            // keeps their account and loses every meme, comment and collection they had, and
+            // nothing anywhere said so — the whole event was an INFO line nobody greps for.
+            if (sagas.lastSagaWasCompensated(email)) {
+                LOG.error("CONTENT ERASED AFTER COMPENSATION for {}: the portal confirmed the purge"
+                                + " after this service had already given up, unlocked the account and"
+                                + " apologised. The account exists; its content does not. This needs"
+                                + " a human — the deletion timeout here and the portal's retry budget"
+                                + " are independent dials in separate repositories.",
+                        masked(email));
+                return;
+            }
+            LOG.info("portal-purged outcome for {} matched no running deletion; ignoring",
+                    masked(email));
             return;
         }
         deleteAccount.execute(Email.of(email));
