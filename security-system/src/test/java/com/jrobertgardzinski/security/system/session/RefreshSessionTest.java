@@ -56,17 +56,17 @@ class RefreshSessionTest {
         authorizationDataRepository = Mockito.mock(AuthorizationDataRepository.class);
         // rotateAndCreate is a default method on the port — the use case calls it because the
         // rotation and the successor's write must be ONE step (a concurrent revokeFamily between
-        // them leaves a live session in a revoked lineage). Mockito stubs default methods like any
-        // other, so these examples drive the real default: markRotated, then create if it won.
+        // them leaves a live session in a revoked lineage).
+        //
+        // thenCallRealMethod, NOT a hand-written answer. The first version transcribed the default's
+        // body here and claimed the examples "drive the real default"; they drove a frozen copy, so
+        // changing the port's default — adding a revokeFamily on a lost rotation, say, or a
+        // condition on the family — would have left this whole suite green while the use case and
+        // the port drifted apart. A test that cannot fail for the reason it names is the defect
+        // this project spent two days removing. markRotated and create stay stubbable per example,
+        // which is all these cases actually need to steer.
         Mockito.when(authorizationDataRepository.rotateAndCreate(Mockito.any(), Mockito.any(), Mockito.any()))
-                .thenAnswer(call -> {
-                    RefreshToken presented = call.getArgument(0);
-                    java.util.function.Supplier<SessionTokens> successor = call.getArgument(1);
-                    SessionFamily family = call.getArgument(2);
-                    return authorizationDataRepository.markRotated(presented)
-                            ? Optional.of(authorizationDataRepository.create(successor.get(), family))
-                            : Optional.empty();
-                });
+                .thenCallRealMethod();
         refreshSession = new RefreshSession(authorizationDataRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
     }
 

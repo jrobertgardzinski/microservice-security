@@ -67,12 +67,25 @@ interface SessionJdbcRepository extends CrudRepository<SessionEntity, String> {
      * <p>The in-memory adapter closes the same race with one monitor
      * ({@code InMemoryAuthorizationDataRepository#rotateAndCreate}); this is the database's
      * version of that monitor. The returned rows are not used — the lock is the point.
+     *
+     * <p><b>{@code ORDER BY} is not cosmetic here.</b> These two locks cover overlapping sets of
+     * rows — a family belongs to a user — and they reach them by different plans: this one walks
+     * {@code idx_sessions_family}, the one below sequentially scans (email has no index). A rotation
+     * only changes {@code status}, an unindexed column, so it is a HOT update: the visible tuple
+     * moves to a later line pointer while the index still points at the root. From then on the two
+     * scans can meet the same rows in OPPOSITE orders, and two revocations of the same user — reuse
+     * detection on one side, "log out everywhere" or the offboarding listener on the other —
+     * deadlock. Postgres kills one after {@code deadlock_timeout}: a 500 on
+     * {@code POST /sessions/revoke-all} in exactly the password-scare moment, or the outcome
+     * listener sent into its retry budget. Sorting both by the primary key gives them one order.
      */
-    @Query("SELECT refresh_token_hash FROM sessions WHERE family_id = :familyId FOR UPDATE")
+    @Query("SELECT refresh_token_hash FROM sessions WHERE family_id = :familyId"
+            + " ORDER BY refresh_token_hash FOR UPDATE")
     java.util.List<String> lockFamily(UUID familyId);
 
-    /** The same lock for "log out everywhere", where the race and the consequence are identical. */
-    @Query("SELECT refresh_token_hash FROM sessions WHERE email = :email FOR UPDATE")
+    /** The same lock, and the same {@code ORDER BY}, for "log out everywhere". */
+    @Query("SELECT refresh_token_hash FROM sessions WHERE email = :email"
+            + " ORDER BY refresh_token_hash FOR UPDATE")
     java.util.List<String> lockSessionsOf(String email);
 
     /**

@@ -240,9 +240,13 @@ class OffboardingListenerHealthTest {
      * answer 500 and the container never reports healthy — while `mvn verify` stays entirely
      * green, because every test here constructs the bean by hand.
      *
-     * <p>The CI boot smoke does not cover it either, and deliberately so: it runs in the
-     * {@code test} environment, where this lamp does not exist at all. So the invariant is asserted
-     * here, where the ambiguity lives.
+     * <p>The CI boot smoke DOES cover it, since {@code 3b837e1} moved that step to the {@code dev}
+     * environment with a real database and the Kafka layer, and made it assert that
+     * {@code offboardingListener} appears in {@code /health} — dropping the {@code @Inject} turns it
+     * red with "/health answered 500". This paragraph said the opposite for three hours, which is
+     * the same defect in a coverage map that P16 poz. 11 found: two documents in one repository
+     * disagreeing about what a gate checks. This test stays because it is the faster and smaller of
+     * the two guards — it fails without Docker, without Postgres and without booting anything.
      */
     @Test
     @DisplayName("the container knows which constructor to use")
