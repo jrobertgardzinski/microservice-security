@@ -128,6 +128,29 @@
             <groupId>io.micronaut.kafka</groupId>
             <artifactId>micronaut-kafka</artifactId>
         </dependency>
+        <!-- Both arrive through micronaut-kafka and micronaut-management anyway; they are declared
+             because OffboardingListenerHealth USES them directly — it reads the consumer's own
+             last-poll metric (kafka-clients' Metric/MetricName) and returns a Publisher of health
+             results (reactive-streams). dependency:analyze is right to insist: a transitive
+             dependency that a class imports is a dependency, and the day micronaut-kafka stops
+             pulling kafka-clients in is not the day to find that out from a compile error. -->
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.reactivestreams</groupId>
+            <artifactId>reactive-streams</artifactId>
+        </dependency>
+        <!-- reactor-core is deliberately NOT declared here. It arrives transitively at runtime
+             scope for micronaut-http-server-netty, and declaring it `test` — which is what the
+             lamp's first test tempted us into, to get a Flux — NARROWS that transitive scope:
+             Maven's nearest definition wins, reactor left target/lib, and the packaged service
+             died on startup with NoClassDefFoundError: reactor/core/CorePublisher. `mvn verify`
+             stayed green throughout, because tests run on the test classpath, where it was
+             present. The test subscribes to the Publisher directly instead; it needs no reactor,
+             and this comment is here so nobody adds it back for convenience. -->
+
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>

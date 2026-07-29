@@ -105,6 +105,54 @@ jobs:
       - name: Build and test (including pact provider verification)
         run: mvn -B --no-transfer-progress -f shared/microservice-security/pom.xml clean verify
 
+      # Does the thing we just built actually START?
+      #
+      # `mvn verify` cannot answer that. Tests run on the TEST classpath; the service runs on the
+      # jar plus target/lib, and the two differ. On 2026-07-29 a dependency declared with a
+      # narrower scope (reactor-core as `test`, to borrow a Flux for one unit test) took Maven's
+      # nearest-definition rule at its word, dropped a RUNTIME transitive out of target/lib, and
+      # killed the packaged service on boot — NoClassDefFoundError: reactor/core/CorePublisher —
+      # through a completely green build. Every suite passed. The service did not exist.
+      #
+      # So: launch it the way the image does, on the same classpath, and ask it the questions the
+      # k8s manifest asks. `test` environment (in-memory stores, no broker) keeps it to seconds and
+      # needs no services.
+      #
+      # What this step does NOT cover, said plainly so nobody reads more into a green tick: the
+      # `test` environment has no Kafka layer, so OffboardingListenerHealth is not even constructed
+      # here — and that bean produced the day's second runtime-only failure (two constructors,
+      # neither annotated, every health endpoint 500ing while the whole suite passed). The
+      # invariant that makes it constructible is asserted in OffboardingListenerHealthTest instead.
+      # This step is about the CLASSPATH.
+      - name: Prove the packaged service boots and answers its probes
+        run: |
+          cd shared/microservice-security
+          MICRONAUT_ENVIRONMENTS=test MICRONAUT_SERVER_PORT=8181 KAFKA_ENABLED=false \
+            SECURITY_COOKIE_SECURE=false \
+            java -cp "security-infrastructure/target/security-infrastructure-1.0.0-SNAPSHOT.jar:security-infrastructure/target/lib/*" \
+            com.jrobertgardzinski.App > /tmp/boot-smoke.log 2>&1 &
+          pid=$!
+          for attempt in $(seq 1 60); do
+            curl -sf http://localhost:8181/health >/dev/null 2>&1 && break
+            if ! kill -0 "$pid" 2>/dev/null; then
+              echo "::error::the packaged service died during startup"
+              tail -40 /tmp/boot-smoke.log
+              exit 1
+            fi
+            sleep 2
+          done
+          for path in /health /health/readiness /health/liveness; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8181$path" || echo 000)
+            if [ "$code" != "200" ]; then
+              echo "::error::$path answered $code — the manifest probes it and would never pass"
+              tail -40 /tmp/boot-smoke.log
+              kill "$pid" 2>/dev/null || true
+              exit 1
+            fi
+            echo "$path: 200"
+          done
+          kill "$pid" 2>/dev/null || true
+
       # The point of the layout above. A verification that was SKIPPED reports green — that is the
       # whole failure this workflow spent weeks in — so the run has to say out loud that these two
       # executed interactions. SilentlySkippedPactTest asserts the same thing from inside the JVM;
