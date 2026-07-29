@@ -17,6 +17,17 @@ micronaut:
         # collections UI (react-native-web — its separate origin is what exercises CORS) and 5173
         # its Vite dev server
         ui:
+          # EXPLICIT since Micronaut 5, which flipped the default from true to false. Every one of
+          # these origins sends its sign-in with credentials: 'include' (the refresh cookie), and a
+          # browser refuses such a response unless it carries
+          # Access-Control-Allow-Credentials: true - so with the default flipped, the preflight
+          # still answered 200 with a correct Allow-Origin and the request was blocked anyway.
+          # Nothing server-side logs a thing: the service never sees the POST.
+          #
+          # This is why it is written down rather than left to a default: the value the browser
+          # needs is not the framework's idea of a safe default, and the two disagreeing is
+          # invisible to every test that does not use a real browser.
+          allow-credentials: true
           allowed-origins:
             - http://localhost:8083
             - http://localhost:8084
