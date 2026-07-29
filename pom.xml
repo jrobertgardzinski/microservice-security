@@ -10,7 +10,7 @@
 
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
-        <micronaut.version>4.10.13</micronaut.version>
+        <micronaut.version>4.10.17</micronaut.version>
     </properties>
 
     <modules>
