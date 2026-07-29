@@ -10,7 +10,11 @@
 
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
-        <micronaut.version>4.10.17</micronaut.version>
+        <micronaut.version>5.1.0</micronaut.version>
+        <!-- Micronaut 5's platform BOM stopped managing testcontainers, the same change Spring Boot 4
+             made on the other side of the estate the same day. Pinned to 1.21.4 like the portal's
+             services: testcontainers reorganised in 2.x and several modules have no 2.x release. -->
+        <testcontainers.version>1.21.4</testcontainers.version>
     </properties>
 
     <modules>
@@ -213,6 +217,21 @@
                 <artifactId>unit-test-starter</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
                 <scope>test</scope>
+            </dependency>
+            <!--
+              BEFORE the Micronaut platform on purpose - Maven takes the earliest matching entry.
+              Micronaut 5.1.0's platform manages jackson at 2.21.5 while its own micronaut-kafka
+              6.1.0 asks for 2.22.1, so the platform alone resolves a jackson-core OLDER than one of
+              its own modules requires. The enforcer's RequireUpperBoundDeps is what caught it, doing
+              exactly the job it is there for. One BOM keeps the whole jackson family on one version
+              instead of pinning artifacts one at a time as each is noticed.
+            -->
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>2.22.1</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>io.micronaut.platform</groupId>

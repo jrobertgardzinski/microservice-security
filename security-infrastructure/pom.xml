@@ -168,11 +168,13 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
+            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
         <!-- the producer's half of the cross-service contracts: verifies the consumers' committed
@@ -243,10 +245,16 @@
         </dependency>
         <dependency>
             <!-- the request pact-jvm replays (mutated to carry the real bearer); comes with the
-                 pact provider, declared for the dependency analyzer -->
+                 pact provider, declared for the dependency analyzer.
+
+                 5.4.3, raised from 5.3.4 when Micronaut 5 arrived: it brings httpclient5 5.6.2,
+                 which pulls httpcore5-h2 5.4.3 and calls MessageSupport.parseHeaders(MessageHeaders,
+                 String, BiConsumer) - a method that does not exist in 5.3. Left at 5.3.4 the
+                 provider verification died with NoSuchMethodError, and only there: nothing else on
+                 the classpath touches that call. -->
             <groupId>org.apache.httpcomponents.core5</groupId>
             <artifactId>httpcore5</artifactId>
-            <version>5.3.4</version>
+            <version>5.4.3</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
