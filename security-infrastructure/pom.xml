@@ -181,7 +181,7 @@
         <dependency>
             <groupId>au.com.dius.pact.provider</groupId>
             <artifactId>junit5</artifactId>
-            <version>4.6.17</version>
+            <version>4.7.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -189,7 +189,7 @@
                  dependency analyzer) -->
             <groupId>au.com.dius.pact</groupId>
             <artifactId>provider</artifactId>
-            <version>4.6.17</version>
+            <version>4.7.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -198,21 +198,21 @@
                  by the three participants' provider tests -->
             <groupId>au.com.dius.pact.consumer</groupId>
             <artifactId>junit5</artifactId>
-            <version>4.6.17</version>
+            <version>4.7.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <!-- MessagePactBuilder and the dsl live here (declared for the dependency analyzer) -->
             <groupId>au.com.dius.pact</groupId>
             <artifactId>consumer</artifactId>
-            <version>4.6.17</version>
+            <version>4.7.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <!-- @Pact, Message, PactSpecVersion live here (declared for the dependency analyzer) -->
             <groupId>au.com.dius.pact.core</groupId>
             <artifactId>model</artifactId>
-            <version>4.6.17</version>
+            <version>4.7.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
