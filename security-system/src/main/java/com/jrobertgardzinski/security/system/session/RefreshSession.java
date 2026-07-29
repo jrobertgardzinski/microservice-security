@@ -53,14 +53,21 @@ public class RefreshSession {
                     // sign-in, an undetected stolen token costs the account. Softening it needs a
                     // grace window with a replayable successor, which is a schema change and a
                     // separate decision.
-                    if (!authorizationDataRepository.markRotated(refreshToken)) {
-                        authorizationDataRepository.revokeFamily(session.family());
-                        return new RefreshSessionResult.ReuseDetected();
-                    }
-                    return new RefreshSessionResult.Refreshed(
-                            authorizationDataRepository.create(
-                                    SessionTokens.createFor(session.email(), config, clock, accessTokenMint),
-                                    session.family()));
+                    //
+                    // Rotation and creation go to the repository as ONE call, because they have to
+                    // be one step. As two, a concurrent revokeFamily — the very thing the branch
+                    // below performs — could land between them, destroying the lineage and then
+                    // having a successor written into it: a live session inside a family the
+                    // service reports as revoked.
+                    return authorizationDataRepository.rotateAndCreate(
+                                    refreshToken,
+                                    () -> SessionTokens.createFor(session.email(), config, clock, accessTokenMint),
+                                    session.family())
+                            .<RefreshSessionResult>map(RefreshSessionResult.Refreshed::new)
+                            .orElseGet(() -> {
+                                authorizationDataRepository.revokeFamily(session.family());
+                                return new RefreshSessionResult.ReuseDetected();
+                            });
                 })
                 .orElseGet(RefreshSessionResult.NotFound::new);
     }

@@ -16,7 +16,19 @@ interface SessionJdbcRepository extends CrudRepository<SessionEntity, String> {
 
     Optional<SessionEntity> findByAccessTokenHashAndStatus(String accessTokenHash, String status);
 
-    java.util.List<SessionEntity> findByEmailAndStatus(String email, String status);
+    /**
+     * The sessions to SHOW a user: active by status and still valid by the clock.
+     *
+     * <p>Both halves are needed and only the first used to be applied. {@code ExpiredSessionReaper}
+     * keeps expired rows on purpose — for the longer of the refresh window and 24 hours, plus up to
+     * its own interval — so that a replayed just-expired token still meets reuse detection. Listing
+     * on the status alone therefore showed a device that had stopped working a day earlier as a
+     * place the user is currently signed in, and nothing could clear it: revoking removes rows of a
+     * lineage, and this row was already dead. Its own javadoc said "status is not the truth, the
+     * expiry column is", in the past tense, about this very listing.
+     */
+    java.util.List<SessionEntity> findByEmailAndStatusAndRefreshTokenExpirationAfter(
+            String email, String status, java.time.LocalDateTime now);
 
     @Query("UPDATE sessions SET status = :status WHERE refresh_token_hash = :refreshTokenHash")
     void updateStatus(String refreshTokenHash, String status);

@@ -30,7 +30,14 @@ import java.util.Map;
  *
  * <p>The HTTP contract:
  * <ul>
- *   <li>{@code Authenticated}    &rarr; 200 OK, {@code {"accessToken": ..., "refreshToken": ...}}</li>
+ *   <li>{@code Authenticated}    &rarr; 200 OK, {@code {"accessToken": ...}} — plus the refresh
+ *       token in a {@code Set-Cookie}, HttpOnly, and <b>never in the body</b>. This line used to
+ *       promise {@code refreshToken} in the JSON, which the code has never sent: a client author
+ *       implementing from the contract read null and built a refresh flow that could not work,
+ *       while the mechanism that does work (a credentialed cookie, and therefore
+ *       {@code credentials: 'include'} on the fetch and {@code allow-credentials} on the CORS
+ *       configuration — the whole of the 2026-07-29 sign-in outage) went undocumented. Described
+ *       the way {@code RefreshController} already describes its own rotated cookie.</li>
  *   <li>{@code Rejected}         &rarr; 401 Unauthorized</li>
  *   <li>{@code EmailNotVerified} &rarr; 403 Forbidden, {@code {"error": "EMAIL_NOT_VERIFIED"}}
  *       (correct credentials, but the address awaits verification)</li>

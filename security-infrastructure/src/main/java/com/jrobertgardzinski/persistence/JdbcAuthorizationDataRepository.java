@@ -30,8 +30,12 @@ final class JdbcAuthorizationDataRepository implements AuthorizationDataReposito
 
     private final SessionJdbcRepository repository;
 
-    JdbcAuthorizationDataRepository(SessionJdbcRepository repository) {
+    /** The same clock the sessions were issued under — see {@link #listActiveSessions}. */
+    private final java.time.Clock clock;
+
+    JdbcAuthorizationDataRepository(SessionJdbcRepository repository, java.time.Clock clock) {
         this.repository = repository;
+        this.clock = clock;
     }
 
     @Override
@@ -79,9 +83,11 @@ final class JdbcAuthorizationDataRepository implements AuthorizationDataReposito
         repository.deleteByEmail(email.value());
     }
 
+    /** Active by status AND unexpired by the clock — see the query's javadoc for why both. */
     @Override
     public java.util.List<com.jrobertgardzinski.security.domain.vo.ActiveSession> listActiveSessions(Email email) {
-        return repository.findByEmailAndStatus(email.value(), SessionStatus.ACTIVE.name()).stream()
+        return repository.findByEmailAndStatusAndRefreshTokenExpirationAfter(
+                        email.value(), SessionStatus.ACTIVE.name(), java.time.LocalDateTime.now(clock)).stream()
                 .map(entity -> new com.jrobertgardzinski.security.domain.vo.ActiveSession(
                         new SessionFamily(entity.familyId()),
                         new RefreshTokenExpiration(entity.refreshTokenExpiration())))

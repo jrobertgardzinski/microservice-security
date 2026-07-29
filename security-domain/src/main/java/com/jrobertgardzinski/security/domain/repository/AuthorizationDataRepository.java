@@ -46,12 +46,53 @@ public interface AuthorizationDataRepository {
      */
     boolean markRotated(RefreshToken refreshToken);
 
+    /**
+     * Rotate the presented token out and, if this caller won that rotation, write its successor —
+     * as ONE step that nothing else in the lineage may interleave with.
+     *
+     * <p>The pair has to be indivisible, and saying so in a comment was not enough. Between the
+     * rotation and the write, another thread detecting reuse of the same lineage can run
+     * {@link #revokeFamily}: the family is destroyed and the successor is then written into it
+     * anyway, leaving a LIVE session in a lineage this service believes it has revoked. That is the
+     * theft-detection guarantee failing in the one case it exists for — a thief refreshing beside
+     * the victim keeps a working session, and every device list and revoke says the family is gone.
+     *
+     * <p>On the JDBC adapter the default below is enough, because the whole use case already runs
+     * inside one transaction ({@code RefreshController} wraps it). The in-memory adapter — which is
+     * the production wiring wherever no datasource is configured, not merely a test double — has no
+     * such boundary, and its individually-atomic methods do not add up to one: it overrides this and
+     * holds a single monitor across both, together with the two revoke operations.
+     *
+     * @param successor supplied rather than passed, so that a caller which loses the rotation never
+     *                  mints tokens it must throw away — and so the critical section demonstrably
+     *                  spans the write, which is what makes the atomicity testable
+     * @return the successor as stored, or empty when somebody else rotated first — which the caller
+     *         must treat exactly like a replayed token
+     */
+    default Optional<SessionTokens> rotateAndCreate(RefreshToken presented,
+                                                    java.util.function.Supplier<SessionTokens> successor,
+                                                    SessionFamily family) {
+        return markRotated(presented) ? Optional.of(create(successor.get(), family)) : Optional.empty();
+    }
+
     /** Revoke an entire session lineage (logout, or theft detected). */
     void revokeFamily(SessionFamily family);
 
     /** Revoke every session of a user, across all lineages ("log out everywhere"). */
     void revokeAllSessions(Email email);
 
-    /** The user's currently active sessions (for showing devices/sessions). */
+    /**
+     * The user's sessions that are genuinely usable right now — for the "where am I signed in?"
+     * page.
+     *
+     * <p>ACTIVE is a status, not a fact about time. A row keeps that status until the reaper
+     * removes it, and the reaper deliberately waits: it holds expired rows for the longer of the
+     * refresh window and 24 hours, plus up to its own hour-long interval. Filtering on the status
+     * alone therefore showed a device that could not sign anything for a day after it stopped
+     * working, on the page a user opens exactly when they are frightened that someone else is on
+     * their account — and no revoke could clear it, because there was nothing left to revoke.
+     * Implementations must apply the expiry as well, against the same clock the sessions were
+     * issued under.
+     */
     List<ActiveSession> listActiveSessions(Email email);
 }

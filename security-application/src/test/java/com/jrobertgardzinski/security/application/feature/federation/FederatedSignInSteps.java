@@ -43,7 +43,7 @@ public class FederatedSignInSteps {
 
     private final InMemoryUserRepository users = new InMemoryUserRepository();
     private final InMemoryEmailVerificationRepository verifications = new InMemoryEmailVerificationRepository();
-    private final InMemoryAuthorizationDataRepository sessions = new InMemoryAuthorizationDataRepository();
+    private final InMemoryAuthorizationDataRepository sessions = new InMemoryAuthorizationDataRepository(Clock.systemUTC());
     private final FakeHashAlgorithm hashAlgorithm = new FakeHashAlgorithm();
     private final Map<String, String> links = new HashMap<>();
     private final FederatedIdentityRepository identities = new FederatedIdentityRepository() {

@@ -31,7 +31,7 @@ public class SessionSteps {
             new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1));
 
     private final Clock clock = Clock.fixed(Instant.parse("2026-06-15T10:00:00Z"), ZoneOffset.UTC);
-    private final InMemoryAuthorizationDataRepository authorizationData = new InMemoryAuthorizationDataRepository();
+    private final InMemoryAuthorizationDataRepository authorizationData = new InMemoryAuthorizationDataRepository(clock);
     private final RefreshSession refreshSession = new RefreshSession(authorizationData, clock, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
 
     private Email email;

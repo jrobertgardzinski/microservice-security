@@ -24,6 +24,17 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
 
     private final Map<String, Row> byRefreshToken = new HashMap<>();
 
+    /**
+     * The scenarios' clock, because {@link #listActiveSessions} is answerable only against one.
+     * A double that ignores expiry would let a feature file describe behaviour neither production
+     * adapter has — which is the one thing a double must never do.
+     */
+    private final java.time.Clock clock;
+
+    public InMemoryAuthorizationDataRepository(java.time.Clock clock) {
+        this.clock = clock;
+    }
+
     /** Test seam: seed a stored active session in its own family. */
     public void store(SessionTokens session) {
         create(session, SessionFamily.start());
@@ -75,10 +86,12 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
         byRefreshToken.values().removeIf(row -> row.tokens().email().equals(email));
     }
 
+    /** Active by status AND unexpired by the clock, exactly as both production adapters answer. */
     @Override
     public java.util.List<com.jrobertgardzinski.security.domain.vo.ActiveSession> listActiveSessions(Email email) {
         return byRefreshToken.values().stream()
-                .filter(row -> row.tokens().email().equals(email) && row.status() == SessionStatus.ACTIVE)
+                .filter(row -> row.tokens().email().equals(email) && row.status() == SessionStatus.ACTIVE
+                        && !row.tokens().refreshTokenExpiration().hasExpired(clock))
                 .map(row -> new com.jrobertgardzinski.security.domain.vo.ActiveSession(
                         row.family(), row.tokens().refreshTokenExpiration()))
                 .toList();

@@ -53,9 +53,11 @@ public class AuthenticationSteps {
     private final InMemoryEmailVerificationRepository verifications = new InMemoryEmailVerificationRepository();
     private final InMemoryRejectedAuthenticationRepository rejections = new InMemoryRejectedAuthenticationRepository();
     private final InMemoryAuthenticationBlockRepository blocks = new InMemoryAuthenticationBlockRepository();
-    private final InMemoryAuthorizationDataRepository sessions = new InMemoryAuthorizationDataRepository();
-    private final FakeHashAlgorithm hashAlgorithm = new FakeHashAlgorithm();
     private final AdjustableClock clock = new AdjustableClock(Instant.parse("2026-06-15T10:00:00Z"), ZoneOffset.UTC);
+    // declared after the clock on purpose: the session store now answers listActiveSessions against
+    // it, the same way both production adapters do
+    private final InMemoryAuthorizationDataRepository sessions = new InMemoryAuthorizationDataRepository(clock);
+    private final FakeHashAlgorithm hashAlgorithm = new FakeHashAlgorithm();
     private final BlockDurationPolicy blockDuration = () -> FIXED_BLOCK_MINUTES;
 
     private Email registeredEmail;

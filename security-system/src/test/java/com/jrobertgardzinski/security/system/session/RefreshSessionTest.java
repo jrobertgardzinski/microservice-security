@@ -54,6 +54,19 @@ class RefreshSessionTest {
     @BeforeTry
     void init() {
         authorizationDataRepository = Mockito.mock(AuthorizationDataRepository.class);
+        // rotateAndCreate is a default method on the port — the use case calls it because the
+        // rotation and the successor's write must be ONE step (a concurrent revokeFamily between
+        // them leaves a live session in a revoked lineage). Mockito stubs default methods like any
+        // other, so these examples drive the real default: markRotated, then create if it won.
+        Mockito.when(authorizationDataRepository.rotateAndCreate(Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenAnswer(call -> {
+                    RefreshToken presented = call.getArgument(0);
+                    java.util.function.Supplier<SessionTokens> successor = call.getArgument(1);
+                    SessionFamily family = call.getArgument(2);
+                    return authorizationDataRepository.markRotated(presented)
+                            ? Optional.of(authorizationDataRepository.create(successor.get(), family))
+                            : Optional.empty();
+                });
         refreshSession = new RefreshSession(authorizationDataRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
     }
 

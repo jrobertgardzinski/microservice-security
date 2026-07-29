@@ -1,7 +1,10 @@
 package com.jrobertgardzinski;
 
+import io.micronaut.configuration.kafka.annotation.ErrorStrategy;
+import io.micronaut.configuration.kafka.annotation.ErrorStrategyValue;
 import io.micronaut.configuration.kafka.annotation.KafkaListener;
 import io.micronaut.configuration.kafka.annotation.OffsetReset;
+import io.micronaut.configuration.kafka.annotation.OffsetStrategy;
 import io.micronaut.configuration.kafka.annotation.Topic;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.core.annotation.Nullable;
@@ -18,9 +21,40 @@ import java.util.Map;
  * the portal's orchestrator (microservice-offboarding) collects those and announces ONE outcome
  * on {@code offboarding-events}. PORTAL_CONTENT_PURGED finishes the deletion for good;
  * PORTAL_PURGE_FAILED rolls the lock back and apologises. Everything else on the topic is not
- * ours. Idempotent by way of the orchestrator's saga latch.
+ * ours. Idempotent by way of the claim on the outcome id.
+ *
+ * <h2>Why the delivery settings are spelled out</h2>
+ * Idempotence protects against processing an outcome TWICE. It says nothing about processing it
+ * ZERO times, and the defaults gave exactly that. Without an {@code errorStrategy}, an exception
+ * out of {@code handle()} — the transaction rolling back on a momentary database hiccup is the
+ * realistic one — was logged, the poll loop moved on, and {@code enable.auto.commit} committed the
+ * offset anyway. The record never came back. Nothing else retries it either: the orchestrator's
+ * sweeper stops re-announcing once ITS own outbox mark lands, which does not depend on this
+ * service having heard anything.
+ *
+ * <p>The consequence was the worst-ordered one available. The portal has already erased every
+ * meme, comment and collection by the time it announces PORTAL_CONTENT_PURGED. Lose that
+ * announcement and the saga sits STARTED until {@code compensateOverdue} unlocks the account and
+ * sends an apology — so the user keeps an account with nothing in it, {@code ACCOUNT_DELETED}
+ * never goes out, and the {@code LOG.error} written for precisely this case
+ * ("CONTENT ERASED AFTER COMPENSATION") never fires, because from this side nothing went wrong.
+ *
+ * <p>So: retry with a growing delay, and commit the offset ONLY after the record is through
+ * ({@link OffsetStrategy#SYNC} — micronaut's retry strategies are inert while offsets
+ * auto-commit). Redelivery is safe by construction: the claim on the outcome id is taken inside
+ * the same transaction as the work, so a rollback releases it and a replay is a first attempt
+ * again. If the retries are exhausted the container STOPS rather than skips — an unread outcome
+ * that a restart will replay beats a silently discarded one, and a stopped listener is visible.
  */
-@KafkaListener(groupId = "security", offsetReset = OffsetReset.EARLIEST)
+@KafkaListener(
+        groupId = "security",
+        offsetReset = OffsetReset.EARLIEST,
+        offsetStrategy = OffsetStrategy.SYNC,
+        errorStrategy = @ErrorStrategy(
+                value = ErrorStrategyValue.RETRY_EXPONENTIALLY_ON_ERROR,
+                retryDelay = "1s",
+                retryCount = 10,
+                stopOnExhaustedRetry = true))
 @Requires(notEnv = "test")
 class OffboardingOutcomeListener {
 
