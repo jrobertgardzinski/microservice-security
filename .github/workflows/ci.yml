@@ -6,6 +6,16 @@ name: CI
 # included, so the provider verification (mail-requests, content-commands) runs here as well: a
 # push that breaks a consumer's contract goes red in THIS repo. The reactor CI (in the aggregator
 # repo) still validates everything together.
+#
+# EVERY checkout below mirrors the WORKSPACE LAYOUT — shared/<repo> for the kernel, portal/<repo>
+# for the consumers that moved there in the 2026-07-12 split — because that is the layout the
+# provider tests' @PactFolder paths are written against, and there is no second set of paths for
+# CI. Until 2026-07-29 the checkouts were flat: ../../offline-jwt and ../../microservice-email
+# happened to land right, while ../../../portal/… resolved ABOVE $GITHUB_WORKSPACE, so the /me and
+# ACCOUNT_DELETION_REQUESTED verifications were @EnabledIf-skipped on every single run and this
+# workflow's own claim above was false. SilentlySkippedPactTest was blind to it for the same
+# reason — it read the same wrong root. Keep the shared/ and portal/ prefixes; they are load-
+# bearing, not decoration.
 
 on:
   push:
@@ -19,64 +29,65 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: microservice-security
+          path: shared/microservice-security
 
       # the shared libraries this service builds against
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/test-starter
-          path: test-starter
+          path: shared/test-starter
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/libs   # the constraint lib lives in repo "libs"
-          path: constraint
+          path: shared/constraint
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/config
-          path: config
+          path: shared/config
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/adjustable-clock
-          path: adjustable-clock
+          path: shared/adjustable-clock
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/email
-          path: email
+          path: shared/email
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/password
-          path: password
+          path: shared/password
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/infrastructure-micronaut-clock
-          path: infrastructure-micronaut-clock
+          path: shared/infrastructure-micronaut-clock
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/offline-jwt
-          path: offline-jwt
+          path: shared/offline-jwt
 
       # offline-jwt is also a consumer (the JWKS pact) and a test dependency (the round-trip);
       # the other consumers are checkout only, no build
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/microservice-email
-          path: microservice-email
+          path: shared/microservice-email
+      # the portal consumers — these four MUST sit under portal/, see the note at the top
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/microservice-memes
-          path: microservice-memes
+          path: portal/microservice-memes
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/microservice-comments
-          path: microservice-comments
+          path: portal/microservice-comments
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/microservice-user-collections
-          path: microservice-user-collections
+          path: portal/microservice-user-collections
       - uses: actions/checkout@v4
         with:
           repository: jrobertgardzinski/microservice-offboarding
-          path: microservice-offboarding
+          path: portal/microservice-offboarding
 
       - name: Set up JDK 25
         uses: actions/setup-java@v4
@@ -88,11 +99,37 @@ jobs:
       - name: Install the shared libraries (dependency order)
         run: |
           for lib in test-starter constraint config adjustable-clock email password infrastructure-micronaut-clock offline-jwt; do
-            mvn -B -q --no-transfer-progress -f "$lib/pom.xml" install -DskipTests
+            mvn -B -q --no-transfer-progress -f "shared/$lib/pom.xml" install -DskipTests
           done
 
       - name: Build and test (including pact provider verification)
-        run: mvn -B --no-transfer-progress -f microservice-security/pom.xml clean verify
+        run: mvn -B --no-transfer-progress -f shared/microservice-security/pom.xml clean verify
+
+      # The point of the layout above. A verification that was SKIPPED reports green — that is the
+      # whole failure this workflow spent weeks in — so the run has to say out loud that these two
+      # executed interactions. SilentlySkippedPactTest asserts the same thing from inside the JVM;
+      # this step is the outside witness, and it is the artifact to point at when asking "did the
+      # provider verification actually run in CI".
+      - name: Prove the portal pact verifications actually ran
+        if: always()
+        run: |
+          reports=shared/microservice-security/security-infrastructure/target/surefire-reports
+          for test in MeIntrospectionPactProviderTest OffboardingFactsPactProviderTest; do
+            file="$reports/TEST-com.jrobertgardzinski.$test.xml"
+            if [ ! -f "$file" ]; then
+              echo "::error::$test produced no surefire report — it never ran."
+              ls -1 "$reports" || true
+              exit 1
+            fi
+            cases=$(grep -c '<testcase' "$file" || true)
+            skips=$(grep -c '<skipped' "$file" || true)
+            if [ "$cases" -eq 0 ] || [ "$cases" -eq "$skips" ]; then
+              echo "::error::$test executed no interaction ($cases case(s), $skips skipped)."
+              echo "The consumer pacts are not where @PactFolder looks — check the checkout paths."
+              exit 1
+            fi
+            echo "$test: $cases interaction(s) verified, $skips skipped."
+          done
 
   # security-ui is NOT a Maven module (unlike memes-ui, which frontend-maven-plugin builds inside
   # the reactor), so until 2026-07-29 nothing in CI ever compiled it or ran its vitest suite. That
