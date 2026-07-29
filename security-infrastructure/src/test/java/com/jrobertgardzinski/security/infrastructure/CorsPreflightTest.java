@@ -58,7 +58,11 @@ class CorsPreflightTest {
     }
 
     private HttpResponse<?> preflight(String origin) {
-        server = ApplicationContext.run(EmbeddedServer.class, Map.of(), "test");
+        return preflight(origin, Map.of());
+    }
+
+    private HttpResponse<?> preflight(String origin, Map<String, Object> properties) {
+        server = ApplicationContext.run(EmbeddedServer.class, properties, "test");
         client = server.getApplicationContext().createBean(HttpClient.class, server.getURL()).toBlocking();
         return client.exchange(HttpRequest.OPTIONS("/authenticate")
                 .header("Origin", origin)
@@ -76,6 +80,21 @@ class CorsPreflightTest {
         assertEquals("true", response.header("Access-Control-Allow-Credentials"),
                 "the sign-in travels with credentials: 'include' for the refresh cookie; without this"
                         + " header the browser discards the response and the service never learns of it");
+    }
+
+    @Test
+    @DisplayName("a deployment can replace the whole origin list — this is what k3s and hosting rely on")
+    void the_origin_list_is_replaceable_by_configuration() {
+        // the shipped defaults are compose's localhost ports; a cluster serves the same UIs from
+        // ingress host names, and CORS is judged on the ORIGIN the browser reports, not on where the
+        // request lands. Without this being configurable the service only works on a laptop.
+        String ingress = "http://memes.portal.localhost:9080";
+        HttpResponse<?> response = preflight(ingress,
+                Map.of("micronaut.server.cors.configurations.ui.allowed-origins", ingress));
+
+        assertEquals(ingress, response.header("Access-Control-Allow-Origin"));
+        assertEquals("true", response.header("Access-Control-Allow-Credentials"),
+                "replacing the origins must not quietly drop the credentials allowance with them");
     }
 
     @Test
