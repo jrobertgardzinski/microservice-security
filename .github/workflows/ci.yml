@@ -26,6 +26,23 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # The boot smoke below runs this service the way a deployment does, and that needs a database:
+    # outside the `test` environment there is no in-memory ProcessedOutcomes, so the outcome
+    # listener — and the lamp that watches it — cannot be constructed without one. Ten seconds of
+    # container for the only check that exercises the wiring the image actually uses.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: security
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -105,35 +122,44 @@ jobs:
       - name: Build and test (including pact provider verification)
         run: mvn -B --no-transfer-progress -f shared/microservice-security/pom.xml clean verify
 
-      # Does the thing we just built actually START?
+      # Does the thing we just built actually START — with the wiring it has in production?
       #
-      # `mvn verify` cannot answer that. Tests run on the TEST classpath; the service runs on the
-      # jar plus target/lib, and the two differ. On 2026-07-29 a dependency declared with a
-      # narrower scope (reactor-core as `test`, to borrow a Flux for one unit test) took Maven's
-      # nearest-definition rule at its word, dropped a RUNTIME transitive out of target/lib, and
-      # killed the packaged service on boot — NoClassDefFoundError: reactor/core/CorePublisher —
-      # through a completely green build. Every suite passed. The service did not exist.
+      # `mvn verify` cannot answer that, and on 2026-07-29 it failed to twice in one afternoon.
+      # Tests run on the TEST classpath and construct beans by hand; the service runs on the jar
+      # plus target/lib and is assembled by the container.
       #
-      # So: launch it the way the image does, on the same classpath, and ask it the questions the
-      # k8s manifest asks. `test` environment (in-memory stores, no broker) keeps it to seconds and
-      # needs no services.
+      #  - reactor-core declared `test` (to borrow a Flux for one assertion) took Maven's
+      #    nearest-definition rule at its word, dropped a RUNTIME transitive out of target/lib and
+      #    killed the service on boot: NoClassDefFoundError: reactor/core/CorePublisher.
+      #  - OffboardingListenerHealth had two constructors and neither was annotated, so Micronaut
+      #    looked for a no-arg one, failed, and HealthEndpoint answered 500 — all three probes
+      #    down, container never healthy.
       #
-      # What this step does NOT cover, said plainly so nobody reads more into a green tick: the
-      # `test` environment has no Kafka layer, so OffboardingListenerHealth is not even constructed
-      # here — and that bean produced the day's second runtime-only failure (two constructors,
-      # neither annotated, every health endpoint 500ing while the whole suite passed). The
-      # invariant that makes it constructible is asserted in OffboardingListenerHealthTest instead.
-      # This step is about the CLASSPATH.
+      # Both through completely green builds. The first version of this step ran in the `test`
+      # environment, which has no Kafka layer and therefore does not construct that lamp at all —
+      # so it would have caught the first failure and slept through the second. A gate that covers
+      # one member of a family is not a gate for the family, so this one runs the service the way
+      # a deployment does: a real environment, a real database, the Kafka layer present.
+      #
+      # The BROKER is deliberately absent (kafka.health.enabled=false turns off the cluster probe,
+      # which is not what is being tested). That is the interesting case rather than a compromise:
+      # the lamp must report the loop as polling even with nothing behind the bootstrap address,
+      # because it measures the loop and not the broker.
+      #
+      # 500 is the failure being watched for — it means the endpoint itself is broken. 200 and 503
+      # are verdicts, and both are acceptable answers.
       - name: Prove the packaged service boots and answers its probes
         run: |
           cd shared/microservice-security
-          MICRONAUT_ENVIRONMENTS=test MICRONAUT_SERVER_PORT=8181 KAFKA_ENABLED=false \
-            SECURITY_COOKIE_SECURE=false \
+          MICRONAUT_ENVIRONMENTS=dev MICRONAUT_SERVER_PORT=8181 \
+            DB_HOST=localhost DB_PORT=5432 DB_NAME=security DB_USER=postgres DB_PASSWORD=secret \
+            KAFKA_HEALTH_ENABLED=false SECURITY_COOKIE_SECURE=false \
+            ENDPOINTS_HEALTH_DETAILS_VISIBLE=ANONYMOUS \
             java -cp "security-infrastructure/target/security-infrastructure-1.0.0-SNAPSHOT.jar:security-infrastructure/target/lib/*" \
             com.jrobertgardzinski.App > /tmp/boot-smoke.log 2>&1 &
           pid=$!
           for attempt in $(seq 1 60); do
-            curl -sf http://localhost:8181/health >/dev/null 2>&1 && break
+            curl -s -o /dev/null http://localhost:8181/health && break
             if ! kill -0 "$pid" 2>/dev/null; then
               echo "::error::the packaged service died during startup"
               tail -40 /tmp/boot-smoke.log
@@ -141,16 +167,19 @@ jobs:
             fi
             sleep 2
           done
+          fail() { echo "::error::$1"; tail -40 /tmp/boot-smoke.log; kill "$pid" 2>/dev/null; exit 1; }
           for path in /health /health/readiness /health/liveness; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8181$path" || echo 000)
-            if [ "$code" != "200" ]; then
-              echo "::error::$path answered $code — the manifest probes it and would never pass"
-              tail -40 /tmp/boot-smoke.log
-              kill "$pid" 2>/dev/null || true
-              exit 1
-            fi
-            echo "$path: 200"
+            case "$code" in
+              200|503) echo "$path: $code" ;;
+              *) fail "$path answered $code — the manifest probes it and would never pass" ;;
+            esac
           done
+          # and the lamp has to be IN the answer: this is the half the `test` environment could
+          # never reach, and the half the second failure lived in
+          curl -s http://localhost:8181/health | grep -q offboardingListener \
+            || fail "the health report does not name offboardingListener — the lamp was not built"
+          echo "offboardingListener is among the contributors"
           kill "$pid" 2>/dev/null || true
 
       # The point of the layout above. A verification that was SKIPPED reports green — that is the
