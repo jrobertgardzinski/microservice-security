@@ -143,16 +143,16 @@ class OffboardingListenerHealthTest {
                 String.valueOf(reported.getDetails()));
     }
 
-    /** The partition this consumer is assigned, and whether it has been given up on. */
-    private void assignedPartition(boolean pausedForGood) {
+    /** The partition this consumer is assigned, and whether the framework reports it paused. */
+    private void assignedPartition(boolean paused) {
         org.apache.kafka.common.TopicPartition partition =
                 new org.apache.kafka.common.TopicPartition(OffboardingListenerHealth.TOPIC, 0);
         when(registry.getConsumerAssignment(CONSUMER)).thenReturn(Set.of(partition));
-        when(registry.isPaused(CONSUMER, Set.of(partition))).thenReturn(pausedForGood);
+        when(registry.isPaused(CONSUMER, Set.of(partition))).thenReturn(paused);
     }
 
     @Test
-    @DisplayName("a partition given up on after the retries are spent is DOWN, even though the loop still polls")
+    @DisplayName("a partition paused past the whole retry budget is DOWN, even though the loop still polls")
     void an_abandoned_partition_is_down() {
         // THE case this lamp exists for, and the one it could not see until this branch existed.
         // stopOnExhaustedRetry does not stop the container: it seeks, logs once and pauses that one
@@ -163,7 +163,10 @@ class OffboardingListenerHealthTest {
         aConsumerLastPolling(Duration.ofMillis(200));
         assignedPartition(true);
         OffboardingListenerHealth lamp = lamp();
-        elapse(Duration.ofHours(6));
+        // the verdict needs two sightings: the first starts the pause clock, and only a pause that
+        // outlives the retry budget — no scheduled resume left to lift it — is "given up on"
+        assertEquals(HealthStatus.UP, health(lamp).getStatus());
+        elapse(OffboardingListenerHealth.ABANDON_TOLERANCE.plusSeconds(1));
 
         HealthResult reported = health(lamp);
 
@@ -180,16 +183,45 @@ class OffboardingListenerHealthTest {
     @Test
     @DisplayName("a partition merely backing off between retries is not 'given up on'")
     void a_partition_between_retries_is_up() {
-        // The discriminator is not "paused" but WHICH pause. A retry's backoff pauses the partition
-        // on the Kafka consumer; giving up records it in pauseRequests as well, and isPaused wants
-        // both. Without that distinction this lamp would go red every time a database hiccup sent
-        // one outcome into its retry budget — a false alarm on the healthiest possible recovery.
+        // The discriminator is DURATION, not the pause itself: in micronaut-kafka 6.1.0 a retry's
+        // backoff goes through the same ConsumerState#pause as stopOnExhaustedRetry, so isPaused
+        // answers true through every backoff window — up to 512s straight for this listener's
+        // budget. A lamp that believed the flag alone went red on a plain database hiccup,
+        // readiness pulled identity from the Service for both products during the healthiest
+        // possible recovery, and the message told the operator to restart a service about to fix
+        // itself.
         aConsumerLastPolling(Duration.ofMillis(200));
-        assignedPartition(false);
+        assignedPartition(true);
         OffboardingListenerHealth lamp = lamp();
-        elapse(Duration.ofHours(6));
-
         assertEquals(HealthStatus.UP, health(lamp).getStatus());
+        elapse(Duration.ofSeconds(512));
+
+        assertEquals(HealthStatus.UP, health(lamp).getStatus(),
+                "a pause still inside the retry budget has a resume scheduled — this recovers on"
+                        + " its own, and DOWN here takes sign-in away for nothing");
+    }
+
+    @Test
+    @DisplayName("a pause that resumed forgets its history — two incidents days apart do not add up")
+    void a_resumed_pause_starts_a_fresh_clock() {
+        // Without the reset, a backoff on Monday and another on Thursday would sum past the
+        // tolerance and report a partition as abandoned while its second retry budget is running.
+        aConsumerLastPolling(Duration.ofMillis(200));
+        assignedPartition(true);
+        OffboardingListenerHealth lamp = lamp();
+        assertEquals(HealthStatus.UP, health(lamp).getStatus());
+        elapse(Duration.ofMinutes(15));
+
+        assignedPartition(false);
+        assertEquals(HealthStatus.UP, health(lamp).getStatus());
+
+        assignedPartition(true);
+        assertEquals(HealthStatus.UP, health(lamp).getStatus());
+        elapse(Duration.ofMinutes(15));
+
+        assertEquals(HealthStatus.UP, health(lamp).getStatus(),
+                "fifteen paused minutes, a resume, and fifteen more are two healthy backoffs,"
+                        + " not thirty minutes of abandonment");
     }
 
     @Test

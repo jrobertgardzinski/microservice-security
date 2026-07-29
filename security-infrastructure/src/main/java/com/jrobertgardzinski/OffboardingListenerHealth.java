@@ -50,7 +50,8 @@ import java.util.function.LongSupplier;
  * Two questions, because this service can stand still in two different ways and neither signal sees
  * the other's failure:
  * <ul>
- *   <li><b>has it given up on a partition?</b> — {@code isPaused}, see {@link #abandonedPartitions}.
+ *   <li><b>has it given up on a partition?</b> — {@code isPaused} held longer than the whole
+ *       retry budget, see {@link #abandonedPartitions}.
  *       This is the state {@code stopOnExhaustedRetry} actually produces, and the poll counter is
  *       blind to it: the loop carries on polling the partitions it did not abandon;</li>
  *   <li><b>is the loop turning at all?</b> — {@code last-poll-seconds-ago}, below. This catches a
@@ -104,8 +105,42 @@ class OffboardingListenerHealth implements HealthIndicator {
      */
     static final Duration STALL_FLOOR = Duration.ofSeconds(60);
 
+    /**
+     * How long a partition must stay paused before this lamp calls it abandoned — arithmetic
+     * again, not taste.
+     *
+     * <p>"Paused" alone cannot tell giving up from backing off: in micronaut-kafka 6.1.0 a
+     * retry's backoff goes through the very same {@code ConsumerState#pause} as
+     * {@code stopOnExhaustedRetry} — {@code delayRetry} adds the partition to
+     * {@code pauseRequests} and schedules a {@code resume} for when the delay is up — so
+     * {@code isPaused} answers true through every backoff window as well. What does
+     * discriminate is duration: every backoff pause is lifted by its scheduled resume, while
+     * nothing ever lifts the pause left by an exhausted retry.
+     *
+     * <p>{@link OffboardingOutcomeListener} retries with delays of 1,2,...,512s (retryDelay 1s
+     * doubled retryCount=10 times), 1023s of backoff end to end — and a probe cannot be trusted
+     * to catch the short resumes between windows, so the threshold must clear the WHOLE budget,
+     * not the longest single window. Twenty minutes does, with margin for the handler
+     * invocations in between; it goes stale if the listener's retry budget grows, which is why
+     * both javadocs name each other. The wait costs nothing: an abandoned partition stays
+     * abandoned until a restart, so reporting it twenty minutes late loses no signal — while
+     * calling a backoff "abandoned" pulls identity out of the Service for both products during
+     * the healthiest possible recovery, and tells the operator to restart a service that is
+     * about to fix itself.
+     */
+    static final Duration ABANDON_TOLERANCE = Duration.ofMinutes(20);
+
     private final ConsumerRegistry consumers;
     private final Duration stallTolerance;
+
+    /**
+     * When each paused partition was FIRST seen paused, so {@link #abandonedPartitions} can
+     * measure how long the pause has held. A partition seen resumed forgets its history — the
+     * next backoff starts a fresh clock, so two incidents days apart do not add up to a false
+     * "abandoned".
+     */
+    private final Map<org.apache.kafka.common.TopicPartition, Long> pausedSinceNanos =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * Elapsed time only, from a monotonic source: a wall-clock step backwards would fake a stall
@@ -177,9 +212,9 @@ class OffboardingListenerHealth implements HealthIndicator {
             Set<org.apache.kafka.common.TopicPartition> abandoned = abandonedPartitions(id);
             if (!abandoned.isEmpty()) {
                 stalled = true;
-                states.put(id, "gave up on " + abandoned + " after the retries were spent — those"
-                        + " partitions are paused for good, the outcome of a deletion sits there"
-                        + " unread, and only a restart replays it");
+                states.put(id, "gave up on " + abandoned + " — paused longer than the whole retry"
+                        + " budget, so no scheduled resume is coming: the outcome of a deletion"
+                        + " sits there unread, and only a restart replays it");
                 continue;
             }
             Optional<Duration> sinceLastPoll = sinceLastPoll(id);
@@ -216,19 +251,32 @@ class OffboardingListenerHealth implements HealthIndicator {
      * A signal that cannot see the failure it was written for is worse than none, because it is
      * believed.
      *
-     * <p>{@code isPaused} is the clean discriminator, and that is a property of the framework
-     * rather than a guess: a retry's backoff pause is applied to the Kafka consumer directly, while
-     * {@code stopOnExhaustedRetry} goes through {@code ConsumerState#pause}, which records the
-     * partition in {@code pauseRequests} — and {@code resumeTopicPartitions} filters exactly those
-     * out, so they are never resumed. {@code ConsumerRegistry#isPaused} requires the partition to
-     * be in BOTH sets, so it answers true for "given up on" and false for "backing off between
-     * attempts". No timer, no tolerance, no window in which the answer is ambiguous.
+     * <p>The second version asked {@code isPaused} and believed the answer outright, on the
+     * theory that only giving up goes through {@code pauseRequests} while a backoff pauses the
+     * Kafka consumer directly. It does not: {@code ConsumerState#delayRetry} — the backoff
+     * between attempts — calls the same {@code pause} and merely schedules the resume, so
+     * {@code isPaused} is true through every backoff window too, and this lamp declared "gave up
+     * for good, only a restart replays it" through a plain database hiccup — readiness pulling
+     * identity out of the Service during the healthiest possible recovery, with a message telling
+     * the operator to restart a service about to fix itself. The real discriminator is DURATION,
+     * see {@link #ABANDON_TOLERANCE}: a pause that has outlived the whole retry budget has no
+     * scheduled resume left that could ever lift it.
      */
     private Set<org.apache.kafka.common.TopicPartition> abandonedPartitions(String id) {
         try {
-            return consumers.getConsumerAssignment(id).stream()
-                    .filter(partition -> consumers.isPaused(id, Set.of(partition)))
-                    .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+            long now = nanoTime.getAsLong();
+            var abandoned = new java.util.LinkedHashSet<org.apache.kafka.common.TopicPartition>();
+            for (org.apache.kafka.common.TopicPartition partition : consumers.getConsumerAssignment(id)) {
+                if (!consumers.isPaused(id, Set.of(partition))) {
+                    pausedSinceNanos.remove(partition);
+                    continue;
+                }
+                long firstSeenPaused = pausedSinceNanos.computeIfAbsent(partition, first -> now);
+                if (Duration.ofNanos(now - firstSeenPaused).compareTo(ABANDON_TOLERANCE) > 0) {
+                    abandoned.add(partition);
+                }
+            }
+            return abandoned;
         } catch (RuntimeException gone) {
             // the consumer was closed between the id listing and this call; the poll-counter branch
             // below reports that case, and reporting it twice would only muddy the details
