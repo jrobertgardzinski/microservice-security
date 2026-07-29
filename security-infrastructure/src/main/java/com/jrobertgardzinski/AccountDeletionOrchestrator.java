@@ -134,13 +134,36 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
 
     /** The portal announced the purge FAILED: the account unlocks and the user is apologised to. */
     public void compensate(String email) {
+        compensate(email, java.util.List.of());
+    }
+
+    /**
+     * The same, told which participants DID purge before the failure.
+     *
+     * <p>The portal has always disclosed that list on {@code PORTAL_PURGE_FAILED} — it is the
+     * difference between "nothing happened, try again" and "your memes are gone, your comments are
+     * not" — and nobody on this side read it. The apology mail says the deletion failed, full stop,
+     * while some of the user's content really was erased. Naming the participants in the log is the
+     * cheap half of the fix and closes the operator's blind spot; putting it in front of the USER
+     * means a new field on the mail request and a wider pact, which belongs with that decision.
+     */
+    public void compensate(String email, java.util.List<String> alreadyPurged) {
         if (!sagas.compensate(email, Instant.now(clock))) {
-            LOG.info("purge-failed outcome for {} matched no running deletion; ignoring", email);
+            LOG.info("purge-failed outcome for {} matched no running deletion; ignoring",
+                    masked(email));
             return;
         }
         userRepository.clearPendingDeletion(Email.of(email));
         appendMail("ACCOUNT_DELETION_FAILED", email);
-        LOG.warn("account deletion compensated (portal reported a failed purge) for {}", email);
+        if (alreadyPurged.isEmpty()) {
+            LOG.warn("account deletion compensated (portal reported a failed purge) for {}",
+                    masked(email));
+        } else {
+            LOG.warn("account deletion compensated for {} — but the purge was PARTIAL: {} already"
+                            + " erased this user's content and will not put it back. The apology"
+                            + " mail does not say so.",
+                    masked(email), alreadyPurged);
+        }
     }
 
     /** The safety net: no outcome AT ALL in time (a dead orchestrator) unlocks the account too. */

@@ -98,7 +98,11 @@ class OffboardingOutcomeListener {
             if ("PORTAL_CONTENT_PURGED".equals(type)) {
                 orchestrator.completePurge(email);
             } else {
-                orchestrator.compensate(email);
+                // the partial-purge disclosure the portal has always sent and nobody read
+                Object confirmed = event.get("confirmed");
+                orchestrator.compensate(email, confirmed instanceof java.util.List<?> participants
+                        ? participants.stream().map(String::valueOf).toList()
+                        : java.util.List.of());
             }
             return null;
         });

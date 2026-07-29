@@ -6,6 +6,8 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
+
 import javax.sql.DataSource;
 import java.time.Clock;
 import java.time.Duration;
@@ -34,21 +36,36 @@ class ExpiredSessionReaper {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExpiredSessionReaper.class);
 
-    /** The grace above expiry, generous on purpose — see the class javadoc. */
-    private static final Duration REUSE_DETECTION_GRACE = Duration.ofHours(24);
+    /**
+     * The floor under the grace period, not the grace period itself.
+     *
+     * <p>It used to be the whole answer — a flat 24 hours, unrelated to anything. The grace has to
+     * be AT LEAST one full refresh-validity window, because that is how long a rotated token could
+     * still plausibly be replayed by a client that held it; deployments configure that window, and
+     * a hard-coded number silently stopped matching the moment somebody set it above a day.
+     */
+    private static final Duration MINIMUM_GRACE = Duration.ofHours(24);
 
     private final SessionJdbcRepository sessions;
+    private final SessionTokensConfig sessionTokens;
     private final Clock clock;
 
-    ExpiredSessionReaper(SessionJdbcRepository sessions, Clock clock) {
+    ExpiredSessionReaper(SessionJdbcRepository sessions, SessionTokensConfig sessionTokens, Clock clock) {
         this.sessions = sessions;
+        this.sessionTokens = sessionTokens;
         this.clock = clock;
+    }
+
+    /** One full refresh window past expiry, and never less than the floor above. */
+    private Duration grace() {
+        Duration window = Duration.ofHours(sessionTokens.refreshTokenValidityInHours().value());
+        return window.compareTo(MINIMUM_GRACE) > 0 ? window : MINIMUM_GRACE;
     }
 
     @Scheduled(fixedDelay = "1h", initialDelay = "5m")
     void reap() {
         try {
-            LocalDateTime cutoff = LocalDateTime.now(clock).minus(REUSE_DETECTION_GRACE);
+            LocalDateTime cutoff = LocalDateTime.now(clock).minus(grace());
             int deleted = sessions.deleteExpiredBefore(cutoff);
             if (deleted > 0) {
                 LOG.info("dropped {} session(s) whose refresh token expired before {}", deleted, cutoff);

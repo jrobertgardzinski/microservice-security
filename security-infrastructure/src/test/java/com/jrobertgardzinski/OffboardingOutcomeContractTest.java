@@ -87,7 +87,7 @@ class OffboardingOutcomeContractTest {
     @PactTestFor(pactMethod = "portalPurgeFailed")
     void theFailureAnnouncementRollsTheDeletionBack(List<Message> messages) {
         listener.handle(messages.get(0).contentsAsString());
-        verify(orchestrator).compensate("leaver@example.com");
+        verify(orchestrator).compensate("leaver@example.com", java.util.List.of());
     }
 
     @Test

@@ -32,8 +32,19 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
 
     private final Map<String, Row> byRefreshTokenHash = new ConcurrentHashMap<>();
 
+    /**
+     * One monitor over the three operations a session rotation performs.
+     *
+     * <p>Each of them is individually atomic, and that is NOT the same as the transaction the JDBC
+     * adapter runs inside. Between a rotation and the {@code create} that follows it, another
+     * thread's {@code revokeFamily} can slip in — so the family is revoked and the successor is
+     * then written anyway, leaving a live session in a lineage this service believes it destroyed.
+     * A single lock makes the sequence behave like the transaction the other adapter gets for free.
+     */
+    private final Object sessionLineage = new Object();
+
     @Override
-    public SessionTokens create(SessionTokens sessionTokens, SessionFamily family) {
+    public synchronized SessionTokens create(SessionTokens sessionTokens, SessionFamily family) {
         byRefreshTokenHash.put(
                 TokenHashing.hash(sessionTokens.refreshToken()),
                 new Row(
@@ -59,7 +70,7 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
     }
 
     @Override
-    public boolean markRotated(RefreshToken refreshToken) {
+    public synchronized boolean markRotated(RefreshToken refreshToken) {
         // one atomic map operation, mirroring the conditional UPDATE the JDBC adapter runs: the
         // flip only happens from ACTIVE, so exactly one of two concurrent callers can win
         boolean[] rotated = {false};
@@ -76,7 +87,7 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
     }
 
     @Override
-    public void revokeFamily(SessionFamily family) {
+    public synchronized void revokeFamily(SessionFamily family) {
         byRefreshTokenHash.values().removeIf(row -> row.session().family().equals(family));
     }
 
