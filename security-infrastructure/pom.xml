@@ -205,7 +205,7 @@
             <!-- MessagePactBuilder and the dsl live here (declared for the dependency analyzer) -->
             <groupId>au.com.dius.pact</groupId>
             <artifactId>consumer</artifactId>
-            <version>4.6.17</version>
+            <version>4.7.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
