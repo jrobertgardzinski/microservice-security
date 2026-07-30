@@ -6,6 +6,8 @@ import com.jrobertgardzinski.security.domain.event.BruteForceProtectionEvent;
 import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
+import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
 import com.jrobertgardzinski.security.domain.vo.Source;
 import com.jrobertgardzinski.security.system.mfa.PendingAuthentication;
 import com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore;
@@ -46,8 +48,12 @@ public class Authentication {
     public AuthenticationResult execute(AuthenticationRequest request) {
         Source source = request.source();
         Credentials credentials = new Credentials(request.email(), request.plaintextPassword());
+        // failures are charged to the PAIR: this address against this account. Either half alone is
+        // walkable-around — by account, anyone locks out a victim from anywhere; by address, three
+        // typos take a whole office down with them.
+        LockoutSubject subject = new LockoutSubject(source, AttemptedAccount.of(request.email()));
 
-        return switch (bruteForceGuard.execute(source)) {
+        return switch (bruteForceGuard.execute(subject)) {
             case BruteForceProtectionEvent.Blocked blocked -> new AuthenticationResult.Blocked(blocked.authenticationBlock());
             case BruteForceProtectionEvent.Allowed _ -> switch (verifyCredentials.execute(credentials)) {
                 case AuthenticationEvent.Valid valid -> {
@@ -55,11 +61,13 @@ public class Authentication {
                     if (!requireVerifiedEmail.isVerified(valid.email())) {
                         yield new AuthenticationResult.EmailNotVerified();
                     }
-                    // A successful sign-in must NOT wipe this IP's brute-force records: the counter
-                    // and blocks are keyed by IP alone, so clearing them on any success turned a
-                    // single known-good credential (an attacker's own account) into a RESET button
-                    // for the whole address. Failures instead age out of the count via the guard's
-                    // rolling failure window, and a placed block expires on its own TTL.
+                    // The person got their own password right, so THEIR earlier misses stop counting
+                    // — this pair's and nobody else's. Clearing the whole address (what this used to
+                    // do) made one known-good credential an amnesty for everything that address was
+                    // trying; clearing nothing at all (what it did between P18 poz. 6 and now) left
+                    // an office locked out over one person's typos. A placed BLOCK is untouched
+                    // either way: it expires on its own timer.
+                    cleanBruteForceRecords.execute(subject);
                     // link #1 passed. With enrolled factors the session waits until the chain
                     // completes; with none it is minted now (unchanged single-factor sign-in).
                     List<EnrolledFactor> factors = enrolledFactorRepository.findByUser(valid.email());
@@ -71,7 +79,7 @@ public class Authentication {
                     yield new AuthenticationResult.MfaRequired(ticket, factors.get(0).type(), pending.challengeData());
                 }
                 case AuthenticationEvent.Invalid _ -> {
-                    updateBruteForceRecords.execute(source);
+                    updateBruteForceRecords.execute(subject);
                     yield new AuthenticationResult.Rejected();
                 }
             };

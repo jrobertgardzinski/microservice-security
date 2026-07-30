@@ -1,12 +1,13 @@
 package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
-import com.jrobertgardzinski.security.domain.vo.Source;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
 
+/** Writes one failed attempt down, charged to the pair that made it: this source, this account. */
 class _UpdateBruteForceRecords {
     private final RejectedAuthenticationRepository rejectedAuthenticationRepository;
     private final Clock clock;
@@ -16,8 +17,8 @@ class _UpdateBruteForceRecords {
         this.clock = clock;
     }
 
-    public void execute(Source source) {
+    public void execute(LockoutSubject subject) {
         rejectedAuthenticationRepository.create(
-                new RejectedAuthenticationDetails(source, LocalDateTime.now(clock)));
+                new RejectedAuthenticationDetails(subject, LocalDateTime.now(clock)));
     }
 }

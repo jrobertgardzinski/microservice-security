@@ -117,9 +117,20 @@ public class BeanFactory {
         return new com.jrobertgardzinski.security.system.roles.SetUserRoles(userRepository);
     }
 
+    /**
+     * Two limits inside one window. The per-account one stays tight (a guessed password is the
+     * threat); the per-source ceiling is deliberately far above it, because an address is not a
+     * person — behind one there may be an office, a CGNAT or a CI runner, and a number chosen for a
+     * single account locks all of them out over somebody else's typos.
+     */
     @Singleton
-    BruteForceConfig bruteForceConfig() {
-        return BruteForceConfig.builder().build();
+    BruteForceConfig bruteForceConfig(
+            @io.micronaut.context.annotation.Value("${security.brute-force.max-failures:3}") int maxFailures,
+            @io.micronaut.context.annotation.Value("${security.brute-force.max-failures-per-source:30}") int maxFailuresPerSource) {
+        return BruteForceConfig.builder()
+                .maxFailures(maxFailures)
+                .maxFailuresPerSource(maxFailuresPerSource)
+                .build();
     }
 
     @Singleton

@@ -3,7 +3,10 @@ package com.jrobertgardzinski.security.system.authentication;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
 import com.jrobertgardzinski.security.domain.vo.Source;
+import com.jrobertgardzinski.email.domain.Email;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
@@ -29,18 +32,21 @@ class _CleanBruteForceRecordsTest {
     void init() {
         rejectedAuthenticationRepository = Mockito.mock(RejectedAuthenticationRepository.class);
         authenticationBlockRepository = Mockito.mock(AuthenticationBlockRepository.class);
-        cleanBruteForceRecords = new _CleanBruteForceRecords(
-                rejectedAuthenticationRepository, authenticationBlockRepository);
+        cleanBruteForceRecords = new _CleanBruteForceRecords(rejectedAuthenticationRepository);
     }
 
     @Example
-    @Label("Removes both failed-authentication records and authentication blocks for the IP")
-    void removes_all_records_for_ip() {
-        cleanBruteForceRecords.execute(IP);
+    @Label("Forgets THIS pair's failures — and leaves a placed block standing")
+    void forgets_only_this_pairs_failures() {
+        LockoutSubject subject = new LockoutSubject(IP, AttemptedAccount.of(Email.of("owner@example.com")));
+
+        cleanBruteForceRecords.execute(subject);
 
         assertAll(
-                () -> Mockito.verify(rejectedAuthenticationRepository).removeAllFor(IP),
-                () -> Mockito.verify(authenticationBlockRepository).removeAllFor(IP)
+                () -> Mockito.verify(rejectedAuthenticationRepository).removeAllFor(subject),
+                // clearing the BLOCK here is what once turned one known-good password into an
+                // amnesty for everything the address had been trying
+                () -> Mockito.verifyNoInteractions(authenticationBlockRepository)
         );
     }
 }

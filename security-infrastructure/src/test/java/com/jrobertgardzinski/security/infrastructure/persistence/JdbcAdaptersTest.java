@@ -23,6 +23,8 @@ import com.jrobertgardzinski.security.domain.vo.EmailChange;
 import com.jrobertgardzinski.security.domain.vo.FactorType;
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
 import com.jrobertgardzinski.security.domain.vo.Source;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
@@ -104,15 +106,24 @@ class JdbcAdaptersTest {
     void rejected_attempts_are_counted_within_a_window_and_cleared() {
         RejectedAuthenticationRepository rejected = context.getBean(RejectedAuthenticationRepository.class);
         Source ip = new Source(new IpAddress("203.0.113.10"), "smoke-agent/1.0");
+        LockoutSubject victim = new LockoutSubject(ip, AttemptedAccount.of(Email.of("victim@example.com")));
+        LockoutSubject other = new LockoutSubject(ip, AttemptedAccount.of(Email.of("someone.else@example.com")));
         LocalDateTime at = LocalDateTime.now();
-        rejected.create(new RejectedAuthenticationDetails(ip, at));
-        rejected.create(new RejectedAuthenticationDetails(ip, at));
+        rejected.create(new RejectedAuthenticationDetails(victim, at));
+        rejected.create(new RejectedAuthenticationDetails(victim, at));
+        rejected.create(new RejectedAuthenticationDetails(other, at));
 
-        assertThat(rejected.countFailuresBy(ip, at.minusMinutes(15)).count()).isEqualTo(2);
-        assertThat(rejected.countFailuresBy(ip, at.plusMinutes(1)).count()).isZero();
+        assertThat(rejected.countFailuresOnAccount(victim, at.minusMinutes(15)).count()).isEqualTo(2);
+        assertThat(rejected.countFailuresOnAccount(victim, at.plusMinutes(1)).count()).isZero();
+        // the ceiling sees every account this address missed on — that is what catches spraying
+        assertThat(rejected.countFailuresFromSource(ip, at.minusMinutes(15)).count()).isEqualTo(3);
 
-        rejected.removeAllFor(ip);
-        assertThat(rejected.countFailuresBy(ip, at.minusMinutes(15)).count()).isZero();
+        // forgetting one pair leaves the rest of the address's record alone: it is other
+        // people's business, and wiping it is what once made one good password an amnesty
+        rejected.removeAllFor(victim);
+        assertThat(rejected.countFailuresOnAccount(victim, at.minusMinutes(15)).count()).isZero();
+        assertThat(rejected.countFailuresOnAccount(other, at.minusMinutes(15)).count()).isEqualTo(1);
+        assertThat(rejected.countFailuresFromSource(ip, at.minusMinutes(15)).count()).isEqualTo(1);
     }
 
     @Test

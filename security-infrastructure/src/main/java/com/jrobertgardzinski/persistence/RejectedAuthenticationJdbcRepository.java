@@ -13,9 +13,15 @@ import java.time.LocalDateTime;
 @Requires(beans = DataSource.class)
 interface RejectedAuthenticationJdbcRepository extends CrudRepository<RejectedAuthenticationEntity, Long> {
 
+    /** The ceiling: this address against anything at all — the shape of spraying. */
     long countByIpAddressAndOccurredAtAfter(String ipAddress, LocalDateTime since);
 
-    void deleteByIpAddress(String ipAddress);
+    /** The tight count: this address against ONE account — the shape of guessing a password. */
+    long countByIpAddressAndAccountFingerprintAndOccurredAtAfter(
+            String ipAddress, String accountFingerprint, LocalDateTime since);
+
+    /** Forget one pair's failures; the rest of the address's record is other people's business. */
+    void deleteByIpAddressAndAccountFingerprint(String ipAddress, String accountFingerprint);
 
     /**
      * Retention: a failure older than the cutoff is deleted.

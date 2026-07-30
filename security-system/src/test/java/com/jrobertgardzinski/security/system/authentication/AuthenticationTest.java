@@ -10,6 +10,8 @@ import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.Credentials;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
 import com.jrobertgardzinski.security.domain.vo.Source;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
@@ -116,7 +118,7 @@ class AuthenticationTest {
     @Label("Blocked when the brute-force guard blocks the IP")
     void blocked_when_guard_blocks() {
         AuthenticationBlock block = new AuthenticationBlock(GIVEN.ipAddress, LocalDateTime.now(CLOCK).plusMinutes(15));
-        Mockito.when(bruteForceGuard.execute(GIVEN.ipAddress))
+        Mockito.when(bruteForceGuard.execute(Mockito.any()))
                 .thenReturn(new BruteForceProtectionEvent.Blocked(block));
 
         AuthenticationResult result = authentication.execute(GIVEN.request);
@@ -135,7 +137,7 @@ class AuthenticationTest {
     @Label("Authenticated when the guard allows and credentials are valid")
     void authenticated_when_guard_allows_and_credentials_valid() {
         SessionTokens sessionTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK);
-        Mockito.when(bruteForceGuard.execute(GIVEN.ipAddress))
+        Mockito.when(bruteForceGuard.execute(Mockito.any()))
                 .thenReturn(new BruteForceProtectionEvent.Allowed());
         Mockito.when(verifyCredentials.execute(GIVEN.credentials))
                 .thenReturn(new AuthenticationEvent.Valid(GIVEN.email));
@@ -146,9 +148,14 @@ class AuthenticationTest {
         AuthenticationResult.Authenticated authenticated = assertInstanceOf(AuthenticationResult.Authenticated.class, result);
         assertAll(
                 () -> assertEquals(sessionTokens, authenticated.session()),
-                // a successful sign-in must NOT clear this IP's brute-force accounting (poz. 6):
-                // that would let a known-good credential reset the counter for the whole address
-                () -> Mockito.verify(cleanBruteForceRecords, Mockito.never()).execute(Mockito.any()),
+                // A successful sign-in clears THIS PAIR's failures and nothing else. The assertion
+                // used to be the opposite — "must NOT clear" — and it was right about the danger
+                // (P18 poz. 6: clearing the whole ADDRESS let one known-good credential reset the
+                // counter for every account behind it) while being wrong about the remedy: with
+                // nothing ever cleared, three typos locked out an office, a CGNAT, a CI runner.
+                // Narrowed to the pair, the escape valve is back and the amnesty is not.
+                () -> Mockito.verify(cleanBruteForceRecords).execute(
+                        new LockoutSubject(GIVEN.ipAddress, AttemptedAccount.of(GIVEN.email))),
                 () -> Mockito.verify(generateSession).create(GIVEN.email),
                 () -> Mockito.verify(updateBruteForceRecords, Mockito.never()).execute(Mockito.any())
         );
@@ -157,7 +164,7 @@ class AuthenticationTest {
     @Example
     @Label("Rejected when the guard allows but credentials are invalid")
     void rejected_when_guard_allows_but_credentials_invalid() {
-        Mockito.when(bruteForceGuard.execute(GIVEN.ipAddress))
+        Mockito.when(bruteForceGuard.execute(Mockito.any()))
                 .thenReturn(new BruteForceProtectionEvent.Allowed());
         Mockito.when(verifyCredentials.execute(GIVEN.credentials))
                 .thenReturn(new AuthenticationEvent.Invalid(GIVEN.email));
@@ -166,7 +173,9 @@ class AuthenticationTest {
 
         assertInstanceOf(AuthenticationResult.Rejected.class, result);
         assertAll(
-                () -> Mockito.verify(updateBruteForceRecords).execute(GIVEN.ipAddress),
+                // charged to the PAIR now: this address against the account that was aimed at
+                () -> Mockito.verify(updateBruteForceRecords).execute(
+                        new LockoutSubject(GIVEN.ipAddress, AttemptedAccount.of(GIVEN.email))),
                 () -> Mockito.verify(cleanBruteForceRecords, Mockito.never()).execute(Mockito.any()),
                 () -> Mockito.verify(generateSession, Mockito.never()).create(Mockito.any())
         );
@@ -175,7 +184,7 @@ class AuthenticationTest {
     @Example
     @Label("Email-not-verified when credentials are valid but the address is unverified")
     void email_not_verified_when_address_unverified() {
-        Mockito.when(bruteForceGuard.execute(GIVEN.ipAddress))
+        Mockito.when(bruteForceGuard.execute(Mockito.any()))
                 .thenReturn(new BruteForceProtectionEvent.Allowed());
         Mockito.when(verifyCredentials.execute(GIVEN.credentials))
                 .thenReturn(new AuthenticationEvent.Valid(GIVEN.email));

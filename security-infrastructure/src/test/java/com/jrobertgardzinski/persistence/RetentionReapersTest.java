@@ -117,9 +117,9 @@ class RetentionReapersTest {
                 context.getBean(RejectedAuthenticationJdbcRepository.class);
         String ip = "203.0.113.77";
         rejections.save(new RejectedAuthenticationEntity(
-                null, ip, "scanner/1.0", LocalDateTime.now().minus(ANCIENT)));
+                null, ip, "scanner/1.0", "fingerprint-of-some-account", LocalDateTime.now().minus(ANCIENT)));
         rejections.save(new RejectedAuthenticationEntity(
-                null, ip, "scanner/1.0", LocalDateTime.now().minusMinutes(1)));
+                null, ip, "scanner/1.0", "fingerprint-of-some-account", LocalDateTime.now().minusMinutes(1)));
 
         context.getBean(RejectedAuthenticationReaper.class).reap();
 

@@ -3,7 +3,10 @@ package com.jrobertgardzinski.security.system.authentication;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
 import com.jrobertgardzinski.security.domain.vo.Source;
+import com.jrobertgardzinski.email.domain.Email;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
@@ -37,9 +40,11 @@ class _UpdateBruteForceRecordsTest {
     @Example
     @Label("Records a failed authentication for the IP stamped with the current time")
     void records_failed_authentication() {
-        updateBruteForceRecords.execute(IP);
+        LockoutSubject subject = new LockoutSubject(IP, AttemptedAccount.of(Email.of("victim@example.com")));
+
+        updateBruteForceRecords.execute(subject);
 
         Mockito.verify(rejectedAuthenticationRepository)
-                .create(new RejectedAuthenticationDetails(IP, LocalDateTime.now(CLOCK)));
+                .create(new RejectedAuthenticationDetails(subject, LocalDateTime.now(CLOCK)));
     }
 }

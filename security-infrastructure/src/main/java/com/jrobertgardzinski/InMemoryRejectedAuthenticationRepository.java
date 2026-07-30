@@ -3,6 +3,7 @@ package com.jrobertgardzinski;
 import com.jrobertgardzinski.security.domain.entity.RejectedAuthentication;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.FailuresCount;
+import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
 import com.jrobertgardzinski.security.domain.vo.Source;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationId;
@@ -34,8 +35,26 @@ public final class InMemoryRejectedAuthenticationRepository implements RejectedA
         return record;
     }
 
+    /**
+     * The tight count — this source against THIS account.
+     *
+     * <p>Matching on the whole {@link com.jrobertgardzinski.security.domain.vo.LockoutSubject} on
+     * purpose: equality of "the same subject" is defined once, in the domain, so this twin cannot
+     * quietly disagree with the JDBC adapter about what it means. Two implementations of one port
+     * drifting on exactly that question is how a green test came to prove the wrong thing before.
+     */
     @Override
-    public FailuresCount countFailuresBy(Source source, LocalDateTime since) {
+    public FailuresCount countFailuresOnAccount(LockoutSubject subject, LocalDateTime since) {
+        long count = records.stream()
+                .map(RejectedAuthentication::details)
+                .filter(details -> details.subject().equals(subject) && details.time().isAfter(since))
+                .count();
+        return new FailuresCount((int) count);
+    }
+
+    /** The ceiling — this source against anything, which is what catches spraying. */
+    @Override
+    public FailuresCount countFailuresFromSource(Source source, LocalDateTime since) {
         long count = records.stream()
                 .map(RejectedAuthentication::details)
                 .filter(details -> details.source().equals(source) && details.time().isAfter(since))
@@ -44,7 +63,7 @@ public final class InMemoryRejectedAuthenticationRepository implements RejectedA
     }
 
     @Override
-    public void removeAllFor(Source source) {
-        records.removeIf(record -> record.details().source().equals(source));
+    public void removeAllFor(LockoutSubject subject) {
+        records.removeIf(record -> record.details().subject().equals(subject));
     }
 }

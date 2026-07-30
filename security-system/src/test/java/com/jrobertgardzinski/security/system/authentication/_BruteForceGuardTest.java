@@ -6,8 +6,11 @@ import com.jrobertgardzinski.security.domain.event.BruteForceProtectionEvent;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.FailuresCount;
+import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
 import com.jrobertgardzinski.security.domain.vo.Source;
+import com.jrobertgardzinski.email.domain.Email;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
@@ -33,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 class _BruteForceGuardTest {
 
     record Given(Source ip) {}
+
     private static final Given GIVEN = new Given(Source.of(new IpAddress("192.168.0.1")));
 
     private static final BruteForceConfig CONFIG = BruteForceConfig.builder()
@@ -57,20 +61,24 @@ class _BruteForceGuardTest {
                 rejectedAuthenticationRepository, authenticationBlockRepository, CLOCK, CONFIG, BLOCK_DURATION);
     }
 
+    private static LockoutSubject subject(Source source) {
+        return new LockoutSubject(source, AttemptedAccount.of(Email.of("victim@example.com")));
+    }
+
     @Example
     @Label("Blocked when an active block already exists for the IP")
     void blocked_when_active_block_exists() {
         AuthenticationBlock active = new AuthenticationBlock(GIVEN.ip, LocalDateTime.now(CLOCK).plusMinutes(5));
         Mockito.when(authenticationBlockRepository.findBy(GIVEN.ip)).thenReturn(Optional.of(active));
 
-        BruteForceProtectionEvent event = bruteForceGuard.execute(GIVEN.ip);
+        BruteForceProtectionEvent event = bruteForceGuard.execute(subject(GIVEN.ip));
 
         BruteForceProtectionEvent.Blocked blocked =
                 assertInstanceOf(BruteForceProtectionEvent.Blocked.class, event);
         assertAll(
                 () -> assertEquals(active, blocked.authenticationBlock()),
                 () -> Mockito.verify(rejectedAuthenticationRepository, Mockito.never())
-                        .countFailuresBy(Mockito.any(), Mockito.any()),
+                        .countFailuresOnAccount(Mockito.any(), Mockito.any()),
                 () -> Mockito.verify(authenticationBlockRepository, Mockito.never()).create(Mockito.any())
         );
     }
@@ -82,7 +90,7 @@ class _BruteForceGuardTest {
         Mockito.when(authenticationBlockRepository.findBy(GIVEN.ip)).thenReturn(Optional.of(active));
 
         Source sameIpOtherBrowser = new Source(GIVEN.ip.ipAddress(), "Fancy-New-Agent/99.0");
-        BruteForceProtectionEvent event = bruteForceGuard.execute(sameIpOtherBrowser);
+        BruteForceProtectionEvent event = bruteForceGuard.execute(subject(sameIpOtherBrowser));
 
         assertInstanceOf(BruteForceProtectionEvent.Blocked.class, event);
         assertAll(
@@ -97,11 +105,11 @@ class _BruteForceGuardTest {
     void blocked_and_new_block_created_when_failure_limit_reached() {
         AuthenticationBlock created = new AuthenticationBlock(GIVEN.ip, LocalDateTime.now(CLOCK).plusMinutes(5));
         Mockito.when(authenticationBlockRepository.findBy(GIVEN.ip)).thenReturn(Optional.empty());
-        Mockito.when(rejectedAuthenticationRepository.countFailuresBy(Mockito.eq(GIVEN.ip), Mockito.any()))
+        Mockito.when(rejectedAuthenticationRepository.countFailuresOnAccount(Mockito.any(), Mockito.any()))
                 .thenReturn(new FailuresCount(CONFIG.maxFailures().value()));
         Mockito.when(authenticationBlockRepository.create(Mockito.any())).thenReturn(created);
 
-        BruteForceProtectionEvent event = bruteForceGuard.execute(GIVEN.ip);
+        BruteForceProtectionEvent event = bruteForceGuard.execute(subject(GIVEN.ip));
 
         BruteForceProtectionEvent.Blocked blocked =
                 assertInstanceOf(BruteForceProtectionEvent.Blocked.class, event);
@@ -112,19 +120,39 @@ class _BruteForceGuardTest {
         // block length now comes from the injected BlockDurationPolicy — deterministic
         assertAll(
                 () -> assertEquals(created, blocked.authenticationBlock()),
-                () -> Mockito.verify(rejectedAuthenticationRepository).removeAllFor(GIVEN.ip),
+                () -> Mockito.verify(rejectedAuthenticationRepository).removeAllFor(subject(GIVEN.ip)),
                 () -> assertEquals(base.plusMinutes(BLOCK_MINUTES), until)
         );
+    }
+
+    @Example
+    @Label("Spraying is caught by the source ceiling, though no single account ever reached its limit")
+    void source_ceiling_catches_what_the_per_account_count_cannot() {
+        // the shape of a sprayer: two or three guesses each, spread over many accounts, so the
+        // per-account count stays comfortably below its limit for every one of them
+        Mockito.when(authenticationBlockRepository.findBy(GIVEN.ip)).thenReturn(Optional.empty());
+        Mockito.when(rejectedAuthenticationRepository.countFailuresOnAccount(Mockito.any(), Mockito.any()))
+                .thenReturn(new FailuresCount(1));
+        Mockito.when(rejectedAuthenticationRepository.countFailuresFromSource(Mockito.any(), Mockito.any()))
+                .thenReturn(new FailuresCount(CONFIG.maxFailuresPerSource().value()));
+        Mockito.when(authenticationBlockRepository.create(Mockito.any()))
+                .thenReturn(new AuthenticationBlock(GIVEN.ip, LocalDateTime.now(CLOCK).plusMinutes(5)));
+
+        BruteForceProtectionEvent event = bruteForceGuard.execute(subject(GIVEN.ip));
+
+        assertInstanceOf(BruteForceProtectionEvent.Blocked.class, event);
     }
 
     @Example
     @Label("Allowed when there is no active block and failures are below the limit")
     void allowed_when_no_active_block_and_below_limit() {
         Mockito.when(authenticationBlockRepository.findBy(GIVEN.ip)).thenReturn(Optional.empty());
-        Mockito.when(rejectedAuthenticationRepository.countFailuresBy(Mockito.eq(GIVEN.ip), Mockito.any()))
+        Mockito.when(rejectedAuthenticationRepository.countFailuresOnAccount(Mockito.any(), Mockito.any()))
                 .thenReturn(new FailuresCount(CONFIG.maxFailures().value() - 1));
+        Mockito.when(rejectedAuthenticationRepository.countFailuresFromSource(Mockito.any(), Mockito.any()))
+                .thenReturn(new FailuresCount(CONFIG.maxFailuresPerSource().value() - 1));
 
-        BruteForceProtectionEvent event = bruteForceGuard.execute(GIVEN.ip);
+        BruteForceProtectionEvent event = bruteForceGuard.execute(subject(GIVEN.ip));
 
         assertInstanceOf(BruteForceProtectionEvent.Allowed.class, event);
         assertAll(

@@ -12,5 +12,5 @@ import java.time.LocalDateTime;
  */
 @MappedEntity("rejected_authentications")
 record RejectedAuthenticationEntity(@Id @GeneratedValue Long id, String ipAddress, String userAgent,
-                                    LocalDateTime occurredAt) {
+                                    String accountFingerprint, LocalDateTime occurredAt) {
 }

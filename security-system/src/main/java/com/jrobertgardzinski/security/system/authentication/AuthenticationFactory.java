@@ -55,8 +55,9 @@ public final class AuthenticationFactory {
         var verifyCredentials = new _VerifyCredentials(userRepository, hashAlgorithmPort);
         var requireVerifiedEmail = new _RequireVerifiedEmail(emailVerificationRepository);
         var generateSession = new _GenerateSession(authorizationDataRepository, clock, sessionTokensConfig, accessTokenMint);
-        var cleanBruteForceRecords = new _CleanBruteForceRecords(
-                rejectedAuthenticationRepository, authenticationBlockRepository);
+        // no block repository here any more: a success clears this pair's failures and never a
+        // placed block, which would hand the amnesty straight back
+        var cleanBruteForceRecords = new _CleanBruteForceRecords(rejectedAuthenticationRepository);
         var updateBruteForceRecords = new _UpdateBruteForceRecords(rejectedAuthenticationRepository, clock);
 
         var authentication = new Authentication(
