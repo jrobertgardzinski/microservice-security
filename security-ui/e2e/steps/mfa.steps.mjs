@@ -18,13 +18,21 @@ import { credentials, uniqueAccount } from '../support/account.mjs';
  */
 async function proveForEnrol(world) {
   const prompt = world.page.getByTestId('enrol-stepup');
-  if (!(await prompt.isVisible().catch(() => false))) {
+  // isVisible() answers about THIS INSTANT, and the 403 that summons this prompt is a round trip
+  // away — so the instantaneous check read "no prompt", this helper returned having done nothing,
+  // and the caller then waited for a screen that was never going to come. Wait for the prompt
+  // instead, and treat the timeout as the honest answer: no proof was asked for.
+  try {
+    await expect(prompt).toBeVisible({ timeout: 5_000 });
+  } catch {
     return;
   }
   await world.page.getByTestId('enrol-stepup-password').fill(credentials.password);
   await world.page.getByTestId('enrol-stepup-submit').click();
+  // the same trap one level down: an account that already carries a factor is asked for a code,
+  // and that answer is another round trip away
   const codeInput = world.page.getByTestId('enrol-stepup-code');
-  if (await codeInput.isVisible().catch(() => false)) {
+  if (await codeInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
     await codeInput.fill(await mailedSignInCode(world));
     await world.page.getByTestId('enrol-stepup-code-submit').click();
   }
