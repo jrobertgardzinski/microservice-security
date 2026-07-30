@@ -24,4 +24,16 @@ public final class InMemoryPasswordlessAccountRepository implements Passwordless
             passwordless.remove(email.value());
         }
     }
+
+    @Override
+    public void reassign(Email fromEmail, Email toEmail) {
+        if (passwordless.remove(fromEmail.value())) {
+            passwordless.add(toEmail.value());
+        }
+    }
+
+    @Override
+    public void purge(Email email) {
+        passwordless.remove(email.value());
+    }
 }

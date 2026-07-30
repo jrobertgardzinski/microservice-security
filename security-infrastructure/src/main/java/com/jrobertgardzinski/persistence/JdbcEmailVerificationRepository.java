@@ -50,4 +50,9 @@ final class JdbcEmailVerificationRepository implements EmailVerificationReposito
     public boolean isVerified(Email email) {
         return repository.findById(email.value()).map(EmailVerificationEntity::verified).orElse(false);
     }
+
+    @Override
+    public void purge(Email email) {
+        repository.deleteById(email.value());
+    }
 }

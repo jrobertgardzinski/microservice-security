@@ -12,6 +12,8 @@ import javax.sql.DataSource;
 @Requires(beans = DataSource.class)
 interface RecoveryCodeJdbcRepository extends CrudRepository<RecoveryCodeEntity, String> {
 
+    java.util.List<RecoveryCodeEntity> findByUserEmail(String userEmail);
+
     void deleteByUserEmail(String userEmail);
 
     long countByUserEmailAndUsedFalse(String userEmail);

@@ -10,6 +10,7 @@ import com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepos
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.FactorType;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,10 +42,11 @@ public class StepUp {
     private final MfaChain chain;
     private final StepUpStore store;
     private final SessionElevation elevation;
+    private final Clock clock;
 
     public StepUp(StepUpPolicy policy, UserRepository users, HashAlgorithmPort hashAlgorithm,
                   PasswordlessAccountRepository passwordless, EnrolledFactorRepository factors,
-                  MfaChain chain, StepUpStore store, SessionElevation elevation) {
+                  MfaChain chain, StepUpStore store, SessionElevation elevation, Clock clock) {
         this.policy = policy;
         this.users = users;
         this.hashAlgorithm = hashAlgorithm;
@@ -53,31 +55,41 @@ public class StepUp {
         this.chain = chain;
         this.store = store;
         this.elevation = elevation;
+        this.clock = clock;
     }
 
     public Result start(Email email, String action, String accessToken, String passwordAttempt) {
         String requirement = policy.requirementFor(action);
         if (StepUpPolicy.NONE.equals(requirement)) {
-            elevation.elevate(accessToken);
+            elevation.elevate(accessToken, action);
             return new Result.Elevated();
         }
-        if (StepUpPolicy.FULL_CHAIN.equals(requirement) && !passwordless.isPasswordless(email)
+        List<EnrolledFactor> enrolled = factors.findByUser(email);
+        // The password is proven for FULL_CHAIN, and ALSO when there are no enrolled factors to
+        // walk: a requirement other than NONE with an empty factor list used to elevate silently on
+        // the live session alone, which turned any non-NONE action into "a stolen token is enough".
+        // A passwordless (federated) account has nothing to prove here — its live session is all it
+        // ever has — so it keeps the direct elevation.
+        boolean mustProvePassword = StepUpPolicy.FULL_CHAIN.equals(requirement) || enrolled.isEmpty();
+        if (mustProvePassword && !passwordless.isPasswordless(email)
                 && !passwordMatches(email, passwordAttempt)) {
             return new Result.WrongPassword();
         }
-        List<EnrolledFactor> enrolled = factors.findByUser(email);
         if (enrolled.isEmpty()) {
-            elevation.elevate(accessToken);   // nothing further to prove
+            elevation.elevate(accessToken, action);   // nothing further to prove
             return new Result.Elevated();
         }
         PendingAuthentication pending = chain.begin(email, enrolled);
-        String ticket = store.open(new StepUpStore.StepUpPending(email, accessToken, pending));
+        String ticket = store.open(new StepUpStore.StepUpPending(email, accessToken, action, pending));
         return new Result.FactorRequired(ticket, enrolled.get(0).type(), pending.challengeData());
     }
 
     public Result submitFactor(String ticket, String proof) {
         Optional<StepUpStore.StepUpPending> found = store.find(ticket);
-        if (found.isEmpty()) {
+        // an unknown ticket, or one whose chain has aged past its TTL, ends the step-up — the twin
+        // ContinueAuthentication makes the same check, but StepUp used to trust the ticket forever
+        if (found.isEmpty() || found.get().chain().isExpired(clock)) {
+            store.close(ticket);
             return new Result.InvalidTicket();
         }
         StepUpStore.StepUpPending pending = found.get();
@@ -87,17 +99,17 @@ public class StepUp {
                 store.close(ticket);
                 return new Result.TooManyAttempts();
             }
-            store.replace(ticket, new StepUpStore.StepUpPending(pending.email(), pending.accessToken(), afterWrong));
+            store.replace(ticket, new StepUpStore.StepUpPending(pending.email(), pending.accessToken(), pending.action(), afterWrong));
             return new Result.WrongProof(afterWrong.attemptsLeft());
         }
         List<EnrolledFactor> tail = pending.chain().tail();
         if (tail.isEmpty()) {
             store.close(ticket);
-            elevation.elevate(pending.accessToken());
+            elevation.elevate(pending.accessToken(), pending.action());
             return new Result.Elevated();
         }
         PendingAuthentication advanced = chain.advanceTo(pending.chain(), tail);
-        store.replace(ticket, new StepUpStore.StepUpPending(pending.email(), pending.accessToken(), advanced));
+        store.replace(ticket, new StepUpStore.StepUpPending(pending.email(), pending.accessToken(), pending.action(), advanced));
         return new Result.FactorRequired(ticket, tail.get(0).type(), advanced.challengeData());
     }
 

@@ -81,13 +81,23 @@ public class FederatedSignIn {
         if (!identity.emailVerified()) {
             return new FederatedSignInResult.Refused("EMAIL_NOT_VOUCHED");
         }
-        Email account = identities.findUserBy(identity.provider(), identity.subject())
+        Optional<Email> linked = identities.findUserBy(identity.provider(), identity.subject())
                 // a link pointing at a user that no longer exists (e.g. the email changed
                 // locally) is stale — fall through to the email rules and re-link
-                .filter(linked -> users.findBy(linked).isPresent())
-                .orElseGet(() -> claimByEmail(identity));
+                .filter(existing -> users.findBy(existing).isPresent());
+        // The lock is checked BEFORE claimByEmail, not after. claimByEmail WRITES — it can wipe the
+        // password, revoke every session, mark the address verified and link the provider identity —
+        // and it used to run first, so an account with a running deletion saga got a fresh provider
+        // identity welded onto it moments before it vanished (and, if the saga compensated, came back
+        // in a state nobody asked for). Sign-in was refused either way; the side effects were not.
+        // The address claimByEmail would act on is exactly the one it returns, so asking about it up
+        // front costs nothing: for an unknown address isPendingDeletion is simply false.
+        Email account = linked.orElseGet(identity::email);
         if (users.isPendingDeletion(account)) {
             return new FederatedSignInResult.Refused("ACCOUNT_CLOSING");
+        }
+        if (linked.isEmpty()) {
+            claimByEmail(identity);
         }
         // the provider login is link #1; if the account has enrolled factors, they must be passed
         // too before a session — the same chain the password sign-in walks
@@ -103,7 +113,11 @@ public class FederatedSignIn {
         return new FederatedSignInResult.MfaRequired(ticket, factors.get(0).type(), pending.challengeData());
     }
 
-    private Email claimByEmail(ProviderIdentity identity) {
+    /**
+     * Applies the e-mail rules to the vouched address and links the provider identity to it. Writes
+     * only; the address it acts on is {@code identity.email()}, which the caller already holds.
+     */
+    private void claimByEmail(ProviderIdentity identity) {
         Email email = identity.email();
         Optional<User> existing = users.findBy(email);
         if (existing.isEmpty()) {
@@ -119,7 +133,6 @@ public class FederatedSignIn {
         }
         // the auto-link case (existing, verified) keeps its password — it stays a password account
         identities.link(identity.provider(), identity.subject(), email);
-        return email;
     }
 
     /**

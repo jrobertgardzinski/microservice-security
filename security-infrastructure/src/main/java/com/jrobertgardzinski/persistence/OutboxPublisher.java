@@ -54,7 +54,7 @@ class OutboxPublisher {
 
     @Scheduled(fixedDelay = "1s", initialDelay = "5s")
     void drain() {
-        for (OutboxEventEntity event : outbox.findByPublishedAtIsNullOrderByCreatedAt()) {
+        for (OutboxEventEntity event : outbox.findByPublishedAtIsNullAndFailedAtIsNullOrderByCreatedAt()) {
             try {
                 if (event.cid() != null) {
                     MDC.put("cid", event.cid());   // the drain log carries the originating request's cid
@@ -65,13 +65,40 @@ class OutboxPublisher {
                     producer.send(event.topic(), event.eventKey(), event.cid(), event.payload());
                 }
                 outbox.markPublished(event.id(), Instant.now(clock));
-            } catch (RuntimeException brokerDown) {
-                LOG.warn("outbox drain interrupted (will retry): {}", brokerDown.getMessage());
-                return; // keep ordering: stop at the first failure, retry next tick
+            } catch (RuntimeException failure) {
+                if (isPermanent(failure)) {
+                    // this row will NEVER publish (too large, unserializable). Stopping here would
+                    // block every later event forever, so mark it failed and move on — the loop keeps
+                    // ordering for the transient case, not for a poison row.
+                    LOG.error("outbox event {} is permanently unpublishable, skipping it: {}",
+                            event.id(), failure.toString());
+                    outbox.markFailed(event.id(), Instant.now(clock));
+                    MDC.remove("cid");
+                    continue;
+                }
+                LOG.warn("outbox drain interrupted (will retry): {}", failure.getMessage());
+                MDC.remove("cid");
+                return; // keep ordering: stop at the first transient failure, retry next tick
             } finally {
                 MDC.remove("cid");
             }
         }
+    }
+
+    /**
+     * Whether a send failure is about THIS event rather than the broker's availability — a record
+     * past {@code max.request.size} or a serialization fault. Such a failure repeats on every tick,
+     * so the row must be set aside instead of blocking the queue. A timeout / connection error is
+     * transient and is NOT permanent (the loop stops and retries).
+     */
+    static boolean isPermanent(Throwable failure) {
+        for (Throwable t = failure; t != null; t = t.getCause()) {
+            if (t instanceof org.apache.kafka.common.errors.RecordTooLargeException
+                    || t instanceof org.apache.kafka.common.errors.SerializationException) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** The stored traceparent as a current OTel scope (its span becomes the parent), or a no-op. */

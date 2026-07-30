@@ -3,6 +3,7 @@ package com.jrobertgardzinski;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.security.domain.entity.User;
+import com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.Role;
 import io.micronaut.context.annotation.Requires;
@@ -37,8 +38,19 @@ public final class InMemoryUserRepository implements UserRepository {
         return byNormalizedEmail.containsKey(normalizedEmail.value());
     }
 
+    /**
+     * The same contract the JDBC adapter has: a taken address is refused, never overwritten.
+     * Both indexes are checked because both columns are UNIQUE in the schema — an alias of a
+     * taken address (Gmail dots, {@code +tags}) is taken too. {@code synchronized} makes the
+     * check-and-put one step, which is what the database's unique constraint does for the other
+     * adapter; without it two concurrent registrations of one address could both get through.
+     */
     @Override
-    public User save(User user) {
+    public synchronized User save(User user) {
+        if (byEmail.containsKey(user.email().value())
+                || byNormalizedEmail.containsKey(user.normalizedEmail().value())) {
+            throw new EmailAlreadyTakenException();
+        }
         byEmail.put(user.email().value(), user);
         byNormalizedEmail.put(user.normalizedEmail().value(), user);
         return user;

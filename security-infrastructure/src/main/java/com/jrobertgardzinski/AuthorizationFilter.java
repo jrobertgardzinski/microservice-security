@@ -55,9 +55,14 @@ final class AuthorizationFilter {
         return null; // proceed to the resource
     }
 
-    /** /me and the factor-enrolment endpoints stay open so an under-enrolled user can become compliant. */
+    /**
+     * /me, the factor-enrolment endpoints and step-up stay open so an under-enrolled user can become
+     * compliant — enrolling a factor now requires stepping up first, so the step-up endpoint must be
+     * reachable under the floor too, or the user would be boxed out of the very act that frees them.
+     */
     private static boolean enrolmentExempt(String path) {
-        return path.equals("/me") || path.startsWith("/account/factors");
+        return path.equals("/me") || path.startsWith("/account/factors")
+                || path.startsWith("/account/step-up");
     }
 
     private boolean isCompliant(com.jrobertgardzinski.email.domain.Email email) {

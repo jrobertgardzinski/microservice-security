@@ -7,6 +7,7 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.domain.entity.User;
+import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -42,15 +43,17 @@ class ChangePasswordTest {
     };
 
     private UserRepository userRepository;
+    private AuthorizationDataRepository sessions;
     private ChangePassword changePassword;
 
     @BeforeTry
     void init() {
         userRepository = Mockito.mock(UserRepository.class);
+        sessions = Mockito.mock(AuthorizationDataRepository.class);
         Mockito.when(userRepository.findBy(EMAIL)).thenReturn(Optional.of(
                 new User(EMAIL, new HashedPassword("hash:OldPassword1!"))));
         changePassword = new ChangePassword(userRepository, FAKE_ALGORITHM,
-                new CreatePasswordHash(FAKE_ALGORITHM, PasswordPolicy.withDefaults()));
+                new CreatePasswordHash(FAKE_ALGORITHM, PasswordPolicy.withDefaults()), sessions);
     }
 
     @Example
@@ -62,6 +65,18 @@ class ChangePasswordTest {
     }
 
     @Example
+    @Label("A changed password revokes every session the old one left behind")
+    void a_change_revokes_every_existing_session() {
+        // Changing the password is what a user does when they suspect somebody else is on their
+        // account. Sessions are rows unrelated to the password hash, so replacing the hash alone
+        // left the thief's stolen token authorizing — and rotating itself on /refresh — for the
+        // whole refresh window.
+        assertInstanceOf(ChangePasswordResult.Changed.class, changePassword.execute(EMAIL, CURRENT, NEW_STRONG));
+
+        Mockito.verify(sessions).revokeAllSessions(EMAIL);
+    }
+
+    @Example
     @Label("A wrong current password is rejected and nothing changes")
     void wrong_current_password_is_rejected() {
         Supplier<PlaintextPassword> wrong = () -> PlaintextPassword.of("WrongPassword1!");
@@ -70,6 +85,7 @@ class ChangePasswordTest {
                 changePassword.execute(EMAIL, wrong, NEW_STRONG));
 
         Mockito.verify(userRepository, Mockito.never()).updatePassword(Mockito.any(), Mockito.any());
+        Mockito.verify(sessions, Mockito.never()).revokeAllSessions(Mockito.any());
     }
 
     @Example

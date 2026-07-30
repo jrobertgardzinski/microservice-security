@@ -1,5 +1,6 @@
 package com.jrobertgardzinski;
 
+import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;
 
 import java.security.SecureRandom;
@@ -43,6 +44,18 @@ final class OauthFlowStore {
     Optional<PendingFlow> consume(String state) {
         return Optional.ofNullable(byState.remove(state))
                 .filter(flow -> clock.instant().isBefore(flow.expires()));
+    }
+
+    /**
+     * Drops flows nobody came back for. {@code consume} only removes an entry when the provider
+     * calls back, so an anonymous, unauthenticated {@code GET /oauth/{provider}/start} loop grew this
+     * map without bound (towards OOMKilled). The TTL was only ever a read-time filter; this makes it
+     * an actual eviction (poz. 17).
+     */
+    @Scheduled(fixedDelay = "1m")
+    void evictExpired() {
+        Instant now = clock.instant();
+        byState.values().removeIf(flow -> !now.isBefore(flow.expires()));
     }
 
     static String randomToken() {

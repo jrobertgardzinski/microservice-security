@@ -10,4 +10,8 @@ import javax.sql.DataSource;
 @JdbcRepository(dialect = Dialect.POSTGRES)
 @Requires(beans = DataSource.class)
 interface EmailChangeJdbcRepository extends CrudRepository<EmailChangeEntity, String> {
+
+    void deleteByCurrentEmail(String currentEmail);
+
+    void deleteByNewEmail(String newEmail);
 }

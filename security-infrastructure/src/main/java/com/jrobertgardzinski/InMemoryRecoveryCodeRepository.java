@@ -45,4 +45,13 @@ public final class InMemoryRecoveryCodeRepository implements RecoveryCodeReposit
     public void removeAll(Email userEmail) {
         byUser.remove(userEmail.value());
     }
+
+    /** Spent flags move with the codes, same as the JDBC adapter. */
+    @Override
+    public void reassign(Email fromEmail, Email toEmail) {
+        Map<String, Boolean> moving = byUser.remove(fromEmail.value());
+        if (moving != null) {
+            byUser.put(toEmail.value(), moving);
+        }
+    }
 }

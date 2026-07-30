@@ -1,9 +1,11 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.system.mfa.StepUpStore;
+import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;
 
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
@@ -16,6 +18,11 @@ final class InMemoryStepUpStore implements StepUpStore {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final Map<String, StepUpPending> byTicket = new ConcurrentHashMap<>();
+    private final Clock clock;
+
+    InMemoryStepUpStore(Clock clock) {
+        this.clock = clock;
+    }
 
     @Override
     public String open(StepUpPending pending) {
@@ -39,5 +46,14 @@ final class InMemoryStepUpStore implements StepUpStore {
     @Override
     public void close(String ticket) {
         byTicket.remove(ticket);
+    }
+
+    /**
+     * Drops tickets whose factor chain has aged past its TTL. Without this a step-up abandoned after
+     * the password step (never completing the factor) lingered until the process restarted (poz. 17).
+     */
+    @Scheduled(fixedDelay = "1m")
+    void evictExpired() {
+        byTicket.values().removeIf(pending -> pending.chain().isExpired(clock));
     }
 }

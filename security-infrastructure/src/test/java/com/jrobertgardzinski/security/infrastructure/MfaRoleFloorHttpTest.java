@@ -127,6 +127,12 @@ class MfaRoleFloorHttpTest {
     }
 
     private void enrolEmailFactor(String email, String token) {
+        // enrolment now sits behind a step-up; /account/step-up is floor-exempt so an under-enrolled
+        // user can still reach it, and a factor-less account elevates on the password alone
+        HttpResponse<Map> elevated = exchange(HttpRequest.POST("/account/step-up",
+                        Map.of("action", "enrol-factor", "password", PASSWORD))
+                .header("Authorization", "Bearer " + token));
+        assertEquals(HttpStatus.OK, elevated.getStatus());
         exchange(HttpRequest.POST("/account/factors/EMAIL_CODE/enroll/start", Map.of())
                 .header("Authorization", "Bearer " + token));
         String code = server.getApplicationContext().getBean(CapturingEmailCodeChannel.class).lastCodeFor(email);

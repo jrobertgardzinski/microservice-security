@@ -23,4 +23,14 @@ public interface EnrolledFactorRepository {
 
     /** Remove every factor a user has — an admin reset when someone is locked out of all of them. */
     void removeAll(Email userEmail);
+
+    /**
+     * Moves every factor of an account to a new address — this table is keyed by the e-mail, and the
+     * e-mail is mutable, so the factors must FOLLOW the account. Without this the second factor
+     * vanishes silently on an e-mail change (a lookup under the new address finds nothing, so a
+     * password alone signs in) and the old secrets stay readable under an address someone else can
+     * register. A code factor whose target is the account's own address is re-targeted too — the
+     * target is where the next code is sent.
+     */
+    void reassign(Email fromEmail, Email toEmail);
 }

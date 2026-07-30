@@ -27,8 +27,13 @@ public final class InMemoryUserRepository implements UserRepository {
         return byNormalizedEmail.containsKey(normalizedEmail.value());
     }
 
+    /** Refuses a taken address exactly as both production adapters do (see {@code UserRepository#save}). */
     @Override
     public User save(User user) {
+        if (byEmail.containsKey(user.email().value())
+                || byNormalizedEmail.containsKey(user.normalizedEmail().value())) {
+            throw new com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException();
+        }
         byEmail.put(user.email().value(), user);
         byNormalizedEmail.put(user.normalizedEmail().value(), user);
         return user;

@@ -34,6 +34,17 @@ micronaut:
           # the service un-deployable anywhere but this laptop, and the failure it produces is the
           # silent client-side one this file's comment above describes.
           allowed-origins: ${SECURITY_CORS_ORIGINS:`http://localhost:8083,http://localhost:8084,http://localhost:4200,http://localhost:8093,http://localhost:5173`}
+security:
+  saga:
+    # The saga-listener lamp's stall tolerance, wired to an environment variable ON PURPOSE rather
+    # than left to the @Value default. OffboardingListenerHealth refuses to start on a value below
+    # its floor and tells the operator to "raise it or leave it unset" — naming
+    # SECURITY_LISTENER_STALL_SEC. Until this line existed that variable was read by NOTHING: the
+    # value came from the property below, so an operator who followed the message set a variable
+    # that changed nothing and saw the very same refusal. The twins already do it this way
+    # (memes MEMES_LISTENER_STALL_SEC, comments COMMENTS_LISTENER_STALL_SEC); the default here
+    # matches the one in the @Value annotation, so behaviour is unchanged when the variable is unset.
+    listener-stall-seconds: ${SECURITY_LISTENER_STALL_SEC:120}
 endpoints:
   health:
     enabled: true

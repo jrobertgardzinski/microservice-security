@@ -20,9 +20,19 @@ class InMemoryAccountDeletionSagaStore implements AccountDeletionSagaStore {
 
     private final Map<UUID, Saga> sagas = new ConcurrentHashMap<>();
 
+    /** One running saga per address, the same invariant V22 gives Postgres — see the port's javadoc. */
     @Override
-    public void start(UUID sagaId, String email, Instant at) {
+    public synchronized boolean start(UUID sagaId, String email, Instant at) {
+        if (running(email)) {
+            return false;
+        }
         sagas.put(sagaId, new Saga(sagaId, email, "STARTED", at));
+        return true;
+    }
+
+    private boolean running(String email) {
+        return sagas.values().stream()
+                .anyMatch(saga -> saga.email().equals(email) && saga.state().equals("STARTED"));
     }
 
     @Override

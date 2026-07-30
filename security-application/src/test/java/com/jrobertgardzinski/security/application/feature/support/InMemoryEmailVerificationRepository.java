@@ -45,4 +45,10 @@ public class InMemoryEmailVerificationRepository implements EmailVerificationRep
     public boolean isVerified(Email email) {
         return verifiedByEmail.getOrDefault(email.value(), false);
     }
+
+    @Override
+    public void purge(Email email) {
+        pendingTokenByEmail.remove(email.value());
+        verifiedByEmail.remove(email.value());
+    }
 }

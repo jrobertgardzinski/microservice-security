@@ -38,17 +38,20 @@ final class FactorsController {
     private final TransactionBoundary transactionBoundary;
     private final com.jrobertgardzinski.security.domain.repository.UserRepository users;
     private final com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance;
+    private final StepUpGuard stepUpGuard;
 
     FactorsController(EnrolFactor enrolFactor, EnrolledFactorRepository enrolledFactors,
                       FactorRegistry registry, TransactionBoundary transactionBoundary,
                       com.jrobertgardzinski.security.domain.repository.UserRepository users,
-                      com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance) {
+                      com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance,
+                      StepUpGuard stepUpGuard) {
         this.enrolFactor = enrolFactor;
         this.enrolledFactors = enrolledFactors;
         this.registry = registry;
         this.transactionBoundary = transactionBoundary;
         this.users = users;
         this.compliance = compliance;
+        this.stepUpGuard = stepUpGuard;
     }
 
     @Get(produces = MediaType.APPLICATION_JSON)
@@ -64,11 +67,22 @@ final class FactorsController {
     @Post(value = "/{type}/enroll/start", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map<String, Object>> start(HttpRequest<?> request, @PathVariable String type,
                                             @Nullable @Body Map<String, String> body) {
+        // enrolling a factor rewrites the sign-in chain, so a merely-live (possibly stolen) session
+        // must step up first — otherwise a thief adds an attacker-held factor and locks the owner out.
+        // Guarding start alone is enough: confirm needs a pending enrolment only a guarded start mints.
+        java.util.Optional<HttpResponse<Map<String, Object>>> stepUp =
+                stepUpGuard.requireElevation(request, "enrol-factor");
+        if (stepUp.isPresent()) {
+            return stepUp.get();
+        }
         Email caller = caller(request);
-        // for the e-mail factor the target defaults to the caller's own (already verified) address
-        String target = body != null && body.get("target") != null ? body.get("target") : caller.value();
+        FactorType factorType = FactorType.of(type);
+        // the e-mail factor's code always goes to the caller's OWN already-verified address — never a
+        // target from the body, or a thief would point the codes at their own inbox
+        String target = "EMAIL_CODE".equals(factorType.value()) || body == null || body.get("target") == null
+                ? caller.value() : body.get("target");
         return respond(transactionBoundary.execute(
-                () -> enrolFactor.start(caller, FactorType.of(type), target)));
+                () -> enrolFactor.start(caller, factorType, target)));
     }
 
     @Post(value = "/{type}/enroll/confirm", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
@@ -88,6 +102,12 @@ final class FactorsController {
         if (compliance.removalWouldBreakFloor(caller, roles)) {
             return HttpResponse.<Map<String, Object>>status(io.micronaut.http.HttpStatus.CONFLICT)
                     .body(Map.of("status", "WOULD_BREAK_MFA_FLOOR"));
+        }
+        // dropping a factor weakens the account, so a stolen live session must step up to do it
+        java.util.Optional<HttpResponse<Map<String, Object>>> stepUp =
+                stepUpGuard.requireElevation(request, "remove-factor");
+        if (stepUp.isPresent()) {
+            return stepUp.get();
         }
         transactionBoundary.execute(() -> {
             enrolledFactors.remove(caller, FactorType.of(type));

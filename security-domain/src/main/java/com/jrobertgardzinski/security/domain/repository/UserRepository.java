@@ -40,5 +40,15 @@ public interface UserRepository {
      */
     boolean existsBy(NormalizedEmail normalizedEmail);
 
+    /**
+     * Persist a NEW user. One semantics for every adapter, with or without a database: the
+     * (normalized) address is unique, and an attempt to save one that is already taken throws
+     * {@link EmailAlreadyTakenException} — it never overwrites the account sitting there.
+     *
+     * <p>Spelled out because the two adapters used to disagree: the JDBC one translated the unique
+     * violation into the exception, the in-memory one (which serves whenever no datasource is
+     * configured) silently replaced the existing row. The same registration losing a race therefore
+     * ended as "email already taken" with a database and as a stolen account without one.
+     */
     User save(User user);
 }

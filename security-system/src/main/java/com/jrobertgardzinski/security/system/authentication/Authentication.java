@@ -55,7 +55,11 @@ public class Authentication {
                     if (!requireVerifiedEmail.isVerified(valid.email())) {
                         yield new AuthenticationResult.EmailNotVerified();
                     }
-                    cleanBruteForceRecords.execute(source);
+                    // A successful sign-in must NOT wipe this IP's brute-force records: the counter
+                    // and blocks are keyed by IP alone, so clearing them on any success turned a
+                    // single known-good credential (an attacker's own account) into a RESET button
+                    // for the whole address. Failures instead age out of the count via the guard's
+                    // rolling failure window, and a placed block expires on its own TTL.
                     // link #1 passed. With enrolled factors the session waits until the chain
                     // completes; with none it is minted now (unchanged single-factor sign-in).
                     List<EnrolledFactor> factors = enrolledFactorRepository.findByUser(valid.email());

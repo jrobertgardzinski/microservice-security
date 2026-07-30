@@ -1,0 +1,67 @@
+package com.jrobertgardzinski;
+
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import io.micronaut.http.HttpRequest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * The access line this filter writes for EVERY request must not carry an e-mail address (poz. 27).
+ * Two admin endpoints name their subject in the path, and this log goes to Loki and stays for weeks —
+ * so the assertion is on the line that is actually emitted, not on the masking function alone.
+ */
+class CorrelationIdFilterTest {
+
+    private final Logger logger = (Logger) LoggerFactory.getLogger(CorrelationIdFilter.class);
+    private final ListAppender<ILoggingEvent> captured = new ListAppender<>();
+
+    @BeforeEach
+    void attachAppender() {
+        captured.start();
+        logger.addAppender(captured);
+    }
+
+    @AfterEach
+    void detachAppender() {
+        logger.detachAppender(captured);
+        captured.stop();
+    }
+
+    @Test
+    @DisplayName("the address in an admin path never reaches the access log")
+    void admin_paths_are_logged_without_the_address() {
+        new CorrelationIdFilter().onRequest(
+                HttpRequest.PUT("/admin/users/victim@example.com/roles", Map.of("roles", "MODERATOR")));
+
+        String line = onlyLine();
+        assertFalse(line.contains("victim@example.com"), "the address reached the access log: " + line);
+        assertTrue(line.contains("vi***@example.com"), "the line must still identify the subject: " + line);
+        assertTrue(line.contains("/admin/users/") && line.contains("/roles"),
+                "the route must stay readable, that is what the line is for: " + line);
+    }
+
+    @Test
+    @DisplayName("an ordinary path is logged exactly as it arrived")
+    void ordinary_paths_are_untouched() {
+        new CorrelationIdFilter().onRequest(HttpRequest.POST("/account/delete", Map.of()));
+
+        assertTrue(onlyLine().contains("/account/delete"), onlyLine());
+    }
+
+    private String onlyLine() {
+        return captured.list.stream()
+                .map(ILoggingEvent::getFormattedMessage)
+                .reduce((a, b) -> a + " | " + b)
+                .orElseThrow(() -> new AssertionError("the filter logged no access line at all"));
+    }
+}

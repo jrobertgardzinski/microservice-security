@@ -31,8 +31,12 @@ class ContentErasedAfterCompensationTest {
     private static final class LatchingStore implements AccountDeletionSagaStore {
         private String state = "STARTED";
 
-        public void start(UUID sagaId, String email, Instant at) {
+        public boolean start(UUID sagaId, String email, Instant at) {
+            if ("STARTED".equals(state)) {
+                return false;   // one running saga per address, as the real stores do
+            }
             state = "STARTED";
+            return true;
         }
 
         public boolean complete(String email, Instant at) {

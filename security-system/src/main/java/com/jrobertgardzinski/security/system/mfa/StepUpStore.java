@@ -11,7 +11,7 @@ import java.util.Optional;
  */
 public interface StepUpStore {
 
-    record StepUpPending(Email email, String accessToken, PendingAuthentication chain) {}
+    record StepUpPending(Email email, String accessToken, String action, PendingAuthentication chain) {}
 
     String open(StepUpPending pending);
 

@@ -91,8 +91,9 @@ interface SessionJdbcRepository extends CrudRepository<SessionEntity, String> {
     /**
      * Retention for the session table, which nothing used to provide.
      *
-     * <p>The only deletions were logout and account removal — and since no UI ever calls
-     * {@code POST /logout} (P12 W1), families were in practice never removed at all. Expiry did
+     * <p>The only deletions were logout and account removal — and since back then no UI called
+     * {@code POST /logout} (P12 W1; every UI does now — security-ui since P12, memes-ui and
+     * collections-ui since P18), families were in practice never removed at all. Expiry did
      * not even change a status, so every sign-in and every refresh left a row carrying an e-mail
      * address, for ever: a database dump handed over a per-user login history nobody meant to
      * keep, and {@code listActiveSessions} filtered on {@code status = 'ACTIVE'} while long-dead

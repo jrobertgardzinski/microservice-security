@@ -36,12 +36,20 @@ public class SourceThrottle {
         this.clock = clock;
     }
 
+    /** Above this many tracked sources, a check first evicts windows that have already rolled over. */
+    private static final int SWEEP_THRESHOLD = 10_000;
+
     /** Record one attempt from this source and decide whether it may proceed. */
     public Decision check(IpAddress source) {
         if (maxPerWindow <= 0) {
             return new Decision(true, 0);   // disabled
         }
         Instant now = clock.instant();
+        // this map is fed by anonymous endpoints, so a source rotating IPs could grow it without
+        // bound; drop windows that have already elapsed once the map gets large (poz. 17)
+        if (windows.size() > SWEEP_THRESHOLD) {
+            windows.values().removeIf(w -> Duration.between(w.start(), now).compareTo(window) >= 0);
+        }
         Window updated = windows.compute(source.value(), (ip, current) ->
                 current == null || Duration.between(current.start(), now).compareTo(window) >= 0
                         ? new Window(now, 1)

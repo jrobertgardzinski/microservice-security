@@ -24,5 +24,8 @@ record OutboxEventEntity(
         @Nullable String cid,
         // the W3C traceparent of that request's span — re-established at drain so the published event
         // continues the same distributed trace; null when there was no active span
-        @Nullable String traceparent) {
+        @Nullable String traceparent,
+        // set when the drain gave up on this row for a PERMANENT reason (too large, unserializable);
+        // such a row is skipped so it cannot block every later event — null while it is still drainable
+        @Nullable Instant failedAt) {
 }

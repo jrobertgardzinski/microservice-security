@@ -16,6 +16,14 @@ import java.util.UUID;
  * (or mints one) so a call arriving from another service (a gate checking {@code /me}) keeps the
  * same id; puts it in the logging context and logs one access line, then echoes it on the response.
  * Grep the id and this service's part of a cross-service journey shows up next to everyone else's.
+ *
+ * <p><b>The access line masks addresses in the path.</b> Two admin endpoints name their subject in
+ * a path segment ({@code PUT /admin/users/{email}/roles} and {@code .../factors/reset}), and this
+ * filter matches {@code /**} — so every admin request wrote a full e-mail address into the log, and
+ * the log is shipped to Loki and kept for weeks. That is personal data leaving the database on a
+ * path nothing in the deletion flow can reach. {@link MaskedEmail#maskedPath} keeps the line useful
+ * (the route is still readable) without the address; the endpoints' URLs, which clients and pacts
+ * depend on, stay as they are.
  */
 @ServerFilter("/**")
 final class CorrelationIdFilter {
@@ -32,7 +40,7 @@ final class CorrelationIdFilter {
         }
         request.setAttribute(ATTR, cid);
         MDC.put(ATTR, cid);
-        log.info("cid={} {} {}", cid, request.getMethod(), request.getPath());
+        log.info("cid={} {} {}", cid, request.getMethod(), MaskedEmail.maskedPath(request.getPath()));
     }
 
     @ResponseFilter

@@ -14,7 +14,18 @@ import java.util.UUID;
  */
 public interface AccountDeletionSagaStore {
 
-    void start(UUID sagaId, String email, Instant at);
+    /**
+     * Opens a saga for this address — at most ONE runs at a time. Returns true for the call that
+     * opened it, false when a saga for the address is already STARTED (a duplicate request: a
+     * second live session, a retry).
+     *
+     * <p>The one-at-a-time part is not decoration. Every other method here addresses a saga by
+     * {@code email AND state = 'STARTED'}, so two STARTED rows for one address mean one portal
+     * outcome settles both: an account deleted for good on a confirmation belonging to another
+     * case. Postgres holds the invariant with a partial unique index (V22); this contract is what
+     * the in-memory store has to match, or the tests ride semantics production does not have.
+     */
+    boolean start(UUID sagaId, String email, Instant at);
 
     /** STARTED → COMPLETED for this email's running saga; true only for the call that did it. */
     boolean complete(String email, Instant at);

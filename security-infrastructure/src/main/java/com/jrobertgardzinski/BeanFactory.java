@@ -100,6 +100,18 @@ public class BeanFactory {
         return new SourceThrottle(maxPerWindow, java.time.Duration.ofMinutes(windowMinutes), clock);
     }
 
+    // step-up runs behind a live session, but it verifies a password and (for SECOND_FACTORS) mails a
+    // code on every start — unthrottled it is a full-speed password oracle and a code mail-bomb. Cap
+    // the rate per source, like the anonymous endpoints do.
+    @Singleton
+    @Named("step-up")
+    SourceThrottle stepUpThrottle(
+            @io.micronaut.context.annotation.Value("${security.step-up.max-per-window:10}") int maxPerWindow,
+            @io.micronaut.context.annotation.Value("${security.step-up.window-minutes:15}") int windowMinutes,
+            Clock clock) {
+        return new SourceThrottle(maxPerWindow, java.time.Duration.ofMinutes(windowMinutes), clock);
+    }
+
     @Singleton
     com.jrobertgardzinski.security.system.roles.SetUserRoles setUserRoles(UserRepository userRepository) {
         return new com.jrobertgardzinski.security.system.roles.SetUserRoles(userRepository);
@@ -306,9 +318,14 @@ public class BeanFactory {
     @Singleton
     ResetPassword resetPassword(PasswordResetRepository passwordResetRepository, UserRepository userRepository,
                                 HashAlgorithmPort hashAlgorithm,
-                                com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless) {
+                                com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,
+                                AuthorizationDataRepository sessions,
+                                @io.micronaut.context.annotation.Value("${security.password-reset.ttl-minutes:60}")
+                                int resetTtlMinutes,
+                                Clock clock) {
         return new ResetPassword(passwordResetRepository, userRepository,
-                new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()), passwordless);
+                new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()), passwordless,
+                sessions, java.time.Duration.ofMinutes(resetTtlMinutes), clock);
     }
 
     @Singleton
@@ -323,9 +340,18 @@ public class BeanFactory {
     @Singleton
     com.jrobertgardzinski.security.config.mfa.StepUpPolicy stepUpPolicy(
             @io.micronaut.context.annotation.Value("${security.step-up.delete-account:FULL_CHAIN}") String deleteAccount,
-            @io.micronaut.context.annotation.Value("${security.step-up.change-password:SECOND_FACTORS}") String changePassword) {
+            @io.micronaut.context.annotation.Value("${security.step-up.change-password:SECOND_FACTORS}") String changePassword,
+            // resetting another user's factors is as destructive as deleting an account, so it is
+            // FULL_CHAIN by default and pinned here explicitly — an elevation minted for it must not
+            // ride over to delete-account (the elevation key carries the action, see SessionElevation)
+            @io.micronaut.context.annotation.Value("${security.step-up.admin-reset:FULL_CHAIN}") String adminReset,
+            // enrolling or removing a factor rewrites what it takes to sign in; a stolen live session
+            // must re-prove itself first, or it could add an attacker-held factor / strip the owner's
+            @io.micronaut.context.annotation.Value("${security.step-up.enrol-factor:SECOND_FACTORS}") String enrolFactor,
+            @io.micronaut.context.annotation.Value("${security.step-up.remove-factor:SECOND_FACTORS}") String removeFactor) {
         return new com.jrobertgardzinski.security.config.mfa.StepUpPolicy(
-                java.util.Map.of("delete-account", deleteAccount, "change-password", changePassword));
+                java.util.Map.of("delete-account", deleteAccount, "change-password", changePassword,
+                        "admin-reset", adminReset, "enrol-factor", enrolFactor, "remove-factor", removeFactor));
     }
 
     @Singleton
@@ -337,10 +363,11 @@ public class BeanFactory {
             com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
             com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
             com.jrobertgardzinski.security.system.mfa.StepUpStore stepUpStore,
-            com.jrobertgardzinski.security.system.mfa.SessionElevation sessionElevation) {
+            com.jrobertgardzinski.security.system.mfa.SessionElevation sessionElevation,
+            Clock clock) {
         return new com.jrobertgardzinski.security.system.mfa.StepUp(
                 stepUpPolicy, userRepository, hashAlgorithm, passwordless, enrolledFactors,
-                mfaChain, stepUpStore, sessionElevation);
+                mfaChain, stepUpStore, sessionElevation, clock);
     }
 
     @Singleton
@@ -354,9 +381,10 @@ public class BeanFactory {
     }
 
     @Singleton
-    ChangePassword changePassword(UserRepository userRepository, HashAlgorithmPort hashAlgorithm) {
+    ChangePassword changePassword(UserRepository userRepository, HashAlgorithmPort hashAlgorithm,
+                                  AuthorizationDataRepository sessions) {
         return new ChangePassword(userRepository, hashAlgorithm,
-                new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()));
+                new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()), sessions);
     }
 
     @Singleton
@@ -370,18 +398,32 @@ public class BeanFactory {
     ConfirmEmailChange confirmEmailChange(EmailChangeRepository emailChangeRepository, UserRepository userRepository,
                                           EmailVerificationRepository emailVerificationRepository,
                                           com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository
-                                                  federatedIdentityRepository) {
+                                                  federatedIdentityRepository,
+                                          com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository
+                                                  enrolledFactorRepository,
+                                          com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository
+                                                  recoveryCodeRepository,
+                                          com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository
+                                                  passwordlessAccountRepository,
+                                          PasswordResetRepository passwordResetRepository) {
         return new ConfirmEmailChange(emailChangeRepository, userRepository, emailVerificationRepository,
-                federatedIdentityRepository);
+                federatedIdentityRepository, enrolledFactorRepository, recoveryCodeRepository,
+                passwordlessAccountRepository, passwordResetRepository);
     }
 
     @Singleton
     DeleteAccount deleteAccount(UserRepository userRepository, AuthorizationDataRepository authorizationDataRepository,
                                 com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactorRepository,
                                 com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository recoveryCodeRepository,
-                                com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository federatedIdentityRepository) {
+                                com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository federatedIdentityRepository,
+                                EmailVerificationRepository emailVerificationRepository,
+                                PasswordResetRepository passwordResetRepository,
+                                EmailChangeRepository emailChangeRepository,
+                                com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordlessAccountRepository) {
         return new DeleteAccount(userRepository, authorizationDataRepository,
-                enrolledFactorRepository, recoveryCodeRepository, federatedIdentityRepository);
+                enrolledFactorRepository, recoveryCodeRepository, federatedIdentityRepository,
+                emailVerificationRepository, passwordResetRepository, emailChangeRepository,
+                passwordlessAccountRepository);
     }
 
     @Singleton

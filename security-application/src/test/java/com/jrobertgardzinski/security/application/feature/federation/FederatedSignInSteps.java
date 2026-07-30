@@ -114,6 +114,26 @@ public class FederatedSignInSteps {
         users.save(new User(Email.of(email), hashAlgorithm.hash(PlaintextPassword.of(password))));
     }
 
+    @Given("a DELETION is running for {string}")
+    public void aDeletionIsRunning(String email) {
+        users.markPendingDeletion(Email.of(email));
+    }
+
+    @Then("the ACCOUNT {string} is still unverified")
+    public void stillUnverified(String email) {
+        assertFalse(verifications.isVerified(Email.of(email)),
+                "a refused sign-in must not mark the address verified");
+    }
+
+    @Then("no PROVIDER identity is linked to {string}")
+    public void noIdentityLinked(String email) {
+        // the whole point of the ordering: claimByEmail WRITES (password wiped, sessions revoked,
+        // address verified, identity linked) and used to run BEFORE the pending-deletion check, so
+        // an account on its way out got a provider identity welded onto it while sign-in was refused
+        assertFalse(links.containsValue(email),
+                "a refused sign-in must leave no provider identity behind");
+    }
+
     @Given("the ACCOUNT {string} holds an active session")
     public void anActiveSession(String email) {
         sessions.create(SessionTokens.createFor(Email.of(email),

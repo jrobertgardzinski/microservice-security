@@ -34,7 +34,7 @@ class JdbcOutboxAppender implements OutboxAppender {
         // active span's W3C traceparent, so the drain can continue this trace.
         repository.save(new OutboxEventEntity(
                 UUID.randomUUID(), topic, key, payload, Instant.now(clock), null,
-                correlationId(), traceparent()));
+                correlationId(), traceparent(), null));
     }
 
     private static String correlationId() {

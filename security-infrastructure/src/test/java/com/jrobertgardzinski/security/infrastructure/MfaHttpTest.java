@@ -89,6 +89,7 @@ class MfaHttpTest {
         String token = registerVerifyAuthenticate(email);
 
         // enrol: start returns the secret to scan (no code sent), confirm seals it with a live code
+        stepUpToEnrol(token);
         HttpResponse<Map> start = exchange(HttpRequest.POST("/account/factors/TOTP/enroll/start", Map.of())
                 .header("Authorization", "Bearer " + token));
         assertEquals(HttpStatus.ACCEPTED, start.getStatus());
@@ -121,6 +122,7 @@ class MfaHttpTest {
 
         // enrol: start returns creation options (challenge nonce), confirm seals it with a signed
         // attestation carrying the credential's public key — the browser's job, played here
+        stepUpToEnrol(token);
         HttpResponse<Map> start = exchange(HttpRequest.POST("/account/factors/WEBAUTHN/enroll/start", Map.of())
                 .header("Authorization", "Bearer " + token));
         assertEquals(HttpStatus.ACCEPTED, start.getStatus());
@@ -200,6 +202,39 @@ class MfaHttpTest {
         return (int) exchange(HttpRequest.GET("/account/recovery-codes")
                 .header("Authorization", "Bearer " + token))
                 .getBody(Map.class).orElseThrow().get("unused");
+    }
+
+    @Test
+    @DisplayName("enrolling/removing a factor needs a step-up, and the e-mail target is the caller's own (poz. 2)")
+    void factor_changes_are_guarded_and_target_is_the_caller() {
+        String email = "poz2@example.com";
+        String token = registerVerifyAuthenticate(email);
+
+        // straight to enrol/start on a merely-live session → refused, told to step up
+        HttpResponse<Map> refused = exchange(HttpRequest.POST("/account/factors/EMAIL_CODE/enroll/start", Map.of())
+                .header("Authorization", "Bearer " + token));
+        assertEquals(HttpStatus.FORBIDDEN, refused.getStatus());
+        assertEquals("STEP_UP_REQUIRED", refused.getBody(Map.class).orElseThrow().get("status"));
+
+        // step up, then enrol — but aim the e-mail factor at an attacker address: the code must still
+        // go to the account's OWN verified address, never the body-supplied target
+        stepUpToEnrol(token);
+        exchange(HttpRequest.POST("/account/factors/EMAIL_CODE/enroll/start", Map.of("target", "attacker@evil.com"))
+                .header("Authorization", "Bearer " + token));
+        org.junit.jupiter.api.Assertions.assertNotNull(codeChannel().lastCodeFor(email),
+                "the enrolment code goes to the caller's own address");
+        org.junit.jupiter.api.Assertions.assertNull(codeChannel().lastCodeFor("attacker@evil.com"),
+                "never to a target supplied in the request body");
+        String enrolCode = codeChannel().lastCodeFor(email);
+        exchange(HttpRequest.POST("/account/factors/EMAIL_CODE/enroll/confirm", Map.of("code", enrolCode))
+                .header("Authorization", "Bearer " + token));
+
+        // now the account has password + EMAIL_CODE (floor is 1, so removal would not break it): a
+        // removal on a merely-live session is still refused for a step-up, not silently allowed
+        HttpResponse<Map> removeRefused = exchange(HttpRequest.DELETE("/account/factors/EMAIL_CODE")
+                .header("Authorization", "Bearer " + token));
+        assertEquals(HttpStatus.FORBIDDEN, removeRefused.getStatus());
+        assertEquals("STEP_UP_REQUIRED", removeRefused.getBody(Map.class).orElseThrow().get("status"));
     }
 
     // --- WebAuthn test helpers: this test plays the browser (build + sign), the server verifies ---
@@ -303,7 +338,16 @@ class MfaHttpTest {
         return (String) authenticated.getBody(Map.class).orElseThrow().get("accessToken");
     }
 
+    /** Enrolling a factor now needs a fresh step-up; a factor-less account elevates on the password alone. */
+    private void stepUpToEnrol(String token) {
+        HttpResponse<Map> elevated = exchange(HttpRequest.POST("/account/step-up",
+                        Map.of("action", "enrol-factor", "password", PASSWORD))
+                .header("Authorization", "Bearer " + token));
+        assertEquals(HttpStatus.OK, elevated.getStatus(), "step-up before enrolment must elevate");
+    }
+
     private void enrolEmailFactor(String email, String token) {
+        stepUpToEnrol(token);
         assertEquals(HttpStatus.ACCEPTED, exchange(HttpRequest.POST("/account/factors/EMAIL_CODE/enroll/start", Map.of())
                 .header("Authorization", "Bearer " + token)).getStatus());
         String enrolCode = codeChannel().lastCodeFor(email);

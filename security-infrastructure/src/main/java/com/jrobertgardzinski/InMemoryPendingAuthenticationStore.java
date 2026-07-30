@@ -2,9 +2,11 @@ package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.system.mfa.PendingAuthentication;
 import com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore;
+import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;
 
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
@@ -22,6 +24,11 @@ final class InMemoryPendingAuthenticationStore implements PendingAuthenticationS
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final Map<String, PendingAuthentication> byTicket = new ConcurrentHashMap<>();
+    private final Clock clock;
+
+    InMemoryPendingAuthenticationStore(Clock clock) {
+        this.clock = clock;
+    }
 
     @Override
     public String open(PendingAuthentication pending) {
@@ -43,6 +50,12 @@ final class InMemoryPendingAuthenticationStore implements PendingAuthenticationS
     @Override
     public void close(String ticket) {
         byTicket.remove(ticket);
+    }
+
+    /** Drops sign-ins abandoned after the password step once their chain TTL has passed (poz. 17). */
+    @Scheduled(fixedDelay = "1m")
+    void evictExpired() {
+        byTicket.values().removeIf(pending -> pending.isExpired(clock));
     }
 
     private static String randomTicket() {

@@ -43,4 +43,16 @@ public final class InMemoryEnrolledFactorRepository implements EnrolledFactorRep
     public void removeAll(Email userEmail) {
         byUser.remove(userEmail.value());
     }
+
+    @Override
+    public void reassign(Email fromEmail, Email toEmail) {
+        List<EnrolledFactor> moving = byUser.remove(fromEmail.value());
+        if (moving == null) {
+            return;
+        }
+        byUser.put(toEmail.value(), moving.stream()
+                .map(f -> new EnrolledFactor(toEmail, f.type(), f.label(), f.order(),
+                        fromEmail.value().equals(f.secretMaterial()) ? toEmail.value() : f.secretMaterial()))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
+    }
 }

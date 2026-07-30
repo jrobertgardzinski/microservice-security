@@ -4,14 +4,23 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
+import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException;
+import com.jrobertgardzinski.security.domain.repository.EmailChangeRepository;
+import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
+import com.jrobertgardzinski.security.domain.repository.PasswordResetRepository;
+import com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository;
+import com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.AccessGrant;
+import com.jrobertgardzinski.security.domain.vo.EmailChange;
+import com.jrobertgardzinski.security.domain.vo.FactorType;
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.domain.vo.Source;
@@ -22,7 +31,9 @@ import com.jrobertgardzinski.security.domain.vo.SessionStatus;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.vo.StoredSession;
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
+import com.jrobertgardzinski.security.domain.vo.token.PasswordResetToken;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
+import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
 import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,6 +44,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -52,7 +64,7 @@ class JdbcAdaptersTest {
             new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1));
 
     @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:18-alpine");
 
     static ApplicationContext context;
 
@@ -154,6 +166,91 @@ class JdbcAdaptersTest {
 
         sessions.markRotated(session.refreshToken());
         assertThat(sessions.findByAccessToken(session.accessToken())).isEmpty();
+    }
+
+    /**
+     * The address-keyed tables move with the account. Only the JDBC adapters can prove this: their
+     * primary keys are the flattened surrogates {@code email|type} and {@code email|hash}, so a move
+     * is a delete plus an insert under a RECOMPUTED id — an UPDATE of the address column alone would
+     * leave rows nobody can address (and the in-memory dubles, keyed by the address itself, cannot
+     * expose that class of mistake).
+     */
+    @Test
+    void address_keyed_rows_move_with_the_account_under_recomputed_ids() {
+        EnrolledFactorRepository factors = context.getBean(EnrolledFactorRepository.class);
+        RecoveryCodeRepository codes = context.getBean(RecoveryCodeRepository.class);
+        PasswordlessAccountRepository passwordless = context.getBean(PasswordlessAccountRepository.class);
+        Email before = Email.of("jdbc-move-old@example.com");
+        Email after = Email.of("jdbc-move-new@example.com");
+
+        factors.enrol(new EnrolledFactor(before, FactorType.EMAIL_CODE, "e-mail code", 2, before.value()));
+        codes.replaceAll(before, List.of("move-hash-1", "move-hash-2"));
+        passwordless.setPasswordless(before, true);
+
+        factors.reassign(before, after);
+        codes.reassign(before, after);
+        passwordless.reassign(before, after);
+
+        assertThat(factors.findByUser(before)).isEmpty();
+        assertThat(factors.findByUser(after)).singleElement().satisfies(factor -> {
+            assertThat(factor.type()).isEqualTo(FactorType.EMAIL_CODE);
+            assertThat(factor.order()).isEqualTo(2);
+            // the code target followed too: secret_material is where the NEXT code is sent
+            assertThat(factor.secretMaterial()).isEqualTo(after.value());
+        });
+        assertThat(codes.unusedCount(before)).isZero();
+        assertThat(codes.unusedCount(after)).isEqualTo(2);
+        // the id was recomputed, not just the address column: spending by the new key must find the row
+        assertThat(codes.consume(after, "move-hash-1")).isTrue();
+        assertThat(passwordless.isPasswordless(before)).isFalse();
+        assertThat(passwordless.isPasswordless(after)).isTrue();
+    }
+
+    /**
+     * A pending reset now carries the moment it was requested (migration V20) and can be dropped
+     * outright — a link that outlives its account is redeemed against the address's next owner.
+     */
+    @Test
+    void a_pending_reset_carries_its_age_and_can_be_purged() {
+        PasswordResetRepository resets = context.getBean(PasswordResetRepository.class);
+        Email email = Email.of("jdbc-reset@example.com");
+        // the application's clock, not the wall clock: it is UTC, and the TTL check compares against
+        // that same clock — reading the local time here would just measure the machine's offset
+        LocalDateTime justBefore = LocalDateTime.now(context.getBean(Clock.class)).minusMinutes(1);
+
+        resets.startReset(email, new PasswordResetToken("jdbc-reset-purged"));
+        resets.purge(email);
+        assertThat(resets.consumeReset(new PasswordResetToken("jdbc-reset-purged"))).isEmpty();
+
+        resets.startReset(email, new PasswordResetToken("jdbc-reset-live"));
+        assertThat(resets.consumeReset(new PasswordResetToken("jdbc-reset-live"))).get()
+                .satisfies(pending -> {
+                    assertThat(pending.email()).isEqualTo(email);
+                    assertThat(pending.requestedAt()).isAfter(justBefore);
+                });
+    }
+
+    /** Both pending-token tables forget an address on request, {@code email_changes} at either end. */
+    @Test
+    void pending_tokens_are_purged_by_address() {
+        EmailChangeRepository changes = context.getBean(EmailChangeRepository.class);
+        EmailVerificationRepository verifications = context.getBean(EmailVerificationRepository.class);
+        Email leaving = Email.of("jdbc-purge-leaving@example.com");
+        Email arriving = Email.of("jdbc-purge-arriving@example.com");
+
+        changes.startChange(new EmailChange(leaving, Email.of("jdbc-purge-x@example.com")),
+                new VerificationToken("jdbc-change-as-source"));
+        changes.startChange(new EmailChange(Email.of("jdbc-purge-y@example.com"), arriving),
+                new VerificationToken("jdbc-change-as-target"));
+        verifications.markVerified(leaving);
+
+        changes.purge(leaving);
+        changes.purge(arriving);
+        verifications.purge(leaving);
+
+        assertThat(changes.confirmChange(new VerificationToken("jdbc-change-as-source"))).isEmpty();
+        assertThat(changes.confirmChange(new VerificationToken("jdbc-change-as-target"))).isEmpty();
+        assertThat(verifications.isVerified(leaving)).isFalse();
     }
 
     @Test

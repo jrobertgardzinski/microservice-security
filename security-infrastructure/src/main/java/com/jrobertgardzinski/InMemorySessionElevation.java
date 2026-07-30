@@ -29,13 +29,27 @@ final class InMemorySessionElevation implements SessionElevation {
     }
 
     @Override
-    public void elevate(String accessToken) {
-        elevatedUntil.put(accessToken, clock.instant().plus(ttl));
+    public void elevate(String accessToken, String action) {
+        elevatedUntil.put(key(accessToken, action), clock.instant().plus(ttl));
     }
 
     @Override
-    public boolean consume(String accessToken) {
-        Instant until = elevatedUntil.remove(accessToken);
+    public boolean consume(String accessToken, String action) {
+        Instant until = elevatedUntil.remove(key(accessToken, action));
         return until != null && clock.instant().isBefore(until);
+    }
+
+    /** Token and action together — an elevation for one action never satisfies another (poz. 1). */
+    private static String key(String accessToken, String action) {
+        // NUL separates the two parts: a base64url access token never contains it, so
+        // (token, action) pairs cannot collide across a shared token.
+        return accessToken + "\u0000" + action;
+    }
+
+    /** Drops elevations whose TTL has passed so an unclaimed mark cannot pile up unbounded (poz. 17). */
+    @io.micronaut.scheduling.annotation.Scheduled(fixedDelay = "1m")
+    void evictExpired() {
+        Instant now = clock.instant();
+        elevatedUntil.values().removeIf(until -> !now.isBefore(until));
     }
 }

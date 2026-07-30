@@ -26,7 +26,7 @@ final class StepUpGuard {
     /** A 403 response if the caller has not stepped up, otherwise empty (proceed). */
     Optional<HttpResponse<Map<String, Object>>> requireElevation(HttpRequest<?> request, String action) {
         String token = bearerToken(request);
-        if (token != null && elevation.consume(token)) {
+        if (token != null && elevation.consume(token, action)) {
             return Optional.empty();
         }
         return Optional.of(HttpResponse.<Map<String, Object>>status(HttpStatus.FORBIDDEN)

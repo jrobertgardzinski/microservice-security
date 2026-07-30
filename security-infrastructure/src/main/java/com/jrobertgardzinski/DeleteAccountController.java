@@ -47,7 +47,15 @@ final class DeleteAccountController {
             return stepUp.get();
         }
         Email email = Email.of(request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow());
-        PurgeChoices choices = purgeChoices(body);
+        PurgeChoices choices;
+        try {
+            choices = purgeChoices(body);
+        } catch (IllegalArgumentException oversized) {
+            // an over-large or over-wide purge map is a bad request, not a server fault — reject it
+            // here so it never becomes an unpublishable outbox row (see PurgeChoices bounds)
+            return HttpResponse.<Map<String, Object>>status(io.micronaut.http.HttpStatus.UNPROCESSABLE_ENTITY)
+                    .body(Map.of("status", "INVALID_PURGE_CHOICES"));
+        }
         transactionBoundary.execute(() -> {
             startAccountDeletion.execute(email, choices);
             return null;

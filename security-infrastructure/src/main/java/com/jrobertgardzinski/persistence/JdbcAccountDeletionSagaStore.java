@@ -20,9 +20,19 @@ class JdbcAccountDeletionSagaStore implements AccountDeletionSagaStore {
         this.repository = repository;
     }
 
+    /**
+     * The read is the normal path; the partial unique index of V22 is the backstop for the race the
+     * read cannot close. Losing that race raises a unique violation, which aborts the request's
+     * whole transaction — the account lock and the deletion fact roll back with it, so the loser
+     * changes nothing at all. That is the safe side of the trade: never a second STARTED row.
+     */
     @Override
-    public void start(UUID sagaId, String email, Instant at) {
+    public boolean start(UUID sagaId, String email, Instant at) {
+        if (repository.existsByEmailAndState(email, "STARTED")) {
+            return false;
+        }
         repository.save(new AccountDeletionSagaEntity(sagaId, email, "STARTED", at, at));
+        return true;
     }
 
     @Override

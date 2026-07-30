@@ -35,4 +35,12 @@ public final class InMemoryRecoveryCodeRepository implements RecoveryCodeReposit
     public void removeAll(Email userEmail) {
         byUser.remove(userEmail.value());
     }
+
+    @Override
+    public void reassign(Email fromEmail, Email toEmail) {
+        Map<String, Boolean> moving = byUser.remove(fromEmail.value());
+        if (moving != null) {
+            byUser.put(toEmail.value(), moving);
+        }
+    }
 }

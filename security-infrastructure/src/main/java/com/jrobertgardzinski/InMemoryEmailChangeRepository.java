@@ -30,4 +30,11 @@ final class InMemoryEmailChangeRepository implements EmailChangeRepository {
     public Optional<EmailChange> confirmChange(VerificationToken token) {
         return Optional.ofNullable(byTokenHash.remove(TokenHashing.hash(token)));
     }
+
+    /** Both ends of a move, same as the JDBC adapter. */
+    @Override
+    public void purge(com.jrobertgardzinski.email.domain.Email email) {
+        byTokenHash.values().removeIf(change -> email.equals(change.currentEmail())
+                || email.equals(change.newEmail()));
+    }
 }

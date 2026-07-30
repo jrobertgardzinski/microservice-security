@@ -16,6 +16,8 @@ import org.slf4j.MDC;
 
 import java.util.Map;
 
+import static com.jrobertgardzinski.MaskedEmail.masked;
+
 /**
  * The saga's ear, after the extraction: identity no longer hears three content participants —
  * the portal's orchestrator (microservice-offboarding) collects those and announces ONE outcome
@@ -72,12 +74,6 @@ import java.util.Map;
 class OffboardingOutcomeListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(OffboardingOutcomeListener.class);
-
-    /** Two characters and the domain: enough to recognise a report, not enough to harvest. */
-    private static String masked(String address) {
-        int at = address.indexOf('@');
-        return at <= 0 ? "***" : address.substring(0, Math.min(2, at)) + "***" + address.substring(at);
-    }
 
     private final AccountDeletionOrchestrator orchestrator;
     private final TransactionBoundary transactionBoundary;

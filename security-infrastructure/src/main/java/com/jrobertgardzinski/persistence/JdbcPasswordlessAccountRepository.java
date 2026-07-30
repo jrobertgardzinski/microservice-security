@@ -33,4 +33,20 @@ final class JdbcPasswordlessAccountRepository implements PasswordlessAccountRepo
             repository.deleteById(email.value());
         }
     }
+
+    /** The row IS the address (it is the primary key), so a move is a delete plus an insert. */
+    @Override
+    public void reassign(Email fromEmail, Email toEmail) {
+        if (repository.existsById(fromEmail.value())) {
+            repository.deleteById(fromEmail.value());
+            if (!repository.existsById(toEmail.value())) {
+                repository.save(new PasswordlessAccountEntity(toEmail.value()));
+            }
+        }
+    }
+
+    @Override
+    public void purge(Email email) {
+        repository.deleteById(email.value());
+    }
 }

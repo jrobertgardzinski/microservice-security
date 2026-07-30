@@ -1,6 +1,7 @@
 package com.jrobertgardzinski.persistence;
 
 import io.micronaut.context.annotation.Requires;
+import io.micronaut.data.annotation.Query;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
@@ -15,4 +16,17 @@ interface RejectedAuthenticationJdbcRepository extends CrudRepository<RejectedAu
     long countByIpAddressAndOccurredAtAfter(String ipAddress, LocalDateTime since);
 
     void deleteByIpAddress(String ipAddress);
+
+    /**
+     * Retention: a failure older than the cutoff is deleted.
+     *
+     * <p>The only deletion before this was {@code deleteByIpAddress}, run when a source SUCCEEDS or
+     * gets blocked. A source that only ever fails — which is every scanner on the internet — was
+     * therefore never cleaned at all: its rows, each an IP address plus a user-agent string, stayed
+     * for ever. {@code Source}'s own javadoc promises the opposite ("the observed context is personal
+     * data; it lives only as long as the failure records it annotates"), and there was nothing to
+     * make that true.
+     */
+    @Query("DELETE FROM rejected_authentications WHERE occurred_at < :cutoff")
+    int deleteOlderThan(LocalDateTime cutoff);
 }

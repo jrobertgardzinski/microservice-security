@@ -47,4 +47,20 @@ final class JdbcRecoveryCodeRepository implements RecoveryCodeRepository {
     public void removeAll(Email userEmail) {
         repository.deleteByUserEmail(userEmail.value());
     }
+
+    /**
+     * Delete-then-insert rather than an UPDATE: the primary key is the flattened {@code email|hash},
+     * so a moved row needs a new id. The spent flag moves with the row — the "N of 10 left" count
+     * must not reset itself because the owner changed their address.
+     */
+    @Override
+    public void reassign(Email fromEmail, Email toEmail) {
+        List<RecoveryCodeEntity> moving = repository.findByUserEmail(fromEmail.value());
+        repository.deleteByUserEmail(fromEmail.value());
+        repository.saveAll(moving.stream()
+                .map(e -> new RecoveryCodeEntity(
+                        RecoveryCodeEntity.keyOf(toEmail.value(), e.codeHash()),
+                        toEmail.value(), e.codeHash(), e.used()))
+                .toList());
+    }
 }

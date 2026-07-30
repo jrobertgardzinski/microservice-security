@@ -443,7 +443,10 @@ export function App() {
     try {
       const r = await request(`${SECURITY}/account/step-up/factor`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Authorization is not optional here: AuthorizationFilter guards /account/** and answers
+        // 401 BEFORE the controller — which messageFor below then blamed on the code, so an
+        // account with a factor could never delete itself through this UI
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ stepUpTicket: deleteTicket, proof: deleteCode }),
       });
       if (r.status === 202) {

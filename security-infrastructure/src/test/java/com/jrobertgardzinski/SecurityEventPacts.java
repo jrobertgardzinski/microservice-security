@@ -103,6 +103,9 @@ public class SecurityEventPacts {
     /** The real orchestrator over a stubbed saga store: outcomes latch, timeouts expire. */
     private static AccountDeletionOrchestrator orchestrator(OutboxAppender outbox) {
         AccountDeletionSagaStore sagas = mock(AccountDeletionSagaStore.class);
+        // the saga opens: without this the orchestrator would take the "already running" branch and
+        // announce no fact at all, and the pact would fail on an empty outbox
+        when(sagas.start(any(), any(), any())).thenReturn(true);
         when(sagas.complete(any(), any())).thenReturn(true);
         when(sagas.compensateOverdue(any(), any())).thenReturn(List.of("leaver@example.com"));
         return new AccountDeletionOrchestrator(sagas, outbox, mock(DeleteAccount.class),

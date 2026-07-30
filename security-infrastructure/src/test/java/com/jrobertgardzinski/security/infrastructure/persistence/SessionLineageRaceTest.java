@@ -50,7 +50,7 @@ class SessionLineageRaceTest {
             new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1));
 
     @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:18-alpine");
 
     static ApplicationContext context;
 

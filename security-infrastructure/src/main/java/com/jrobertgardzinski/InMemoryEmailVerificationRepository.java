@@ -51,4 +51,9 @@ final class InMemoryEmailVerificationRepository implements EmailVerificationRepo
         Row row = byEmail.get(email.value());
         return row != null && row.verified();
     }
+
+    @Override
+    public void purge(Email email) {
+        byEmail.remove(email.value());
+    }
 }

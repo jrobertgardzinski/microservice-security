@@ -66,8 +66,17 @@ class AdminFactorResetHttpTest {
         // the admin must step up first
         assertEquals(HttpStatus.FORBIDDEN, exchange(HttpRequest.PUT("/admin/users/" + user + "/factors/reset", null)
                 .header("Authorization", "Bearer " + adminToken)).getStatus());
-        // bootstrap admin has no factors → step-up elevates on the (SECOND_FACTORS) start alone
-        assertEquals(HttpStatus.OK, exchange(HttpRequest.POST("/account/step-up", Map.of("action", "admin-reset"))
+        // admin-reset is FULL_CHAIN, so a bootstrap admin with no factors must still re-enter its
+        // PASSWORD — a step-up WITHOUT the password no longer elevates (poz. 1)
+        assertEquals(HttpStatus.UNAUTHORIZED, exchange(HttpRequest.POST("/account/step-up",
+                        Map.of("action", "admin-reset")).header("Authorization", "Bearer " + adminToken)).getStatus());
+        assertEquals(HttpStatus.OK, exchange(HttpRequest.POST("/account/step-up",
+                        Map.of("action", "admin-reset", "password", PASSWORD))
+                .header("Authorization", "Bearer " + adminToken)).getStatus());
+        // and that admin-reset elevation must NOT unlock a different action — deleting the admin's own
+        // account still demands its own step-up (the elevation is keyed by action, poz. 1). The failed
+        // attempt consumes only the delete-account key, so the admin-reset elevation survives for the reset below.
+        assertEquals(HttpStatus.FORBIDDEN, exchange(HttpRequest.POST("/account/delete", null)
                 .header("Authorization", "Bearer " + adminToken)).getStatus());
 
         HttpResponse<Map> reset = exchange(HttpRequest.PUT("/admin/users/" + user + "/factors/reset", null)
@@ -95,6 +104,10 @@ class AdminFactorResetHttpTest {
     }
 
     private void enrolEmailFactor(String email, String token) {
+        // enrolment sits behind a step-up now; a factor-less account elevates on the password alone
+        assertEquals(HttpStatus.OK, exchange(HttpRequest.POST("/account/step-up",
+                        Map.of("action", "enrol-factor", "password", PASSWORD))
+                .header("Authorization", "Bearer " + token)).getStatus());
         exchange(HttpRequest.POST("/account/factors/EMAIL_CODE/enroll/start", Map.of())
                 .header("Authorization", "Bearer " + token));
         String code = server.getApplicationContext().getBean(CapturingEmailCodeChannel.class).lastCodeFor(email);

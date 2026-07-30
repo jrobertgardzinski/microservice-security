@@ -22,6 +22,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.jrobertgardzinski.MaskedEmail.masked;
+
 /**
  * Identity's side of the account-deletion saga — the ORCHESTRATION itself lives in the portal
  * ({@code microservice-offboarding}), because the content being purged is the portal's domain.
@@ -77,11 +79,18 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
             // identity-only deployment: no portal, no content, nothing to wait for
             deleteAccount.execute(email);
             appendMail("ACCOUNT_DELETED", email.value());
-            LOG.info("account deleted immediately (no portal configured) for {}", email.value());
+            LOG.info("account deleted immediately (no portal configured) for {}", masked(email.value()));
             return;
         }
         UUID sagaId = UUID.randomUUID();
-        sagas.start(sagaId, email.value(), Instant.now(clock));
+        if (!sagas.start(sagaId, email.value(), Instant.now(clock))) {
+            // a deletion for this address is already running: the account is locked, the fact is out
+            // and the portal is working on it. Announcing it again would fork a second saga whose
+            // outcome settles the first one's row — so this request joins the one under way instead.
+            LOG.info("account deletion already under way for {}; joining it instead of announcing"
+                    + " a second one", masked(email.value()));
+            return;
+        }
         Map<String, Object> fact = new LinkedHashMap<>(Map.of(
                 "id", UUID.randomUUID().toString(),
                 "sagaId", sagaId.toString(),
@@ -99,12 +108,6 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
      * good and a goodbye mail goes out. Duplicates and strays are no-ops — the store's
      * STARTED→COMPLETED latch admits exactly one caller.
      */
-    /** Two characters and the domain: enough to recognise a report, not enough to harvest. */
-    private static String masked(String address) {
-        int at = address.indexOf('@');
-        return at <= 0 ? "***" : address.substring(0, Math.min(2, at)) + "***" + address.substring(at);
-    }
-
     public void completePurge(String email) {
         if (!sagas.complete(email, Instant.now(clock))) {
             // Two very different reasons to be here, and they used to share one INFO line.
@@ -129,7 +132,7 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
         }
         deleteAccount.execute(Email.of(email));
         appendMail("ACCOUNT_DELETED", email);
-        LOG.info("account deletion completed for {}", email);
+        LOG.info("account deletion completed for {}", masked(email));
     }
 
     /** The portal announced the purge FAILED: the account unlocks and the user is apologised to. */
@@ -172,7 +175,8 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
         for (String email : sagas.compensateOverdue(now.minus(purgeTimeout), now)) {
             userRepository.clearPendingDeletion(Email.of(email));
             appendMail("ACCOUNT_DELETION_FAILED", email);
-            LOG.warn("account deletion compensated (no portal outcome in {}) for {}", purgeTimeout, email);
+            LOG.warn("account deletion compensated (no portal outcome in {}) for {}",
+                    purgeTimeout, masked(email));
         }
     }
 

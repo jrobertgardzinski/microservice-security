@@ -39,4 +39,11 @@ final class JdbcEmailChangeRepository implements EmailChangeRepository {
             return new EmailChange(Email.of(entity.currentEmail()), Email.of(entity.newEmail()));
         });
     }
+
+    /** Both ends of a move: the address can appear as the source of one change and the target of another. */
+    @Override
+    public void purge(Email email) {
+        repository.deleteByCurrentEmail(email.value());
+        repository.deleteByNewEmail(email.value());
+    }
 }

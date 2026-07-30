@@ -104,6 +104,11 @@ class AuthenticationTest {
             @Override
             public void removeAll(com.jrobertgardzinski.email.domain.Email userEmail) {
             }
+
+            @Override
+            public void reassign(com.jrobertgardzinski.email.domain.Email fromEmail,
+                                 com.jrobertgardzinski.email.domain.Email toEmail) {
+            }
         };
     }
 
@@ -141,7 +146,9 @@ class AuthenticationTest {
         AuthenticationResult.Authenticated authenticated = assertInstanceOf(AuthenticationResult.Authenticated.class, result);
         assertAll(
                 () -> assertEquals(sessionTokens, authenticated.session()),
-                () -> Mockito.verify(cleanBruteForceRecords).execute(GIVEN.ipAddress),
+                // a successful sign-in must NOT clear this IP's brute-force accounting (poz. 6):
+                // that would let a known-good credential reset the counter for the whole address
+                () -> Mockito.verify(cleanBruteForceRecords, Mockito.never()).execute(Mockito.any()),
                 () -> Mockito.verify(generateSession).create(GIVEN.email),
                 () -> Mockito.verify(updateBruteForceRecords, Mockito.never()).execute(Mockito.any())
         );

@@ -25,4 +25,12 @@ public interface EmailVerificationRepository {
     void markVerified(Email email);
 
     boolean isVerified(Email email);
+
+    /**
+     * Forgets everything known about this address: the pending token and the verified flag. Called
+     * when the account is deleted and when it moves to another address — a "verified" row left under
+     * a freed address would vouch for whoever registers it next, and the address itself is personal
+     * data that must not outlive the account.
+     */
+    void purge(Email email);
 }

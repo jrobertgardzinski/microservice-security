@@ -107,6 +107,16 @@
                  (root logger silently lost its output) -->
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <!-- Already here transitively through logback-classic; named explicitly because two
+                 tests assert on what is ACTUALLY LOGGED (no e-mail address in the access line, none
+                 in the deletion path) and attach a ListAppender to do it. Runtime scope, exactly
+                 like classic, so the runtime classpath is unchanged and the test compile classpath
+                 gains visibility of it — same arrangement as jackson-databind below. -->
+            <scope>runtime</scope>
+        </dependency>
 
         <!-- Persistence: Micronaut Data JDBC over a Hikari pool to PostgreSQL; schema by Flyway.
              The JDBC repository adapters activate only when a datasource is present; with none

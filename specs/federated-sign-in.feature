@@ -43,6 +43,17 @@ Feature: Federated sign-in
       When the USER SIGNS IN with a PROVIDER identity vouching for "guarded@example.com"
       Then the SIGN IN needs a further FACTOR
 
+  Rule: 3c. An ACCOUNT locked by a running deletion is refused WITHOUT being touched
+
+    Example: the leaver clicks "sign in with the provider" while their deletion is running
+      Given a local ACCOUNT "leaver@example.com" with an unverified email and the password "SquatterPass1!"
+      And a DELETION is running for "leaver@example.com"
+      When the USER SIGNS IN with a PROVIDER identity vouching for "leaver@example.com"
+      Then the SIGN IN is refused
+      And the password "SquatterPass1!" still opens the ACCOUNT "leaver@example.com"
+      And the ACCOUNT "leaver@example.com" is still unverified
+      And no PROVIDER identity is linked to "leaver@example.com"
+
   Rule: 4. An identity the PROVIDER does not vouch for touches nothing
 
     Example: the provider did not verify the email

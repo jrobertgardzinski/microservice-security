@@ -18,10 +18,25 @@ public record StepUpPolicy(Map<String, String> byAction) {
 
     public StepUpPolicy {
         byAction = Map.copyOf(byAction);
+        // a typo in a per-action requirement (e.g. FULL_CHAN) must not silently degrade to "a live
+        // session is enough" — reject unknown values at start, the way parseParticipants does in
+        // offboarding, so a misconfiguration fails loudly instead of dropping the guard.
+        byAction.forEach((action, requirement) -> {
+            if (!NONE.equals(requirement) && !SECOND_FACTORS.equals(requirement)
+                    && !FULL_CHAIN.equals(requirement)) {
+                throw new IllegalArgumentException("step-up requirement for '" + action
+                        + "' must be one of NONE, SECOND_FACTORS, FULL_CHAIN but was '" + requirement + "'");
+            }
+        });
     }
 
+    /**
+     * The requirement for an action. An action nobody configured is treated as the strictest
+     * ({@code FULL_CHAIN}): a new sensitive endpoint that forgot to register its policy must fail
+     * closed (re-prove everything), never open (a live session is enough).
+     */
     public String requirementFor(String action) {
-        return byAction.getOrDefault(action, SECOND_FACTORS);
+        return byAction.getOrDefault(action, FULL_CHAIN);
     }
 
     public static StepUpPolicy withDefaults() {
