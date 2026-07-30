@@ -10,8 +10,31 @@ import { Given, Then, When } from '@cucumber/cucumber';
 import { expect } from 'playwright/test';
 import { credentials, uniqueAccount } from '../support/account.mjs';
 
+/**
+ * Adding a factor now sits behind a step-up (P18 poz. 2): a merely-live session must not be able to
+ * rewrite how an account signs in. The UI answers a 403 by asking for proof rather than by failing,
+ * so the glue does what the person does — types the password, and the mailed code if a factor is
+ * already enrolled. Silent when no proof is asked for, so the same call fits every enrolment.
+ */
+async function proveForEnrol(world) {
+  const prompt = world.page.getByTestId('enrol-stepup');
+  if (!(await prompt.isVisible().catch(() => false))) {
+    return;
+  }
+  await world.page.getByTestId('enrol-stepup-password').fill(credentials.password);
+  await world.page.getByTestId('enrol-stepup-submit').click();
+  const codeInput = world.page.getByTestId('enrol-stepup-code');
+  if (await codeInput.isVisible().catch(() => false)) {
+    await codeInput.fill(await mailedSignInCode(world));
+    await world.page.getByTestId('enrol-stepup-code-submit').click();
+  }
+  await expect(prompt).toBeHidden();
+}
+
 let recoveryCodes = [];
 let spentRecoveryCode = '';
+
+export { proveForEnrol };
 
 async function signInPasswordStep(world) {
   await world.page.getByTestId('tab-signin').click();
@@ -73,6 +96,7 @@ Given('the USER has enrolled the e-mail FACTOR', async function () {
   await expect(addButton.or(enrolledEntry)).toBeVisible();
   if (await addButton.isVisible()) {
     await addButton.click();
+    await proveForEnrol(this);
     // the code input appears only once the server answered 202 — i.e. the code is really out;
     // reading the mailbox any earlier races the enrolment start and finds a stale code
     const codeInput = this.page.getByTestId('enroll-code');

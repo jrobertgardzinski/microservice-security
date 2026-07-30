@@ -13,6 +13,11 @@ export function AccountScreen(props: {
     enrollingType: string; enrollDisplay: string; enrollTarget: string; enrolCode: string;
     setEnrollTarget: (v: string) => void; setEnrolCode: (v: string) => void;
     startEnrol: (type: string) => void; confirmEnrol: () => void;
+    stepUpType: string;
+    stepUpPassword: string; setStepUpPassword: (v: string) => void;
+    stepUpTicket: string;
+    stepUpCode: string; setStepUpCode: (v: string) => void;
+    prove: () => void; proveFactor: () => void;
   };
   recovery: { codes: string[]; unused: number | null; generate: () => void };
   sessions: { list: Session[]; revokeAll: () => void };
@@ -57,6 +62,29 @@ export function AccountScreen(props: {
           </button>
         </div>
       ))}
+      {factors.stepUpType && (
+        // adding a factor is a change to how this account signs in, so the server asks for proof
+        // first — the password while there is nothing else to prove with, a factor once there is
+        <div data-testid="enrol-stepup">
+          <p>Confirm it is you before changing how you sign in:</p>
+          {!factors.stepUpTicket ? (
+            <>
+              <input data-testid="enrol-stepup-password" type="password" placeholder="your password"
+                     value={factors.stepUpPassword}
+                     onChange={(e) => factors.setStepUpPassword(e.target.value)} />
+              <button data-testid="enrol-stepup-submit" onClick={() => factors.prove()}>Continue</button>
+            </>
+          ) : (
+            <>
+              <input data-testid="enrol-stepup-code" placeholder="code we sent you"
+                     value={factors.stepUpCode}
+                     onChange={(e) => factors.setStepUpCode(e.target.value)} />
+              <button data-testid="enrol-stepup-code-submit"
+                      onClick={() => factors.proveFactor()}>Continue</button>
+            </>
+          )}
+        </div>
+      )}
       {factors.enrollingType && (
         <div>
           {factors.enrollDisplay && (

@@ -5,6 +5,7 @@
 
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from 'playwright/test';
+import { proveForEnrol } from './mfa.steps.mjs';
 import { credentials } from '../support/account.mjs';
 
 Given('the USER has a device that can hold PASSKEYS', async function () {
@@ -31,6 +32,7 @@ Given('the USER has ENROLLED a PASSKEY', async function () {
   await expect(this.page.getByTestId('signed-in-email')).toHaveText(credentials.email);
 
   await this.page.getByTestId('add-WEBAUTHN').click();
+  await proveForEnrol(this);
   // the UI creates the credential and confirms in one gesture — wait for the passkey to appear
   await expect(this.page.getByTestId('factor-list').getByText('passkey')).toBeVisible();
   await this.page.getByTestId('sign-out').click();

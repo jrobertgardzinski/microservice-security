@@ -38,6 +38,14 @@ export function App() {
   const [offered, setOffered] = useState<string[]>([]);
   const [enrollingType, setEnrollingType] = useState('');
   const [enrollDisplay, setEnrollDisplay] = useState('');
+  // Enrolling a factor rewrites what it takes to sign in, so the server demands a fresh step-up
+  // (P18 poz. 2): a merely-live — possibly stolen — session must not be able to add a factor the
+  // thief holds. The FIRST factor is proven with the password; a later one with the factors already
+  // enrolled, which is why this carries both a password and a ticket.
+  const [enrolStepUpType, setEnrolStepUpType] = useState('');
+  const [enrolStepUpPassword, setEnrolStepUpPassword] = useState('');
+  const [enrolStepUpTicket, setEnrolStepUpTicket] = useState('');
+  const [enrolStepUpCode, setEnrolStepUpCode] = useState('');
   const [enrollTarget, setEnrollTarget] = useState('');
   const [enrolCode, setEnrolCode] = useState('');
   // recovery codes: shown exactly once, right after generation; only the count is retrievable later
@@ -289,8 +297,58 @@ export function App() {
       setEnrollingType(type);
       setEnrollDisplay(setup.display ?? '');
       setEnrolCode('');
+    } else if (r.status === 403) {
+      // STEP_UP_REQUIRED. Not an error to report — an extra proof to collect, after which this very
+      // enrolment resumes on its own.
+      setEnrolStepUpType(type);
+      setEnrolStepUpPassword('');
+      setEnrolStepUpTicket('');
+      setEnrolStepUpCode('');
     } else {
       setNotice('Could not start enrolment.');
+    }
+  };
+
+  /** The password half of the enrolment step-up; a second factor may still be asked for after it. */
+  const proveForEnrol = async () => {
+    const type = enrolStepUpType;
+    const r = await request(`${SECURITY}/account/step-up`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'enrol-factor', password: enrolStepUpPassword }),
+    });
+    const body: { status?: string; stepUpTicket?: string } = await r.json().catch(() => ({}));
+    if (r.status === 200 && body.status === 'ELEVATED') {
+      setEnrolStepUpType('');
+      await startEnrol(type);
+    } else if (r.status === 202 && body.status === 'FACTOR_REQUIRED') {
+      setEnrolStepUpTicket(body.stepUpTicket ?? '');
+    } else if (r.status === 401 || r.status === 403) {
+      setNotice('Wrong password.');
+    } else {
+      setNotice(`Security answered ${r.status}. Please try again.`);
+    }
+  };
+
+  /** The factor half: the chain the account already carries, one link at a time. */
+  const proveFactorForEnrol = async () => {
+    const type = enrolStepUpType;
+    // Authorization is NOT optional here: AuthorizationFilter guards /account/** and answers 401
+    // before the controller ever sees the ticket (the defect P18 poz. 8 fixed on the deletion path).
+    const r = await request(`${SECURITY}/account/step-up/factor`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ stepUpTicket: enrolStepUpTicket, proof: enrolStepUpCode }),
+    });
+    const body: { status?: string; stepUpTicket?: string } = await r.json().catch(() => ({}));
+    if (r.status === 200) {
+      setEnrolStepUpType('');
+      await startEnrol(type);
+    } else if (r.status === 202 && body.status === 'FACTOR_REQUIRED') {
+      setEnrolStepUpTicket(body.stepUpTicket ?? enrolStepUpTicket);
+      setEnrolStepUpCode('');
+    } else {
+      setNotice('Wrong code.');
     }
   };
 
@@ -486,6 +544,12 @@ export function App() {
             setEnrollTarget, setEnrolCode,
             startEnrol: (type) => void startEnrol(type),
             confirmEnrol: () => void confirmEnrol(),
+            stepUpType: enrolStepUpType,
+            stepUpPassword: enrolStepUpPassword, setStepUpPassword: setEnrolStepUpPassword,
+            stepUpTicket: enrolStepUpTicket,
+            stepUpCode: enrolStepUpCode, setStepUpCode: setEnrolStepUpCode,
+            prove: () => void proveForEnrol(),
+            proveFactor: () => void proveFactorForEnrol(),
           }}
           recovery={{
             codes: recoveryCodes, unused: recoveryUnused,
