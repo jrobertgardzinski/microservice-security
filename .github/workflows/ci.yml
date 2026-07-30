@@ -32,7 +32,7 @@ jobs:
     # container for the only check that exercises the wiring the image actually uses.
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:18-alpine
         env:
           POSTGRES_PASSWORD: secret
           POSTGRES_DB: security
@@ -44,70 +44,70 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: shared/microservice-security
 
       # the shared libraries this service builds against
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: jrobertgardzinski/test-starter
           path: shared/test-starter
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: jrobertgardzinski/libs   # the constraint lib lives in repo "libs"
           path: shared/constraint
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: jrobertgardzinski/config
           path: shared/config
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: jrobertgardzinski/adjustable-clock
           path: shared/adjustable-clock
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: jrobertgardzinski/email
           path: shared/email
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: jrobertgardzinski/password
           path: shared/password
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: jrobertgardzinski/infrastructure-micronaut-clock
           path: shared/infrastructure-micronaut-clock
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: jrobertgardzinski/offline-jwt
           path: shared/offline-jwt
 
       # offline-jwt is also a consumer (the JWKS pact) and a test dependency (the round-trip);
       # the other consumers are checkout only, no build
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: jrobertgardzinski/microservice-email
           path: shared/microservice-email
       # the portal consumers — these four MUST sit under portal/, see the note at the top
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: jrobertgardzinski/microservice-memes
           path: portal/microservice-memes
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: jrobertgardzinski/microservice-comments
           path: portal/microservice-comments
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: jrobertgardzinski/microservice-user-collections
           path: portal/microservice-user-collections
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: jrobertgardzinski/microservice-offboarding
           path: portal/microservice-offboarding
 
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
@@ -220,8 +220,8 @@ jobs:
       run:
         working-directory: security-ui
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           # the version security-ui's own toolchain needs; vite 8 requires >= 20.19
           node-version: '22'
