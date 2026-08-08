@@ -1,5 +1,7 @@
 package com.jrobertgardzinski;
 
+import java.time.LocalDateTime;
+import java.time.Clock;
 import com.jrobertgardzinski.security.domain.entity.RejectedAuthentication;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.FailuresCount;
@@ -8,10 +10,10 @@ import com.jrobertgardzinski.security.domain.vo.Source;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationId;
 import io.micronaut.context.annotation.Requires;
+import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;
 
 import javax.sql.DataSource;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -26,6 +28,15 @@ public final class InMemoryRejectedAuthenticationRepository implements RejectedA
 
     private final List<RejectedAuthentication> records = new CopyOnWriteArrayList<>();
     private final AtomicLong sequence = new AtomicLong();
+    private final Clock clock;
+    private final com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig config;
+
+    InMemoryRejectedAuthenticationRepository(
+            Clock clock,
+            com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig config) {
+        this.clock = clock;
+        this.config = config;
+    }
 
     @Override
     public RejectedAuthentication create(RejectedAuthenticationDetails details) {
@@ -60,6 +71,23 @@ public final class InMemoryRejectedAuthenticationRepository implements RejectedA
                 .filter(details -> details.source().equals(source) && details.time().isAfter(since))
                 .count();
         return new FailuresCount((int) count);
+    }
+
+    /**
+     * Forget failures older than the window anyone still counts over.
+     *
+     * <p>Nothing outside the window can influence a decision — every count asks for failures
+     * "since" a moment inside it — so what is left is a growing register of who failed to sign in
+     * as whom, kept for no reason and paid for in memory. Anyone who can reach the sign-in endpoint
+     * can add to it, which is what makes this the same finding as the OAuth flow store, not a
+     * tidiness preference. Retention is TWICE the window, so a count taken a moment before the
+     * sweep still sees everything it is entitled to.
+     */
+    @Scheduled(fixedDelay = "5m")
+    void evictOutsideTheWindow() {
+        LocalDateTime cutoff = LocalDateTime.now(clock)
+                .minusMinutes(2L * config.failureWindowMinutes().value());
+        records.removeIf(record -> record.details().time().isBefore(cutoff));
     }
 
     @Override

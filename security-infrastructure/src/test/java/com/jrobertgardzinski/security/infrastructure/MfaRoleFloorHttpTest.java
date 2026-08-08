@@ -66,6 +66,11 @@ class MfaRoleFloorHttpTest {
         assertEquals(HttpStatus.OK, get("/sessions", userToken).getStatus());
         assertEquals(true, me(userToken).get("mfaCompliant"));
 
+        // granting a role is a permanent widening, so the admin proves the session is fresh first
+        assertEquals(HttpStatus.OK, exchange(HttpRequest.POST("/account/step-up",
+                        Map.of("action", "admin-roles", "password", PASSWORD))
+                .header("Authorization", "Bearer " + adminToken)).getStatus());
+
         // the bootstrap admin (graced) can still reach /admin and grants MODERATOR
         HttpResponse<Map> granted = exchange(HttpRequest.PUT("/admin/users/" + user + "/roles",
                 Map.of("roles", List.of("MODERATOR"))).header("Authorization", "Bearer " + adminToken));

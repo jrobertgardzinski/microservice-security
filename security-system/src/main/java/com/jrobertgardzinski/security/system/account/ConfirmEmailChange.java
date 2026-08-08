@@ -20,6 +20,11 @@ import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
  * because the provider keeps reporting its own old address and the auto-link at the next sign-in
  * would never find the moved account.
  *
+ * <p>A ticket is only good for as long as the window the caller sets: this link MOVES the account,
+ * so one sitting unnoticed in an old mailbox must stop working, exactly as a password-reset link
+ * does. It did not, until now — nothing was reading the date it was issued, because nothing was
+ * stored.
+ *
  * <p>Everything else the account owns is keyed by that address too, and not one of those tables has
  * a foreign key to cascade — so this use case moves them by hand or the move loses them. Two kinds,
  * two answers. What belongs to the ACCOUNT follows it: the MFA factors, the recovery codes and the
@@ -40,6 +45,8 @@ public class ConfirmEmailChange {
     private final RecoveryCodeRepository recoveryCodeRepository;
     private final PasswordlessAccountRepository passwordlessAccountRepository;
     private final PasswordResetRepository passwordResetRepository;
+    private final java.time.Duration tokenTtl;
+    private final java.time.Clock clock;
 
     public ConfirmEmailChange(EmailChangeRepository emailChangeRepository, UserRepository userRepository,
                               EmailVerificationRepository emailVerificationRepository,
@@ -47,7 +54,8 @@ public class ConfirmEmailChange {
                               EnrolledFactorRepository enrolledFactorRepository,
                               RecoveryCodeRepository recoveryCodeRepository,
                               PasswordlessAccountRepository passwordlessAccountRepository,
-                              PasswordResetRepository passwordResetRepository) {
+                              PasswordResetRepository passwordResetRepository,
+                              java.time.Duration tokenTtl, java.time.Clock clock) {
         this.emailChangeRepository = emailChangeRepository;
         this.userRepository = userRepository;
         this.emailVerificationRepository = emailVerificationRepository;
@@ -56,10 +64,14 @@ public class ConfirmEmailChange {
         this.recoveryCodeRepository = recoveryCodeRepository;
         this.passwordlessAccountRepository = passwordlessAccountRepository;
         this.passwordResetRepository = passwordResetRepository;
+        this.tokenTtl = tokenTtl;
+        this.clock = clock;
     }
 
     public ConfirmEmailChangeResult execute(VerificationToken token) {
         return emailChangeRepository.confirmChange(token)
+                .filter(this::stillFresh)
+                .map(EmailChangeRepository.PendingEmailChange::change)
                 .<ConfirmEmailChangeResult>map(change -> {
                     federatedIdentityRepository.relinkAll(change.currentEmail(), change.newEmail());
                     enrolledFactorRepository.reassign(change.currentEmail(), change.newEmail());
@@ -73,5 +85,15 @@ public class ConfirmEmailChange {
                     return new ConfirmEmailChangeResult.EmailChanged(change.newEmail());
                 })
                 .orElseGet(ConfirmEmailChangeResult.InvalidToken::new);
+    }
+
+    /**
+     * An expired ticket is treated exactly like an unknown one — and it is already consumed by the
+     * time we look, so it is spent for good either way. Same answer as a stale password-reset link,
+     * for the same reason: telling the difference would tell a stranger that a change to this
+     * address was once started.
+     */
+    private boolean stillFresh(EmailChangeRepository.PendingEmailChange pending) {
+        return !pending.startedAt().plus(tokenTtl).isBefore(java.time.LocalDateTime.now(clock));
     }
 }

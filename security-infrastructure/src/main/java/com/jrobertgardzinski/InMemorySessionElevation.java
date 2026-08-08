@@ -2,6 +2,7 @@ package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.system.mfa.SessionElevation;
 import io.micronaut.context.annotation.Value;
+import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;
 
 import java.time.Clock;
@@ -47,7 +48,7 @@ final class InMemorySessionElevation implements SessionElevation {
     }
 
     /** Drops elevations whose TTL has passed so an unclaimed mark cannot pile up unbounded (poz. 17). */
-    @io.micronaut.scheduling.annotation.Scheduled(fixedDelay = "1m")
+    @Scheduled(fixedDelay = "1m")
     void evictExpired() {
         Instant now = clock.instant();
         elevatedUntil.values().removeIf(until -> !now.isBefore(until));

@@ -15,7 +15,19 @@ public interface EmailChangeRepository {
 
     void startChange(EmailChange change, VerificationToken token);
 
-    Optional<EmailChange> confirmChange(VerificationToken token);
+    /**
+     * The ticket, and the moment it was issued — because when it was issued is half the answer.
+     *
+     * <p>Single use alone is not enough: a link that never expires outlives the reason it was sent.
+     * This one MOVES the account, so a stale mail sitting in an old inbox is a way in that survives
+     * every later precaution — and it read as valid for months, because nothing was looking at the
+     * date. The window itself is a decision, so it is made where decisions are made: in the use
+     * case, not here and not in the adapter.
+     */
+    Optional<PendingEmailChange> confirmChange(VerificationToken token);
+
+    /** A pending move together with the moment it started. */
+    record PendingEmailChange(EmailChange change, java.time.LocalDateTime startedAt) {}
 
     /**
      * Drops every pending change that mentions this address, as EITHER end of a move. Called when the
