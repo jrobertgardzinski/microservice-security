@@ -36,11 +36,23 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   nigdy się nie pojawia. Połowa przyczyny naprawiona (UI nie pytał o step-up przy generowaniu
   kodów — przycisk był martwy także dla użytkownika, nie tylko w teście). Zostaje: dla konta
   Z zapisanym czynnikiem serwer zwraca 202 FACTOR_REQUIRED, a pole na kod się nie renderuje.
-  **Trop, od którego zacząć:** podsłuch sieci w przeglądarce pokazał, że `/account/step-up/factor`
-  nie jest wołane ANI RAZU w całym przebiegu suity — również przez scenariusze, które przechodzą,
-  bo ich konta elewują się na samym haśle (`StepUp` linia 73: hasło jest wymagane tylko dla
+  **Ślad sieciowy z podsłuchu w przeglądarce (2026-08-08), od tego zacząć:**
+  ```
+  POST /account/recovery-codes -> 403 {"status":"STEP_UP_REQUIRED","action":"generate-recovery-codes"}
+  POST /account/step-up        -> 202 {"stepUpTicket":"...","nextFactor":"EMAIL_CODE","status":"FACTOR_REQUIRED"}
+  POST /account/step-up        -> 200 {"status":"ELEVATED"}      <-- DRUGI start, zamiast /step-up/factor
+  POST /account/recovery-codes -> 403 {"status":"STEP_UP_REQUIRED"}
+  ```
+  Czyli: bilet przychodzi, ale UI zamiast dokończyć łańcuch (`/account/step-up/factor`) startuje
+  step-up od nowa — i elewacja, którą wtedy dostaje, nie otwiera tego endpointu. `/step-up/factor`
+  nie jest wołane ANI RAZU w całym przebiegu suity, także przez scenariusze, które PRZECHODZĄ:
+  ich konta elewują się na samym haśle (`StepUp` linia 73 — hasło jest wymagane tylko dla
   FULL_CHAIN albo gdy lista czynników jest pusta). Czynnikowa połowa step-upu w UI nie ma więc
-  żadnego pokrycia — i to jest prawdziwa dziura, nie sam czerwony scenariusz.
+  żadnego pokrycia i to jest prawdziwa dziura, nie sam czerwony scenariusz.
+
+  Sprawdzone i WYKLUCZONE: limit step-upu (429 — podniesiony w compose, nie zmienia wyniku),
+  wersja Node (suita wymaga 22+, lokalnie zainstalowany przez nvm), strona serwera (ręcznie
+  curl-em: step-up z akcją `generate-recovery-codes` → ELEVATED → POST zwraca dziesięć kodów).
 
 ## Otwarte — use case'y / security
 
