@@ -17,6 +17,8 @@ import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.domain.vo.Source;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
 import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.system.authentication.Authentication;
@@ -198,9 +200,16 @@ public class AuthenticationSteps {
         return authentication;
     }
 
+    /**
+     * Seed failures against the PAIR the scenario then signs in as — the source AND the registered
+     * account. Charging them to the source alone would seed a bucket nothing reads: since the
+     * lockout stopped being keyed by address alone, the count these examples are about is the tight
+     * per-victim one, and the source-wide ceiling above it is deliberately much higher.
+     */
     private void recordFailures(int count) {
+        LockoutSubject subject = new LockoutSubject(SOURCE, AttemptedAccount.of(registeredEmail));
         for (int i = 0; i < count; i++) {
-            rejections.create(new RejectedAuthenticationDetails(SOURCE, LocalDateTime.now(clock)));
+            rejections.create(new RejectedAuthenticationDetails(subject, LocalDateTime.now(clock)));
         }
     }
 
