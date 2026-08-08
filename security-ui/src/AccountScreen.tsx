@@ -66,6 +66,9 @@ export function AccountScreen(props: {
         // adding a factor is a change to how this account signs in, so the server asks for proof
         // first — the password while there is nothing else to prove with, a factor once there is
         <div data-testid="enrol-stepup">
+          {/* the same door guards two things: adding a factor, and minting recovery codes that
+              bypass the whole factor chain — so the wording covers both rather than promising
+              an enrolment that may not be happening */}
           <p>Confirm it is you before changing how you sign in:</p>
           {!factors.stepUpTicket ? (
             <>

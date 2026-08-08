@@ -264,6 +264,14 @@ export function App() {
     if (rc.ok) setRecoveryUnused((await rc.json()).unused ?? 0);
   };
 
+  /**
+   * Not a factor type — the sentinel that reuses the enrolment step-up panel for the ONE other
+   * action behind the same door. Generating recovery codes hands out credentials that bypass the
+   * whole factor chain, so the server demands a fresh elevation for it exactly as it does for
+   * enrolment; the UI simply never learned to ask, and the button answered 403 in silence.
+   */
+  const RECOVERY_STEP_UP = 'RECOVERY_CODES';
+
   const generateRecoveryCodes = async () => {
     setNotice(null);
     const r = await request(`${SECURITY}/account/recovery-codes`, {
@@ -274,6 +282,13 @@ export function App() {
       const body: { codes: string[] } = await r.json();
       setRecoveryCodes(body.codes ?? []);           // the one and only time they are visible
       setRecoveryUnused((body.codes ?? []).length);
+    } else if (r.status === 403) {
+      // STEP_UP_REQUIRED, exactly like starting an enrolment: an extra proof to collect, after
+      // which this very generation resumes on its own
+      setEnrolStepUpType(RECOVERY_STEP_UP);
+      setEnrolStepUpPassword('');
+      setEnrolStepUpTicket('');
+      setEnrolStepUpCode('');
     } else {
       setNotice(`Could not generate recovery codes (${r.status}).`);
     }
@@ -315,12 +330,17 @@ export function App() {
     const r = await request(`${SECURITY}/account/step-up`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: 'enrol-factor', password: enrolStepUpPassword }),
+      // the action NAMES the door: since P18 an elevation is keyed by token AND action, so asking
+      // for 'enrol-factor' would buy an elevation the recovery-codes endpoint does not accept
+      body: JSON.stringify({
+        action: type === RECOVERY_STEP_UP ? 'generate-recovery-codes' : 'enrol-factor',
+        password: enrolStepUpPassword,
+      }),
     });
     const body: { status?: string; stepUpTicket?: string } = await r.json().catch(() => ({}));
     if (r.status === 200 && body.status === 'ELEVATED') {
       setEnrolStepUpType('');
-      await startEnrol(type);
+      if (type === RECOVERY_STEP_UP) await generateRecoveryCodes(); else await startEnrol(type);
     } else if (r.status === 202 && body.status === 'FACTOR_REQUIRED') {
       setEnrolStepUpTicket(body.stepUpTicket ?? '');
     } else if (r.status === 401 || r.status === 403) {
@@ -343,7 +363,7 @@ export function App() {
     const body: { status?: string; stepUpTicket?: string } = await r.json().catch(() => ({}));
     if (r.status === 200) {
       setEnrolStepUpType('');
-      await startEnrol(type);
+      if (type === RECOVERY_STEP_UP) await generateRecoveryCodes(); else await startEnrol(type);
     } else if (r.status === 202 && body.status === 'FACTOR_REQUIRED') {
       setEnrolStepUpTicket(body.stepUpTicket ?? enrolStepUpTicket);
       setEnrolStepUpCode('');

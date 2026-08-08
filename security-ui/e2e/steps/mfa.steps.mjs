@@ -138,6 +138,10 @@ When('the USER submits a wrong CODE', async function () {
 Given('the USER has GENERATED RECOVERY CODES', async function () {
   await signInCompletingMfa(this);
   await this.page.getByTestId('generate-recovery').click();
+  // minting codes that bypass the whole factor chain is behind the same step-up door as adding a
+  // factor. The UI asks for that proof now; before it did, this click answered 403 in silence and
+  // the codes never appeared — which is what had this suite red every night since 2026-07-30
+  await proveForEnrol(this);
   // the page is the only place the plain codes ever exist — harvest them like a user would
   await expect(this.page.getByTestId('recovery-codes')).toBeVisible();
   recoveryCodes = await this.page.getByTestId('recovery-codes').locator('li').allTextContents();
