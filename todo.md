@@ -31,8 +31,17 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
 
 ## Otwarte — pilne (2026-08-08)
 
-- **Cztery scenariusze przeglądarkowe MFA są czerwone, a z nimi całe CI `workspace-shared`** —
-  co noc od 2026-08-03 (a realnie od `df7218b`, 30 lipca). Objaw: `getByTestId('recovery-codes')`
+- **~~Cztery scenariusze przeglądarkowe MFA są czerwone~~ — COFNIĘTE 2026-08-08.** Sprostowanie:
+  to NIE był dług sprzed sierpnia. Browser e2e było 36/36 zielone jeszcze o 10:09 tego dnia;
+  cztery scenariusze położyła paczka `a2bf62c` (wygaszanie linków zmiany adresu + step-up na
+  kodach odzyskiwania), zacommitowana z drzewa roboczego bez sprawdzenia suity przeglądarkowej.
+  Revert przywrócił 36/36; praca czeka na gałęzi **`wip-email-change-expiry`**.
+  **Do dokończenia przed powrotem na main:** (1) UI musi dokończyć czynnikową połowę step-upu —
+  bilet `FACTOR_REQUIRED` przychodzi, a `/account/step-up/factor` nie jest wołane ani razu w całej
+  suicie (także przez scenariusze, które przechodzą, bo ich konta elewują się na samym haśle;
+  `StepUp` linia 73); (2) scenariusz zmiany adresu przestaje dostawać maila po dołożeniu okna
+  ważności. Ślad sieciowy niżej zostaje aktualny — dotyczy tamtej gałęzi.
+  Objaw był taki: `getByTestId('recovery-codes')`
   nigdy się nie pojawia. Połowa przyczyny naprawiona (UI nie pytał o step-up przy generowaniu
   kodów — przycisk był martwy także dla użytkownika, nie tylko w teście). Zostaje: dla konta
   Z zapisanym czynnikiem serwer zwraca 202 FACTOR_REQUIRED, a pole na kod się nie renderuje.
