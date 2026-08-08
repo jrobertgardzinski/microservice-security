@@ -38,7 +38,13 @@ public class HttpDeleteAccountSteps {
 
     @Before
     public void startServer() {
-        server = ApplicationContext.run(EmbeddedServer.class);
+        // The safety net is pinned SMALL for this context on purpose. The scenario is about the
+        // rule ("silence past the limit rolls the closure back"), not about what the limit is —
+        // and while it hard-coded a jump past the production default, every change to that default
+        // broke it (12m arrived and a 6-minute jump stopped being past anything). Two minutes here
+        // means the step advances three and the scenario stops caring what production runs.
+        server = ApplicationContext.run(EmbeddedServer.class,
+                Map.of("account-deletion.purge-timeout", "2m"));
         client = server.getApplicationContext()
                 .createBean(HttpClient.class, server.getURL())
                 .toBlocking();
@@ -126,7 +132,8 @@ public class HttpDeleteAccountSteps {
 
     @When("no portal outcome arrives within the time limit")
     public void noPortalOutcomeArrivesInTime() {
-        client.exchange(HttpRequest.POST("/test/clock/advance", Map.of("duration", "PT6M")));
+        // past the two minutes this context pins (see startServer) — not past production's 12m
+        client.exchange(HttpRequest.POST("/test/clock/advance", Map.of("duration", "PT3M")));
         server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).compensateOverdue();
     }
 

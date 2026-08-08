@@ -59,9 +59,27 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
     AccountDeletionOrchestrator(AccountDeletionSagaStore sagas, OutboxAppender outbox,
                                 DeleteAccount deleteAccount, UserRepository userRepository,
                                 JsonMapper json, Clock clock,
-                                // the safety net fires well AFTER the portal's own timeout (2m),
-                                // so the portal's failure announcement normally wins the race
-                                @Value("${account-deletion.purge-timeout:5m}") Duration purgeTimeout,
+                                // The safety net must fire well AFTER the portal's own worst case,
+                                // so the portal's verdict wins the race and this net is left for
+                                // what it is FOR: a coordinator that died, not a slow participant.
+                                //
+                                // 12m, and the number is derived rather than felt. The portal's
+                                // sweeper measures its purge timeout from the last command the
+                                // participant actually RECEIVED (P18), so a silent participant
+                                // costs 120s per delivered command and the whole case takes
+                                // purgeTimeout x (retries + 1) = 120s x 4 = 8 minutes, plus a 15s
+                                // sweep and the mail road. The old default of 5m predates that
+                                // change and had quietly become the FIRST of the two to fire:
+                                // measured on the live stack 2026-08-08, the account came back at
+                                // ~5 min and its content only at ~8. Nobody decided that; it was
+                                // the sum of two timeouts nobody re-read together.
+                                //
+                                // Raising this is the cheaper half of the fix. The expensive half
+                                // would be teaching the two services about each other's clocks,
+                                // and they are deliberately independent — so the rule is written
+                                // down instead: this value stays above the portal's
+                                // OFFBOARDING_PURGE_TIMEOUT_SEC x (OFFBOARDING_MAX_PURGE_RETRIES+1).
+                                @Value("${account-deletion.purge-timeout:12m}") Duration purgeTimeout,
                                 @Value("${account-deletion.await-portal-purge:true}") boolean awaitPortalPurge) {
         this.sagas = sagas;
         this.outbox = outbox;
