@@ -180,9 +180,18 @@ public class AccountDeletionOrchestrator implements AccountDeletionSaga {
             LOG.warn("account deletion compensated (portal reported a failed purge) for {}",
                     masked(email));
         } else {
-            LOG.warn("account deletion compensated for {} — but the purge was PARTIAL: {} already"
-                            + " erased this user's content and will not put it back. The apology"
-                            + " mail does not say so.",
+            // The list is who CONFIRMED, and since ADR 0007 that means "reserved", not "destroyed":
+            // a portal participant marks the leaver's content, hides it from every read and keeps
+            // it, and the same capitulation that produced this outcome commands the restore. So
+            // this line no longer cries about content that will not come back — it says who had it
+            // hidden, which is still worth an operator's eye if the restore itself goes missing.
+            // (The old wording — "already erased this user's content and will not put it back" —
+            // was true when the participants deleted on the first command, and became a lie the
+            // day they stopped. It fired on every compensated saga, so it would have sent someone
+            // hunting a data loss that had not happened.)
+            LOG.warn("account deletion compensated for {}; the portal had already RESERVED the"
+                            + " content at {} and is restoring it — if it does not come back,"
+                            + " that is a portal-side problem, not a lost purge",
                     masked(email), alreadyPurged);
         }
     }
