@@ -272,6 +272,12 @@ export function App() {
    */
   const RECOVERY_STEP_UP = 'RECOVERY_CODES';
 
+  /**
+   * The third action behind the same door. Moving the address MOVES THE ACCOUNT — the confirmation
+   * lands in the new mailbox — so a merely-live session must not start it either.
+   */
+  const CHANGE_EMAIL_STEP_UP = 'CHANGE_EMAIL';
+
   const generateRecoveryCodes = async () => {
     setNotice(null);
     const r = await request(`${SECURITY}/account/recovery-codes`, {
@@ -324,6 +330,24 @@ export function App() {
     }
   };
 
+  /**
+   * Which door the elevation is bought for. Since P18 an elevation is keyed by token AND action,
+   * so this name decides which endpoint it opens — asking for the wrong one buys an elevation that
+   * changes nothing and leaves the caller in a 403 loop.
+   */
+  const stepUpActionOf = (type: string) => {
+    if (type === RECOVERY_STEP_UP) return 'generate-recovery-codes';
+    if (type === CHANGE_EMAIL_STEP_UP) return 'change-email';
+    return 'enrol-factor';
+  };
+
+  /** What the elevation was bought FOR — the request that was interrupted, run again. */
+  const resumeAfterStepUp = async (type: string) => {
+    if (type === RECOVERY_STEP_UP) return void await generateRecoveryCodes();
+    if (type === CHANGE_EMAIL_STEP_UP) return void await requestEmailChange();
+    return void await startEnrol(type);
+  };
+
   /** The password half of the enrolment step-up; a second factor may still be asked for after it. */
   const proveForEnrol = async () => {
     const type = enrolStepUpType;
@@ -332,15 +356,12 @@ export function App() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       // the action NAMES the door: since P18 an elevation is keyed by token AND action, so asking
       // for 'enrol-factor' would buy an elevation the recovery-codes endpoint does not accept
-      body: JSON.stringify({
-        action: type === RECOVERY_STEP_UP ? 'generate-recovery-codes' : 'enrol-factor',
-        password: enrolStepUpPassword,
-      }),
+      body: JSON.stringify({ action: stepUpActionOf(type), password: enrolStepUpPassword }),
     });
     const body: { status?: string; stepUpTicket?: string } = await r.json().catch(() => ({}));
     if (r.status === 200 && body.status === 'ELEVATED') {
       setEnrolStepUpType('');
-      if (type === RECOVERY_STEP_UP) await generateRecoveryCodes(); else await startEnrol(type);
+      await resumeAfterStepUp(type);
     } else if (r.status === 202 && body.status === 'FACTOR_REQUIRED') {
       setEnrolStepUpTicket(body.stepUpTicket ?? '');
     } else if (r.status === 401 || r.status === 403) {
@@ -363,7 +384,7 @@ export function App() {
     const body: { status?: string; stepUpTicket?: string } = await r.json().catch(() => ({}));
     if (r.status === 200) {
       setEnrolStepUpType('');
-      if (type === RECOVERY_STEP_UP) await generateRecoveryCodes(); else await startEnrol(type);
+      await resumeAfterStepUp(type);
     } else if (r.status === 202 && body.status === 'FACTOR_REQUIRED') {
       setEnrolStepUpTicket(body.stepUpTicket ?? enrolStepUpTicket);
       setEnrolStepUpCode('');
@@ -466,6 +487,14 @@ export function App() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ newEmail }),
     });
+    if (r.status === 403) {
+      // STEP_UP_REQUIRED: an extra proof to collect, after which this very request resumes
+      setEnrolStepUpType(CHANGE_EMAIL_STEP_UP);
+      setEnrolStepUpPassword('');
+      setEnrolStepUpTicket('');
+      setEnrolStepUpCode('');
+      return;
+    }
     // 202 whatever the address's fate — the truth goes by mail (anti-enumeration)
     setNotice(r.status === 202
       ? 'Check the new address — we sent a confirmation link.'
