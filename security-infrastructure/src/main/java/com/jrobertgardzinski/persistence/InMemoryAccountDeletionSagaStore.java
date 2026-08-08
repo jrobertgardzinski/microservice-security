@@ -1,6 +1,7 @@
 package com.jrobertgardzinski.persistence;
 
 import io.micronaut.context.annotation.Requires;
+import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;
 
 import javax.sql.DataSource;
@@ -19,6 +20,11 @@ class InMemoryAccountDeletionSagaStore implements AccountDeletionSagaStore {
     private record Saga(UUID id, String email, String state, Instant createdAt) {}
 
     private final Map<UUID, Saga> sagas = new ConcurrentHashMap<>();
+    private final java.time.Clock clock;
+
+    InMemoryAccountDeletionSagaStore(java.time.Clock clock) {
+        this.clock = clock;
+    }
 
     /** One running saga per address, the same invariant V22 gives Postgres — see the port's javadoc. */
     @Override
@@ -52,6 +58,19 @@ class InMemoryAccountDeletionSagaStore implements AccountDeletionSagaStore {
                 .max(java.util.Comparator.comparing(Saga::createdAt))
                 .map(saga -> "COMPENSATED".equals(saga.state()))
                 .orElse(false);
+    }
+
+    /**
+     * Forget sagas that have SETTLED — completed or compensated — and settled long ago.
+     *
+     * <p>{@code SettledDeletionSagaReaper} does this for the table; the map had nothing, so every
+     * account deletion ever run stayed remembered. A STARTED saga is never touched here, however
+     * old: that one is still owed an outcome, and {@code compensateOverdue} is what decides it.
+     */
+    @Scheduled(fixedDelay = "1h", initialDelay = "5m")
+    synchronized void evictSettled() {
+        Instant cutoff = Instant.now(clock).minus(java.time.Duration.ofDays(7));
+        sagas.values().removeIf(saga -> !"STARTED".equals(saga.state()) && saga.createdAt().isBefore(cutoff));
     }
 
     @Override

@@ -10,4 +10,7 @@ import javax.sql.DataSource;
 @JdbcRepository(dialect = Dialect.POSTGRES)
 @Requires(beans = DataSource.class)
 interface AuthenticationBlockJdbcRepository extends CrudRepository<AuthenticationBlockEntity, String> {
+
+    /** Retention: a block whose expiry has passed decides nothing and names an address for ever. */
+    int deleteByExpiryDateBefore(java.time.LocalDateTime cutoff);
 }

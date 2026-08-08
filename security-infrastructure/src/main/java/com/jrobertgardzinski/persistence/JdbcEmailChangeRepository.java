@@ -21,22 +21,27 @@ import java.util.Optional;
 final class JdbcEmailChangeRepository implements EmailChangeRepository {
 
     private final EmailChangeJdbcRepository repository;
+    private final java.time.Clock clock;
 
-    JdbcEmailChangeRepository(EmailChangeJdbcRepository repository) {
+    JdbcEmailChangeRepository(EmailChangeJdbcRepository repository, java.time.Clock clock) {
         this.repository = repository;
+        this.clock = clock;
     }
 
     @Override
     public void startChange(EmailChange change, VerificationToken token) {
         repository.save(new EmailChangeEntity(
-                TokenHashing.hash(token), change.currentEmail().value(), change.newEmail().value()));
+                TokenHashing.hash(token), change.currentEmail().value(), change.newEmail().value(),
+                java.time.LocalDateTime.now(clock)));
     }
 
     @Override
-    public Optional<EmailChange> confirmChange(VerificationToken token) {
+    public Optional<PendingEmailChange> confirmChange(VerificationToken token) {
         return repository.findById(TokenHashing.hash(token)).map(entity -> {
             repository.deleteById(entity.tokenHash());
-            return new EmailChange(Email.of(entity.currentEmail()), Email.of(entity.newEmail()));
+            return new PendingEmailChange(
+                    new EmailChange(Email.of(entity.currentEmail()), Email.of(entity.newEmail())),
+                    entity.startedAt());
         });
     }
 

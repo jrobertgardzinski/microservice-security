@@ -28,17 +28,27 @@ final class RecoveryCodesController {
     private final GenerateRecoveryCodes generateRecoveryCodes;
     private final RecoveryCodeRepository recoveryCodes;
     private final TransactionBoundary transactionBoundary;
+    private final StepUpGuard stepUpGuard;
 
     RecoveryCodesController(GenerateRecoveryCodes generateRecoveryCodes,
                             RecoveryCodeRepository recoveryCodes,
-                            TransactionBoundary transactionBoundary) {
+                            TransactionBoundary transactionBoundary,
+                            StepUpGuard stepUpGuard) {
         this.generateRecoveryCodes = generateRecoveryCodes;
         this.recoveryCodes = recoveryCodes;
         this.transactionBoundary = transactionBoundary;
+        this.stepUpGuard = stepUpGuard;
     }
 
     @Post(produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map<String, Object>> generate(HttpRequest<?> request) {
+        // recovery codes are spare keys: shown once, and each one signs in when a factor is out of
+        // reach. A merely-live session must not be able to mint itself a set and keep them.
+        java.util.Optional<HttpResponse<Map<String, Object>>> stepUp =
+                stepUpGuard.requireElevation(request, "generate-recovery-codes");
+        if (stepUp.isPresent()) {
+            return stepUp.get();
+        }
         Email caller = caller(request);
         List<String> plainCodes = transactionBoundary.execute(() -> generateRecoveryCodes.execute(caller));
         return HttpResponse.ok(Map.of("status", "GENERATED", "codes", plainCodes));
