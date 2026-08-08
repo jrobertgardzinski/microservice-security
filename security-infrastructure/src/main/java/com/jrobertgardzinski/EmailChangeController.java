@@ -31,28 +31,16 @@ final class EmailChangeController {
     private final RequestEmailChange requestEmailChange;
     private final TransactionBoundary transactionBoundary;
     private final com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier noticeNotifier;
-    private final StepUpGuard stepUpGuard;
 
     EmailChangeController(RequestEmailChange requestEmailChange, TransactionBoundary transactionBoundary,
-                          com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier noticeNotifier,
-                          StepUpGuard stepUpGuard) {
+                          com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier noticeNotifier) {
         this.requestEmailChange = requestEmailChange;
         this.transactionBoundary = transactionBoundary;
         this.noticeNotifier = noticeNotifier;
-        this.stepUpGuard = stepUpGuard;
     }
 
     @Post(value = "/request", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> request(HttpRequest<?> request, @Body Map<String, Object> body) {
-        // moving the address moves the account, and the confirmation lands in the NEW mailbox — so
-        // a thief with a live session could walk off with the whole account and the owner would
-        // learn about it from a notice. Guarded where the change STARTS; the confirmation itself
-        // still needs the token mailed to that new address.
-        java.util.Optional<HttpResponse<Map<String, Object>>> stepUp =
-                stepUpGuard.requireElevation(request, "change-email");
-        if (stepUp.isPresent()) {
-            return stepUp.get();
-        }
         Email currentEmail = Email.of(
                 request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow());
         Email newEmail;

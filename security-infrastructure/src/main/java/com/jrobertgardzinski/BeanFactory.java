@@ -359,17 +359,10 @@ public class BeanFactory {
             // enrolling or removing a factor rewrites what it takes to sign in; a stolen live session
             // must re-prove itself first, or it could add an attacker-held factor / strip the owner's
             @io.micronaut.context.annotation.Value("${security.step-up.enrol-factor:SECOND_FACTORS}") String enrolFactor,
-            @io.micronaut.context.annotation.Value("${security.step-up.remove-factor:SECOND_FACTORS}") String removeFactor,
-            // spare keys, the address itself and a granted role: each hands a live session
-            // something durable, so each asks for fresh proof (P18 follow-up, StepUpCoverageTest)
-            @io.micronaut.context.annotation.Value("${security.step-up.generate-recovery-codes:SECOND_FACTORS}") String recoveryCodes,
-            @io.micronaut.context.annotation.Value("${security.step-up.change-email:FULL_CHAIN}") String changeEmail,
-            @io.micronaut.context.annotation.Value("${security.step-up.admin-roles:FULL_CHAIN}") String adminRoles) {
+            @io.micronaut.context.annotation.Value("${security.step-up.remove-factor:SECOND_FACTORS}") String removeFactor) {
         return new com.jrobertgardzinski.security.config.mfa.StepUpPolicy(
                 java.util.Map.of("delete-account", deleteAccount, "change-password", changePassword,
-                        "admin-reset", adminReset, "enrol-factor", enrolFactor, "remove-factor", removeFactor,
-                        "generate-recovery-codes", recoveryCodes, "change-email", changeEmail,
-                        "admin-roles", adminRoles));
+                        "admin-reset", adminReset, "enrol-factor", enrolFactor, "remove-factor", removeFactor));
     }
 
     @Singleton
@@ -423,15 +416,10 @@ public class BeanFactory {
                                                   recoveryCodeRepository,
                                           com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository
                                                   passwordlessAccountRepository,
-                                          PasswordResetRepository passwordResetRepository,
-                                          @io.micronaut.context.annotation.Value(
-                                                  "${security.email-change.ttl-minutes:1440}")
-                                          int changeTtlMinutes,
-                                          Clock clock) {
+                                          PasswordResetRepository passwordResetRepository) {
         return new ConfirmEmailChange(emailChangeRepository, userRepository, emailVerificationRepository,
                 federatedIdentityRepository, enrolledFactorRepository, recoveryCodeRepository,
-                passwordlessAccountRepository, passwordResetRepository,
-                java.time.Duration.ofMinutes(changeTtlMinutes), clock);
+                passwordlessAccountRepository, passwordResetRepository);
     }
 
     @Singleton

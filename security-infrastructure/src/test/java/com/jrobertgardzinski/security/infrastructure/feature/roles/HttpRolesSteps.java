@@ -103,24 +103,10 @@ public class HttpRolesSteps {
     }
 
     private HttpResponse<Map> setRoles(String token, String target, String roleList) {
-        stepUp(token);
         List<String> roleValues = Arrays.stream(roleList.split(",")).map(String::trim).collect(Collectors.toList());
         MutableHttpRequest<?> request = HttpRequest.PUT("/admin/users/" + target + "/roles",
                 Map.of("roles", roleValues)).header("Authorization", "Bearer " + token);
         return exchange(request);
-    }
-
-    /**
-     * Granting a role is a permanent widening of what a session may do, so it takes fresh proof and
-     * not merely a live session. Every caller here has a password and no factors, so re-entering the
-     * password elevates at once — including the callers who are then refused on their ROLE, which is
-     * the point: the step-up decides how fresh the session is, the role decides what it may do.
-     */
-    private void stepUp(String token) {
-        HttpResponse<Map> elevated = exchange(HttpRequest.POST("/account/step-up",
-                        Map.of("action", "admin-roles", "password", PASSWORD))
-                .header("Authorization", "Bearer " + token));
-        assertEquals(HttpStatus.OK, elevated.getStatus());
     }
 
     @SuppressWarnings("unchecked")

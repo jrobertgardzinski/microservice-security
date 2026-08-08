@@ -11,7 +11,6 @@ import com.jrobertgardzinski.security.domain.vo.StoredSession;
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 import io.micronaut.context.annotation.Requires;
-import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;
 
 import javax.sql.DataSource;
@@ -123,24 +122,6 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
     public void revokeFamily(SessionFamily family) {
         synchronized (sessionLineage) {
             byRefreshTokenHash.values().removeIf(row -> row.session().family().equals(family));
-        }
-    }
-
-    /**
-     * Drop sessions whose refresh token expired long enough ago to be beyond argument.
-     *
-     * <p>The twin with a datasource has {@code ExpiredSessionReaper} doing exactly this; without it
-     * here, every sign-in ever made stays in the map for the life of the process. The GRACE is the
-     * same idea as there — a day past expiry — so a row is never removed while anything could still
-     * legitimately ask about it.
-     */
-    @Scheduled(fixedDelay = "1h", initialDelay = "5m")
-    void evictExpired() {
-        synchronized (sessionLineage) {
-            byRefreshTokenHash.values().removeIf(row ->
-                    row.session().refreshTokenExpiration().hasExpired(clock)
-                            && row.session().refreshTokenExpiration().value()
-                                    .isBefore(java.time.LocalDateTime.now(clock).minusDays(1)));
         }
     }
 

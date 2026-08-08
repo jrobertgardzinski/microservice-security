@@ -83,11 +83,10 @@ class AddressKeyedStoresTest {
         final InMemoryPasswordlessAccountRepository passwordless = new InMemoryPasswordlessAccountRepository();
         final InMemoryEmailVerificationRepository verifications = new InMemoryEmailVerificationRepository();
         final InMemoryPasswordResetRepository resets = new InMemoryPasswordResetRepository(Clock.systemUTC());
-        final InMemoryEmailChangeRepository changes = new InMemoryEmailChangeRepository(Clock.systemUTC());
+        final InMemoryEmailChangeRepository changes = new InMemoryEmailChangeRepository();
 
         final ConfirmEmailChange confirmEmailChange = new ConfirmEmailChange(changes, users, verifications,
-                federated, factors, codes, passwordless, resets,
-                java.time.Duration.ofMinutes(1440), Clock.systemUTC());
+                federated, factors, codes, passwordless, resets);
         final DeleteAccount deleteAccount = new DeleteAccount(users, sessions, factors, codes, federated,
                 verifications, resets, changes, passwordless);
 
@@ -128,7 +127,7 @@ class AddressKeyedStoresTest {
                 new Store("email_changes", false,
                         address -> f.changes.startChange(new EmailChange(address, THIRD), OTHER_CHANGE_TOKEN),
                         () -> f.changes.confirmChange(OTHER_CHANGE_TOKEN)
-                                .map(pending -> pending.change().currentEmail()).stream().toList()));
+                                .map(EmailChange::currentEmail).stream().toList()));
     }
 
     private static List<Email> heldWhere(Predicate<Email> holdsSomething) {

@@ -35,14 +35,11 @@ final class AdminRolesController {
     private final SetUserRoles setUserRoles;
     private final UserRepository users;
     private final Set<String> bootstrapAdmins;
-    private final StepUpGuard stepUpGuard;
 
     AdminRolesController(SetUserRoles setUserRoles, UserRepository users,
-                         @Value("${security.bootstrap-admins:}") List<String> bootstrapAdmins,
-                         StepUpGuard stepUpGuard) {
+                         @Value("${security.bootstrap-admins:}") List<String> bootstrapAdmins) {
         this.setUserRoles = setUserRoles;
         this.users = users;
-        this.stepUpGuard = stepUpGuard;
         this.bootstrapAdmins = bootstrapAdmins.stream()
                 .map(s -> s.trim().toLowerCase(Locale.ROOT)).filter(s -> !s.isBlank())
                 .collect(Collectors.toUnmodifiableSet());
@@ -54,15 +51,6 @@ final class AdminRolesController {
         if (!isAdmin(caller)) {
             return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN)
                     .body(Map.of("status", "NOT_AN_ADMIN"));
-        }
-        // AFTER the role check, so a non-admin still learns only that they are not an admin. A
-        // granted role is a permanent widening of what a session may do, so a stolen admin session
-        // must prove itself again before handing that out — the same rule the factor reset next
-        // door already follows.
-        java.util.Optional<HttpResponse<Map<String, Object>>> stepUp =
-                stepUpGuard.requireElevation(request, "admin-roles");
-        if (stepUp.isPresent()) {
-            return stepUp.get();
         }
         Set<Role> roles;
         try {

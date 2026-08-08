@@ -40,12 +40,6 @@ class ConfirmEmailChangeTest {
     private PasswordResetRepository passwordResetRepository;
     private ConfirmEmailChange confirmEmailChange;
 
-    private static final int TOKEN_TTL_MINUTES = 1440;
-    private static final java.time.LocalDateTime NOW =
-            java.time.LocalDateTime.of(2026, 7, 30, 12, 0);
-    private final java.time.Clock clock = java.time.Clock.fixed(
-            NOW.toInstant(java.time.ZoneOffset.UTC), java.time.ZoneOffset.UTC);
-
     @BeforeTry
     void init() {
         emailChangeRepository = Mockito.mock(EmailChangeRepository.class);
@@ -59,14 +53,13 @@ class ConfirmEmailChangeTest {
         passwordResetRepository = Mockito.mock(PasswordResetRepository.class);
         confirmEmailChange = new ConfirmEmailChange(emailChangeRepository, userRepository,
                 emailVerificationRepository, federatedIdentityRepository, enrolledFactorRepository,
-                recoveryCodeRepository, passwordlessAccountRepository, passwordResetRepository,
-                java.time.Duration.ofMinutes(TOKEN_TTL_MINUTES), clock);
+                recoveryCodeRepository, passwordlessAccountRepository, passwordResetRepository);
     }
 
     @Example
     @Label("A matching token moves the user to the new address and marks it verified")
     void matching_token_changes_the_email() {
-        Mockito.when(emailChangeRepository.confirmChange(TOKEN)).thenReturn(Optional.of(fresh(new EmailChange(OLD, NEW))));
+        Mockito.when(emailChangeRepository.confirmChange(TOKEN)).thenReturn(Optional.of(new EmailChange(OLD, NEW)));
 
         assertEquals(new ConfirmEmailChangeResult.EmailChanged(NEW), confirmEmailChange.execute(TOKEN));
         Mockito.verify(userRepository).updateEmail(OLD, NEW);
@@ -76,7 +69,7 @@ class ConfirmEmailChangeTest {
     @Example
     @Label("Federated links die with the old address — the provider vouched for it, not the account")
     void federated_links_are_severed() {
-        Mockito.when(emailChangeRepository.confirmChange(TOKEN)).thenReturn(Optional.of(fresh(new EmailChange(OLD, NEW))));
+        Mockito.when(emailChangeRepository.confirmChange(TOKEN)).thenReturn(Optional.of(new EmailChange(OLD, NEW)));
 
         confirmEmailChange.execute(TOKEN);
 
@@ -90,7 +83,7 @@ class ConfirmEmailChangeTest {
         // behind, a lookup under the new address finds nothing: the second factor disappears without
         // a trace and a password alone signs in again, the printed recovery codes stop working, and a
         // federated account reads as "has a password" — which locks its owner out of deleting it.
-        Mockito.when(emailChangeRepository.confirmChange(TOKEN)).thenReturn(Optional.of(fresh(new EmailChange(OLD, NEW))));
+        Mockito.when(emailChangeRepository.confirmChange(TOKEN)).thenReturn(Optional.of(new EmailChange(OLD, NEW)));
 
         confirmEmailChange.execute(TOKEN);
 
@@ -105,7 +98,7 @@ class ConfirmEmailChangeTest {
         // A reset link e-mailed before the move is matched by ADDRESS. Left pending, it would set the
         // password of whoever registers the freed address next — the same takeover the deletion path
         // had, reached through an e-mail change instead.
-        Mockito.when(emailChangeRepository.confirmChange(TOKEN)).thenReturn(Optional.of(fresh(new EmailChange(OLD, NEW))));
+        Mockito.when(emailChangeRepository.confirmChange(TOKEN)).thenReturn(Optional.of(new EmailChange(OLD, NEW)));
 
         confirmEmailChange.execute(TOKEN);
 
@@ -123,23 +116,5 @@ class ConfirmEmailChangeTest {
         Mockito.verify(userRepository, Mockito.never()).updateEmail(Mockito.any(), Mockito.any());
         Mockito.verify(enrolledFactorRepository, Mockito.never()).reassign(Mockito.any(), Mockito.any());
         Mockito.verify(passwordResetRepository, Mockito.never()).purge(Mockito.any());
-    }
-
-    /** A ticket issued a minute ago — well inside the window every example here assumes. */
-    private EmailChangeRepository.PendingEmailChange fresh(EmailChange change) {
-        return new EmailChangeRepository.PendingEmailChange(change, NOW.minusMinutes(1));
-    }
-
-    @Example
-    @Label("A ticket older than the window is refused, exactly like an unknown one")
-    void an_expired_ticket_is_refused() {
-        // It MOVES the account: one sitting unnoticed in an old mailbox must stop working, the same
-        // way a password-reset link does. It did not, until the moment it was issued was stored.
-        Mockito.when(emailChangeRepository.confirmChange(TOKEN)).thenReturn(Optional.of(
-                new EmailChangeRepository.PendingEmailChange(new EmailChange(OLD, NEW),
-                        NOW.minusMinutes(TOKEN_TTL_MINUTES + 1))));
-
-        assertEquals(new ConfirmEmailChangeResult.InvalidToken(), confirmEmailChange.execute(TOKEN));
-        Mockito.verify(userRepository, Mockito.never()).updateEmail(OLD, NEW);
     }
 }

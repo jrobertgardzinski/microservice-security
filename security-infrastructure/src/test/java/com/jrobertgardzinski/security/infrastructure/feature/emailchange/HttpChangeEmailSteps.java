@@ -78,23 +78,9 @@ public class HttpChangeEmailSteps {
     @When("the USER requests to CHANGE the EMAIL to {string}")
     public void theUserRequestsToChangeTheEmail(String newEmail) {
         this.newEmail = newEmail;
-        stepUpForTheChange();
         requestResponse = exchange(HttpRequest.POST("/account/email/request", Map.of("newEmail", newEmail))
                 .header("Authorization", "Bearer " + accessToken));
         assertEquals(HttpStatus.ACCEPTED, requestResponse.getStatus());
-    }
-
-    /**
-     * Moving the address moves the account, and the confirmation lands in the NEW mailbox — so a
-     * live session alone is not enough to start one. This user has a password and no factors, so
-     * re-entering the password elevates the session at once.
-     */
-    private void stepUpForTheChange() {
-        HttpResponse<Map> elevated = exchange(HttpRequest.POST("/account/step-up",
-                        Map.of("action", "change-email", "password", PASSWORD))
-                .header("Authorization", "Bearer " + accessToken));
-        assertEquals(HttpStatus.OK, elevated.getStatus());
-        assertEquals("ELEVATED", elevated.getBody(Map.class).orElseThrow().get("status"));
     }
 
     @When("the USER CONFIRMS the EMAIL CHANGE with the token from the link")

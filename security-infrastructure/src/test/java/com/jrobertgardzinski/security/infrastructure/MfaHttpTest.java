@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The whole multi-factor sign-in over the wire: enrol the e-mail factor, then a correct password no
@@ -165,7 +164,6 @@ class MfaHttpTest {
         enrolEmailFactor(email, token);
 
         // generate a batch: plain codes appear exactly once in this response
-        stepUpToMintCodes(email, token);
         HttpResponse<Map> minted = exchange(HttpRequest.POST("/account/recovery-codes", Map.of())
                 .header("Authorization", "Bearer " + token));
         assertEquals(HttpStatus.OK, minted.getStatus());
@@ -190,7 +188,6 @@ class MfaHttpTest {
         assertEquals(HttpStatus.UNAUTHORIZED, replayed.getStatus(), "a recovery code is single-use");
 
         // a fresh batch kills the remaining nine
-        stepUpToMintCodes(email, token);
         exchange(HttpRequest.POST("/account/recovery-codes", Map.of())
                 .header("Authorization", "Bearer " + token));
         HttpResponse<Map> third = exchange(HttpRequest.POST("/authenticate",
@@ -339,29 +336,6 @@ class MfaHttpTest {
                 exchange(HttpRequest.POST("/authenticate", Map.of("email", email, "password", PASSWORD)));
         assertEquals(HttpStatus.OK, authenticated.getStatus(), "no factors yet, so the password signs in directly");
         return (String) authenticated.getBody(Map.class).orElseThrow().get("accessToken");
-    }
-
-    /**
-     * Minting recovery codes is guarded by the SECOND_FACTORS policy: these are durable spare keys
-     * that stand in for the factor, so proving the factor is exactly the proof that fits. The
-     * password alone starts the step-up and answers with a ticket; the mailed code completes it.
-     */
-    private void stepUpToMintCodes(String email, String token) {
-        HttpResponse<Map> started = exchange(HttpRequest.POST("/account/step-up",
-                        Map.of("action", "generate-recovery-codes", "password", PASSWORD))
-                .header("Authorization", "Bearer " + token));
-        // 200 when the password was the whole chain, 202 when a factor challenge went out
-        assertTrue(started.getStatus() == HttpStatus.OK || started.getStatus() == HttpStatus.ACCEPTED,
-                "step-up refused outright: " + started.getStatus());
-        Map<?, ?> body = started.getBody(Map.class).orElseThrow();
-        if ("ELEVATED".equals(body.get("status"))) {
-            return;   // no factor enrolled: the password was the whole chain
-        }
-        HttpResponse<Map> completed = exchange(HttpRequest.POST("/account/step-up/factor",
-                        Map.of("stepUpTicket", body.get("stepUpTicket"), "proof", codeChannel().lastCodeFor(email)))
-                .header("Authorization", "Bearer " + token));
-        assertEquals(HttpStatus.OK, completed.getStatus(), "the factor proof must complete the step-up");
-        assertEquals("ELEVATED", completed.getBody(Map.class).orElseThrow().get("status"));
     }
 
     /** Enrolling a factor now needs a fresh step-up; a factor-less account elevates on the password alone. */

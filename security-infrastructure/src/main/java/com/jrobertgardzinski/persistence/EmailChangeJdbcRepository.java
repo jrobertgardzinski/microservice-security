@@ -14,7 +14,4 @@ interface EmailChangeJdbcRepository extends CrudRepository<EmailChangeEntity, St
     void deleteByCurrentEmail(String currentEmail);
 
     void deleteByNewEmail(String newEmail);
-
-    /** Retention: a ticket nobody confirmed is rubbish the moment it stops being usable. */
-    int deleteByStartedAtBefore(java.time.LocalDateTime cutoff);
 }

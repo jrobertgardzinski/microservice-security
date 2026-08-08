@@ -12,6 +12,5 @@ import io.micronaut.data.annotation.MappedEntity;
 record EmailChangeEntity(
         @Id String tokenHash,
         String currentEmail,
-        String newEmail,
-        java.time.LocalDateTime startedAt) {
+        String newEmail) {
 }
