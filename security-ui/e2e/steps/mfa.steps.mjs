@@ -29,10 +29,17 @@ async function proveForEnrol(world) {
   }
   await world.page.getByTestId('enrol-stepup-password').fill(credentials.password);
   await world.page.getByTestId('enrol-stepup-submit').click();
-  // the same trap one level down: an account that already carries a factor is asked for a code,
-  // and that answer is another round trip away
+  // the same trap one level down, and this copy of it was still live: an account that already
+  // carries a factor is asked for a code, and that answer is another round trip away — but
+  // isVisible() takes no timeout, it answers about THIS INSTANT and the option is silently
+  // ignored. So the code input, which appears a re-render after the 202, was never seen: the
+  // helper skipped the factor half and then waited for a panel that could not close.
+  // Nothing caught it for months, because every OTHER scenario's account elevates on the
+  // password alone — /account/step-up/factor was not called once in the whole suite.
   const codeInput = world.page.getByTestId('enrol-stepup-code');
-  if (await codeInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
+  const askedForACode = await expect(codeInput).toBeVisible({ timeout: 5_000 })
+      .then(() => true).catch(() => false);
+  if (askedForACode) {
     await codeInput.fill(await mailedSignInCode(world));
     await world.page.getByTestId('enrol-stepup-code-submit').click();
   }

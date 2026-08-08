@@ -8,6 +8,7 @@ import { Given, Then, When } from '@cucumber/cucumber';
 import { expect } from 'playwright/test';
 import { UI } from '../support/world.mjs';
 import { credentials, resolveEmail } from '../support/account.mjs';
+import { proveForEnrol } from './mfa.steps.mjs';
 
 let requestedNewEmail = '';
 let freshRequestNotice = 'Check the new address — we sent a confirmation link.';
@@ -26,6 +27,10 @@ When('the USER requests to CHANGE the EMAIL to {string}', async function (newEma
   requestedNewEmail = newEmail;
   await this.page.getByTestId('new-email').fill(newEmail);
   await this.page.getByTestId('change-email-submit').click();
+  // moving the address MOVES THE ACCOUNT — the confirmation lands in the new mailbox — so security
+  // asks for a fresh elevation first, exactly as it does for enrolment and for recovery codes.
+  // The helper is a no-op when no proof is demanded, so this reads the same either way.
+  await proveForEnrol(this);
   await expect(this.page.getByTestId('notice')).toBeVisible();
 });
 
