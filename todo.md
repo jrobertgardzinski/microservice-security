@@ -29,6 +29,19 @@ potwierdzenie `memes-events`), dopiero potwierdzenie kasuje usera i wysyła mail
 brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min) = kompensacja
 (odblokowanie + mail z przeprosinami).
 
+## Otwarte — pilne (2026-08-08)
+
+- **Cztery scenariusze przeglądarkowe MFA są czerwone, a z nimi całe CI `workspace-shared`** —
+  co noc od 2026-08-03 (a realnie od `df7218b`, 30 lipca). Objaw: `getByTestId('recovery-codes')`
+  nigdy się nie pojawia. Połowa przyczyny naprawiona (UI nie pytał o step-up przy generowaniu
+  kodów — przycisk był martwy także dla użytkownika, nie tylko w teście). Zostaje: dla konta
+  Z zapisanym czynnikiem serwer zwraca 202 FACTOR_REQUIRED, a pole na kod się nie renderuje.
+  **Trop, od którego zacząć:** podsłuch sieci w przeglądarce pokazał, że `/account/step-up/factor`
+  nie jest wołane ANI RAZU w całym przebiegu suity — również przez scenariusze, które przechodzą,
+  bo ich konta elewują się na samym haśle (`StepUp` linia 73: hasło jest wymagane tylko dla
+  FULL_CHAIN albo gdy lista czynników jest pusta). Czynnikowa połowa step-upu w UI nie ma więc
+  żadnego pokrycia — i to jest prawdziwa dziura, nie sam czerwony scenariusz.
+
 ## Otwarte — use case'y / security
 
 - ~~OAuth/social login~~ — ZROBIONE (2026-07-05): taniec Authorization Code + PKCE (S256) na
