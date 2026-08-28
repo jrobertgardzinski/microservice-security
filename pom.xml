@@ -168,6 +168,11 @@
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>config</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
                 <artifactId>email-security-usecase</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
             </dependency>

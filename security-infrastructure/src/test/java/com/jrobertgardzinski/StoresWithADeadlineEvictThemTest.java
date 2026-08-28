@@ -75,6 +75,16 @@ class StoresWithADeadlineEvictThemTest {
             Map.entry("InMemoryEmailVerificationRepository", "one row per address, overwritten in place"),
             Map.entry("InMemoryPasswordResetRepository", "one row per address, overwritten in place"));
 
+    /**
+     * Configuration rows: a runtime override stands until an administrator withdraws it. No
+     * deadline and no reaper — on EITHER side of the DataSource switch: the table has none, so
+     * its twin may not sweep either, and a timer here would silently withdraw a policy someone
+     * deliberately set.
+     */
+    private static final Map<String, String> OPERATOR_OWNED_CONFIGURATION = Map.of(
+            "InMemorySecuritySettings", "the runtime rung of the configuration ladder —"
+                    + " security_settings has no reaper, so neither may its twin");
+
     /** Assertion sinks. Keeping everything is what they are for. */
     private static final Set<String> CAPTURE_BUFFERS = Set.of(
             "CapturingEmailCodeChannel", "CapturingSmsCodeChannel", "CapturingEmailVerificationNotifier",
@@ -85,6 +95,7 @@ class StoresWithADeadlineEvictThemTest {
         Set<String> classified = new TreeSet<>(PRODUCTION_WITH_A_DEADLINE.keySet());
         classified.addAll(MIRRORS_A_REAPED_TABLE.keySet());
         classified.addAll(LIVES_WITH_THE_ACCOUNT.keySet());
+        classified.addAll(OPERATOR_OWNED_CONFIGURATION.keySet());
         classified.addAll(CAPTURE_BUFFERS);
 
         Set<String> found = storesKeepingStateInMemory();
@@ -159,6 +170,17 @@ class StoresWithADeadlineEvictThemTest {
         assertEquals(List.of(), swept,
                 "a timer removing account state deletes things nobody asked to delete — if one of"
                         + " these genuinely gained a deadline, move it and say what the deadline is");
+    }
+
+    @Test
+    void operator_owned_configuration_never_sweeps_on_a_timer() {
+        List<String> swept = OPERATOR_OWNED_CONFIGURATION.keySet().stream()
+                .filter(StoresWithADeadlineEvictThemTest::sweeps)
+                .toList();
+
+        assertEquals(List.of(), swept,
+                "a timer withdrawing configuration rows silently un-decides what an administrator"
+                        + " decided — an override is withdrawn by deleting the row, never by age");
     }
 
     private static Set<String> storesKeepingStateInMemory() throws IOException {

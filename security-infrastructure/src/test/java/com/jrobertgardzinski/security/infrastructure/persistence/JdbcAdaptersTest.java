@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.security.infrastructure.persistence;
 
+import com.jrobertgardzinski.config.source.live.LiveConfigPort;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.password.domain.HashedPassword;
@@ -272,5 +273,23 @@ class JdbcAdaptersTest {
 
         assertThatThrownBy(() -> users.save(new User(email, new HashedPassword("hash-b"))))
                 .isInstanceOf(EmailAlreadyTakenException.class);
+    }
+
+    @Test
+    void security_settings_rows_reach_the_ladder_and_garbage_reports_a_vacant_rung() throws Exception {
+        LiveConfigPort<?> settings = context.getBean(LiveConfigPort.class);
+        try (var connection = java.sql.DriverManager.getConnection(
+                POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+             var insert = connection.createStatement()) {
+            insert.execute("INSERT INTO security_settings (name, value) VALUES"
+                    + " ('security.password.policy.min.length', '10'),"
+                    + " ('security.settings.broken', 'not-a-number')");
+        }
+
+        assertThat(settings.find("security.password.policy.min.length")).isEqualTo(10);
+        // unparseable and absent both report as a vacant rung - the ladder falls through,
+        // a hand-edited row never takes password validation down
+        assertThat(settings.find("security.settings.broken")).isNull();
+        assertThat(settings.find("security.settings.never.set")).isNull();
     }
 }

@@ -1,6 +1,13 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.config.ladder.ConfigLadder;
+import com.jrobertgardzinski.config.source.restart.RestartConfigPort;
+import com.jrobertgardzinski.config.source.restart.RestartConfigSource;
+import com.jrobertgardzinski.config.source.live.CachingLiveConfigPort;
+import com.jrobertgardzinski.config.source.live.LiveConfigPort;
+import com.jrobertgardzinski.config.source.live.LiveConfigSource;
 import com.jrobertgardzinski.email.policy.CanRegister;
+import com.jrobertgardzinski.password.security.config.MinLength;
 import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
@@ -59,6 +66,35 @@ public class BeanFactory {
     @Singleton
     HashAlgorithmPort hashAlgorithm() {
         return new Argon2HashAlgorithm();
+    }
+
+    /**
+     * The minimal password length as a layered ladder — the canonical precedence law: the source
+     * bound latest in the lifecycle wins. A {@code security_settings} row (runtime — an
+     * administrator's decision now) over the {@code security.password.policy.min.length} property
+     * (deployment) over {@link MinLength#DEFAULT} (compile time). The database rung is read
+     * through a TTL cache whose TTL is itself RESTART-level configuration — meta-configuration
+     * lives one rung below what it governs, so a bad TTL can never delay its own correction — and
+     * a zero TTL switches the cache off. Use cases resolve per attempt, so a change is honoured
+     * by the next request within one TTL, no restart.
+     */
+    @Singleton
+    ConfigLadder<Integer> minPasswordLength(LiveConfigPort<Integer> settingsRows,
+                                            RestartConfigPort<Integer> properties,
+                                            Clock clock) {
+        var restartSource = new RestartConfigSource<>(properties);
+        int cacheTtlSeconds = ConfigLadder.restart(
+                "security.settings.cache.ttl.seconds", 10,
+                seconds -> {
+                    if (seconds < 0) throw new IllegalArgumentException("ttl seconds must not be negative");
+                },
+                restartSource).resolve();
+        var liveSource = new LiveConfigSource<>(new CachingLiveConfigPort<>(
+                settingsRows, java.time.Duration.ofSeconds(cacheTtlSeconds), clock));
+        return ConfigLadder.live(
+                "security.password.policy.min.length", MinLength.DEFAULT.value(),
+                length -> new MinLength(length),
+                liveSource, restartSource);
     }
 
     @Singleton

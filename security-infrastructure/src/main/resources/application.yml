@@ -35,6 +35,18 @@ micronaut:
           # silent client-side one this file's comment above describes.
           allowed-origins: ${SECURITY_CORS_ORIGINS:`http://localhost:8083,http://localhost:8084,http://localhost:4200,http://localhost:8093,http://localhost:5173`}
 security:
+  # The layered configuration ladder (shared/config, wired in BeanFactory#minPasswordLength):
+  # a security_settings database row (runtime — live within one cache TTL) beats a property set
+  # here (deployment — needs a restart) beats the hardcoded default (compile time). Both keys are
+  # deliberately ABSENT below: an absent property is a VACANT rung, not zero — the hardcoded
+  # default (MinLength.DEFAULT = 5, TTL 10 s) answers until a deployment or an administrator says
+  # otherwise. Setting a value here (or the equivalent env var) claims the deployment rung.
+  #
+  # password.policy.min.length: 12
+  # settings.cache.ttl.seconds: 10   # zero switches the settings cache off. The TTL has NO
+  #                                  # database rung ON PURPOSE: meta-configuration lives one
+  #                                  # rung below what it governs, or a bad TTL (say 24h) would
+  #                                  # delay the very correction that fixes it by 24h.
   saga:
     # The saga-listener lamp's stall tolerance, wired to an environment variable ON PURPOSE rather
     # than left to the @Value default. OffboardingListenerHealth refuses to start on a value below
