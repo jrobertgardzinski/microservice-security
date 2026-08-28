@@ -5,6 +5,7 @@ import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
+import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
@@ -29,14 +30,14 @@ public class ChangePassword {
 
     private final UserRepository userRepository;
     private final HashAlgorithmPort hashAlgorithm;
-    private final CreatePasswordHash createPasswordHash;
+    private final Supplier<PasswordPolicy> passwordPolicy;
     private final AuthorizationDataRepository sessions;
 
     public ChangePassword(UserRepository userRepository, HashAlgorithmPort hashAlgorithm,
-                          CreatePasswordHash createPasswordHash, AuthorizationDataRepository sessions) {
+                          Supplier<PasswordPolicy> passwordPolicy, AuthorizationDataRepository sessions) {
         this.userRepository = userRepository;
         this.hashAlgorithm = hashAlgorithm;
-        this.createPasswordHash = createPasswordHash;
+        this.passwordPolicy = passwordPolicy;
         this.sessions = sessions;
     }
 
@@ -46,7 +47,8 @@ public class ChangePassword {
         if (found.isEmpty() || !hashAlgorithm.verify(found.get().passwordHash(), currentPassword.get())) {
             return new ChangePasswordResult.WrongCurrentPassword();
         }
-        Optional<HashedPassword> newHash = createPasswordHash.create(newPassword).findValue();
+        Optional<HashedPassword> newHash = new CreatePasswordHash(hashAlgorithm, passwordPolicy.get())
+                .create(newPassword).findValue();
         if (newHash.isEmpty()) {
             return new ChangePasswordResult.WeakPassword();
         }

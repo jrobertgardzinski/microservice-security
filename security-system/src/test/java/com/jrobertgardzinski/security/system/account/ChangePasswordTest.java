@@ -53,7 +53,7 @@ class ChangePasswordTest {
         Mockito.when(userRepository.findBy(EMAIL)).thenReturn(Optional.of(
                 new User(EMAIL, new HashedPassword("hash:OldPassword1!"))));
         changePassword = new ChangePassword(userRepository, FAKE_ALGORITHM,
-                new CreatePasswordHash(FAKE_ALGORITHM, PasswordPolicy.withDefaults()), sessions);
+                PasswordPolicy::withDefaults, sessions);
     }
 
     @Example

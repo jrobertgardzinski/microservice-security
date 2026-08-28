@@ -1,9 +1,11 @@
 package com.jrobertgardzinski.security.system.passwordreset;
 
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
+import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
 import com.jrobertgardzinski.security.domain.repository.PasswordResetRepository;
 import com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository;
@@ -41,18 +43,21 @@ public class ResetPassword {
 
     private final PasswordResetRepository passwordResetRepository;
     private final UserRepository userRepository;
-    private final CreatePasswordHash createPasswordHash;
+    private final HashAlgorithmPort hashAlgorithm;
+    private final Supplier<PasswordPolicy> passwordPolicy;
     private final PasswordlessAccountRepository passwordlessAccounts;
     private final AuthorizationDataRepository sessions;
     private final Duration tokenTtl;
     private final Clock clock;
 
     public ResetPassword(PasswordResetRepository passwordResetRepository, UserRepository userRepository,
-                         CreatePasswordHash createPasswordHash, PasswordlessAccountRepository passwordlessAccounts,
+                         HashAlgorithmPort hashAlgorithm, Supplier<PasswordPolicy> passwordPolicy,
+                         PasswordlessAccountRepository passwordlessAccounts,
                          AuthorizationDataRepository sessions, Duration tokenTtl, Clock clock) {
         this.passwordResetRepository = passwordResetRepository;
         this.userRepository = userRepository;
-        this.createPasswordHash = createPasswordHash;
+        this.hashAlgorithm = hashAlgorithm;
+        this.passwordPolicy = passwordPolicy;
         this.passwordlessAccounts = passwordlessAccounts;
         this.sessions = sessions;
         this.tokenTtl = tokenTtl;
@@ -60,7 +65,8 @@ public class ResetPassword {
     }
 
     public ResetPasswordResult execute(PasswordResetToken token, Supplier<PlaintextPassword> newPassword) {
-        Optional<HashedPassword> hashed = createPasswordHash.create(newPassword).findValue();
+        Optional<HashedPassword> hashed = new CreatePasswordHash(hashAlgorithm, passwordPolicy.get())
+                .create(newPassword).findValue();
         if (hashed.isEmpty()) {
             return new ResetPasswordResult.WeakPassword();
         }

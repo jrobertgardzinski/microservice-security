@@ -65,7 +65,7 @@ class ResetPasswordTest {
         userRepository = Mockito.mock(UserRepository.class);
         sessions = Mockito.mock(AuthorizationDataRepository.class);
         resetPassword = new ResetPassword(passwordResetRepository, userRepository,
-                new CreatePasswordHash(FAKE_ALGORITHM, PasswordPolicy.withDefaults()),
+                FAKE_ALGORITHM, PasswordPolicy::withDefaults,
                 new com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository() {
                     public boolean isPasswordless(com.jrobertgardzinski.email.domain.Email e) { return false; }
                     public void setPasswordless(com.jrobertgardzinski.email.domain.Email e, boolean v) {}

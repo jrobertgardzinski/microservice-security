@@ -2,9 +2,10 @@ package com.jrobertgardzinski.security.system.registration;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.policy.CanRegister;
+import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.password.policy.CreatePasswordHash;
+import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.util.constraint.Outcome;
@@ -24,20 +25,30 @@ import static org.junit.jupiter.api.Assertions.*;
 class RegisterTest {
 
     private static final String EMAIL = "user@example.com";
-    private static final String PASSWORD = "plaintext";
-    private static final HashedPassword HASH = new HashedPassword("hash");
+    private static final String PASSWORD = "StrongPassword1!";
+    private static final String WEAK_PASSWORD = "weak";
+    private static final HashedPassword HASH = new HashedPassword("hash:" + PASSWORD);
+    private static final HashAlgorithmPort FAKE_ALGORITHM = new HashAlgorithmPort() {
+        @Override
+        public HashedPassword hash(PlaintextPassword plaintextPassword) {
+            return new HashedPassword("hash:" + plaintextPassword.value());
+        }
+
+        @Override
+        public boolean verify(HashedPassword hashedPassword, PlaintextPassword plaintextPassword) {
+            return hashedPassword.value().equals("hash:" + plaintextPassword.value());
+        }
+    };
 
     private UserRepository userRepository;
     private CanRegister canRegister;
-    private CreatePasswordHash createPasswordHash;
     private Register register;
 
     @BeforeTry
     void init() {
         userRepository = Mockito.mock(UserRepository.class);
         canRegister = Mockito.mock(CanRegister.class);
-        createPasswordHash = Mockito.mock(CreatePasswordHash.class);
-        register = new Register(userRepository, canRegister, createPasswordHash);
+        register = new Register(userRepository, canRegister, FAKE_ALGORITHM, PasswordPolicy::withDefaults);
     }
 
     @Property
@@ -49,19 +60,17 @@ class RegisterTest {
         Assume.that(emailFails || passwordFails);
 
         List<String> emailErrors = emailFails ? someErrors() : Collections.emptyList();
-        List<String> passwordErrors = passwordFails ? someErrors() : Collections.emptyList();
+        String password = passwordFails ? WEAK_PASSWORD : PASSWORD;
 
         Outcome<Email> emailOutcome = emailDecision(emailErrors);
-        Outcome<HashedPassword> outcome = passwordOutcome(passwordErrors);
         Mockito.when(canRegister.evaluate(Mockito.any())).thenReturn(emailOutcome);
-        Mockito.when(createPasswordHash.create(Mockito.any())).thenReturn(outcome);
 
-        RegisterResult result = register.execute(() -> Email.of(EMAIL), () -> PlaintextPassword.of(PASSWORD));
+        RegisterResult result = register.execute(() -> Email.of(EMAIL), () -> PlaintextPassword.of(password));
 
         RegisterResult.Rejected rejected = assertInstanceOf(RegisterResult.Rejected.class, result);
         assertAll(
                 () -> assertEquals(emailErrors, rejected.emailErrors().codes()),
-                () -> assertEquals(passwordErrors, rejected.passwordErrors().codes()),
+                () -> assertEquals(passwordFails, !rejected.passwordErrors().codes().isEmpty()),
                 () -> Mockito.verify(userRepository, Mockito.never()).save(Mockito.any())
         );
     }
@@ -75,16 +84,12 @@ class RegisterTest {
     private Outcome<Email> emailDecision(List<String> errors) {
         return errors.isEmpty() ? new Outcome.Allowed<>(Email.of(EMAIL)) : new Outcome.Rejected<>(errors);
     }
-    private Outcome<HashedPassword> passwordOutcome(List<String> errors) {
-        return errors.isEmpty() ? new Outcome.Allowed<>(HASH) : new Outcome.Rejected<>(errors);
-    }
 
     @Example
     @Label("Registered when both email and password pass validation")
     void registered_when_both_pass() {
         User user = new User(Email.of(EMAIL), HASH);
         Mockito.when(canRegister.evaluate(Mockito.any())).thenReturn(new Outcome.Allowed<>(Email.of(EMAIL)));
-        Mockito.when(createPasswordHash.create(Mockito.any())).thenReturn(new Outcome.Allowed<>(HASH));
         Mockito.when(userRepository.save(Mockito.any())).thenReturn(user);
 
         RegisterResult result = register.execute(() -> Email.of(EMAIL), () -> PlaintextPassword.of(PASSWORD));
@@ -97,7 +102,6 @@ class RegisterTest {
     @Label("EmailAlreadyTaken when a user with that email already exists")
     void email_already_taken_when_user_exists() {
         Mockito.when(canRegister.evaluate(Mockito.any())).thenReturn(new Outcome.Allowed<>(Email.of(EMAIL)));
-        Mockito.when(createPasswordHash.create(Mockito.any())).thenReturn(new Outcome.Allowed<>(HASH));
         Mockito.when(userRepository.existsBy(Mockito.any())).thenReturn(true);
 
         RegisterResult result = register.execute(() -> Email.of(EMAIL), () -> PlaintextPassword.of(PASSWORD));

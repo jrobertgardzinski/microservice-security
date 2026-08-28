@@ -8,9 +8,9 @@ import com.jrobertgardzinski.config.source.live.LiveConfigPort;
 import com.jrobertgardzinski.config.source.live.LiveConfigSource;
 import com.jrobertgardzinski.email.policy.CanRegister;
 import com.jrobertgardzinski.password.security.config.MinLength;
+import com.jrobertgardzinski.password.security.config.SpecialChars;
 import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
-import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
@@ -52,6 +52,7 @@ import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 
 import java.time.Clock;
+import java.util.function.Supplier;
 
 /**
  * Production wiring for the use cases behind the HTTP entry points. Each use case the controllers
@@ -97,12 +98,18 @@ public class BeanFactory {
                 liveSource, restartSource);
     }
 
+    /** One policy for every place a password is established: register, reset, change. */
+    private static Supplier<PasswordPolicy> passwordPolicy(ConfigLadder<Integer> minPasswordLength) {
+        return () -> new PasswordPolicy(new MinLength(minPasswordLength.resolve()), SpecialChars.DEFAULT);
+    }
+
     @Singleton
-    Register register(UserRepository userRepository, HashAlgorithmPort hashAlgorithm) {
+    Register register(UserRepository userRepository, HashAlgorithmPort hashAlgorithm,
+                      ConfigLadder<Integer> minPasswordLength) {
         return new Register(
                 userRepository,
                 CanRegister.builder().build(),
-                new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()));
+                hashAlgorithm, passwordPolicy(minPasswordLength));
     }
 
     /**
@@ -369,9 +376,10 @@ public class BeanFactory {
                                 AuthorizationDataRepository sessions,
                                 @io.micronaut.context.annotation.Value("${security.password-reset.ttl-minutes:60}")
                                 int resetTtlMinutes,
-                                Clock clock) {
+                                Clock clock,
+                                ConfigLadder<Integer> minPasswordLength) {
         return new ResetPassword(passwordResetRepository, userRepository,
-                new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()), passwordless,
+                hashAlgorithm, passwordPolicy(minPasswordLength), passwordless,
                 sessions, java.time.Duration.ofMinutes(resetTtlMinutes), clock);
     }
 
@@ -436,9 +444,10 @@ public class BeanFactory {
 
     @Singleton
     ChangePassword changePassword(UserRepository userRepository, HashAlgorithmPort hashAlgorithm,
-                                  AuthorizationDataRepository sessions) {
+                                  AuthorizationDataRepository sessions,
+                                  ConfigLadder<Integer> minPasswordLength) {
         return new ChangePassword(userRepository, hashAlgorithm,
-                new CreatePasswordHash(hashAlgorithm, PasswordPolicy.withDefaults()), sessions);
+                passwordPolicy(minPasswordLength), sessions);
     }
 
     @Singleton
