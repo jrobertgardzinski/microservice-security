@@ -45,7 +45,8 @@ class StepUpCoverageTest {
             "AdminFactorsController", "resetting another account's factors strips that person's second factor",
             "RecoveryCodesController", "recovery codes are durable spare keys: minted once, usable when the factor is out of reach",
             "EmailChangeController", "moving the address moves the account — the confirmation lands in the NEW mailbox",
-            "AdminRolesController", "granting a role is a permanent widening of what the session may do");
+            "AdminRolesController", "granting a role is a permanent widening of what the session may do",
+            "AdminPasswordPolicyController", "the password floor binds every future password in the estate — lowering it on a stolen live session is a lasting weakening");
 
     /**
      * The rest, each with the reason a live session is enough. These are not oversights; leaving

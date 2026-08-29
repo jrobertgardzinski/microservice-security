@@ -3,6 +3,7 @@ package com.jrobertgardzinski.security.system.registration;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.password.domain.HashedPassword;
+import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
@@ -21,11 +22,14 @@ class RegistrationAttempt {
 
     private final Outcome<Email> emailOutcome;
     private final Outcome<HashedPassword> passwordOutcome;
+    private final PasswordPolicy passwordPolicy;
     private final UserRepository userRepository;
 
-    RegistrationAttempt(Outcome<Email> emailOutcome, Outcome<HashedPassword> passwordOutcome, UserRepository userRepository) {
+    RegistrationAttempt(Outcome<Email> emailOutcome, Outcome<HashedPassword> passwordOutcome,
+                        PasswordPolicy passwordPolicy, UserRepository userRepository) {
         this.emailOutcome = emailOutcome;
         this.passwordOutcome = passwordOutcome;
+        this.passwordPolicy = passwordPolicy;
         this.userRepository = userRepository;
     }
 
@@ -33,7 +37,7 @@ class RegistrationAttempt {
         var optionalEmail = emailOutcome.findValue();
         var optionalHashedPassword = passwordOutcome.findValue();
         if (optionalEmail.isEmpty() || optionalHashedPassword.isEmpty()) {
-            return new RegisterResult.Rejected(EmailErrorCodes.of(emailOutcome), PasswordErrorCodes.of(passwordOutcome));
+            return new RegisterResult.Rejected(EmailErrorCodes.of(emailOutcome), PasswordErrorCodes.of(passwordOutcome), passwordPolicy);
         }
         Email email = optionalEmail.get();
         HashedPassword hashedPassword = optionalHashedPassword.get();

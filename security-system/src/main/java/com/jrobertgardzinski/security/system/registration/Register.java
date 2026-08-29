@@ -30,9 +30,11 @@ public class Register {
     }
 
     public RegisterResult execute(Supplier<Email> email, Supplier<PlaintextPassword> password) {
+        PasswordPolicy policy = passwordPolicy.get();
         RegistrationAttempt attempt = new RegistrationAttempt(
                 canRegister.evaluate(email),
-                new CreatePasswordHash(hashAlgorithm, passwordPolicy.get()).create(password),
+                new CreatePasswordHash(hashAlgorithm, policy).create(password),
+                policy,
                 userRepository
         );
         return attempt.resolve();

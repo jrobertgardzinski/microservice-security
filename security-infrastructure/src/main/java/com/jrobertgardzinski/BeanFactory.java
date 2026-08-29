@@ -38,6 +38,8 @@ import com.jrobertgardzinski.security.system.session.Logout;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RevokeAllSessions;
 import com.jrobertgardzinski.security.system.account.ChangePassword;
+import com.jrobertgardzinski.security.system.settings.MinPasswordLengthStore;
+import com.jrobertgardzinski.security.system.settings.SetMinPasswordLength;
 import com.jrobertgardzinski.security.system.account.ConfirmEmailChange;
 import com.jrobertgardzinski.security.domain.port.AccountDeletionSaga;
 import com.jrobertgardzinski.security.system.account.DeleteAccount;
@@ -93,9 +95,15 @@ public class BeanFactory {
         var liveSource = new LiveConfigSource<>(new CachingLiveConfigPort<>(
                 settingsRows, java.time.Duration.ofSeconds(cacheTtlSeconds), clock));
         return ConfigLadder.live(
-                "security.password.policy.min.length", MinLength.DEFAULT.value(),
+                SetMinPasswordLength.KEY, MinLength.DEFAULT.value(),
                 length -> new MinLength(length),
                 liveSource, restartSource);
+    }
+
+    /** The admin's hand on the live rung: the value object is the gate, the store is the row. */
+    @Singleton
+    SetMinPasswordLength setMinPasswordLength(MinPasswordLengthStore store) {
+        return new SetMinPasswordLength(store);
     }
 
     /** One policy for every place a password is established: register, reset, change. */
@@ -408,12 +416,15 @@ public class BeanFactory {
             // something durable, so each asks for fresh proof (P18 follow-up, StepUpCoverageTest)
             @io.micronaut.context.annotation.Value("${security.step-up.generate-recovery-codes:SECOND_FACTORS}") String recoveryCodes,
             @io.micronaut.context.annotation.Value("${security.step-up.change-email:FULL_CHAIN}") String changeEmail,
-            @io.micronaut.context.annotation.Value("${security.step-up.admin-roles:FULL_CHAIN}") String adminRoles) {
+            @io.micronaut.context.annotation.Value("${security.step-up.admin-roles:FULL_CHAIN}") String adminRoles,
+            // the password policy binds every future password in the estate; a stolen admin
+            // session must not be able to lower the floor on a live token alone
+            @io.micronaut.context.annotation.Value("${security.step-up.admin-settings:FULL_CHAIN}") String adminSettings) {
         return new com.jrobertgardzinski.security.config.mfa.StepUpPolicy(
                 java.util.Map.of("delete-account", deleteAccount, "change-password", changePassword,
                         "admin-reset", adminReset, "enrol-factor", enrolFactor, "remove-factor", removeFactor,
                         "generate-recovery-codes", recoveryCodes, "change-email", changeEmail,
-                        "admin-roles", adminRoles));
+                        "admin-roles", adminRoles, "admin-settings", adminSettings));
     }
 
     @Singleton

@@ -27,7 +27,9 @@ export function App() {
   const [floor, setFloor] = useState({ required: 1, have: 1 });
   const [notice, setNotice] = useState<string | null>(null);
   const [emailErrors, setEmailErrors] = useState<string[]>([]);
-  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  // one entry per failed rule: { CODE: parameter in force } — e.g. { MIN_LENGTH_NOT_MET: 12 },
+  // or { CODE: true } for a rule without a parameter
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, unknown>[]>([]);
   // multi-factor sign-in
   const [mfaTicket, setMfaTicket] = useState('');
   const [nextFactor, setNextFactor] = useState('');
@@ -249,7 +251,7 @@ export function App() {
     if (r.status === 201) {
       setMode('inbox');
     } else if (r.status === 422) {
-      const errors: { emailErrors?: string[]; passwordErrors?: string[] } = await r.json();
+      const errors: { emailErrors?: string[]; passwordErrors?: Record<string, unknown>[] } = await r.json();
       setEmailErrors(errors.emailErrors ?? []);
       setPasswordErrors(errors.passwordErrors ?? []);
     } else {
@@ -653,7 +655,10 @@ export function App() {
         <div data-testid="validation-errors" className="notice">
           That will not do:
           <ul data-testid="email-errors">{emailErrors.map((e) => <li key={e}>{prettify(e)}</li>)}</ul>
-          <ul data-testid="password-errors">{passwordErrors.map((e) => <li key={e}>{prettify(e)}</li>)}</ul>
+          <ul data-testid="password-errors">{passwordErrors.map((e) => {
+            const [code, parameter] = Object.entries(e)[0];
+            return <li key={code}>{prettify(code)}{parameter === true ? '' : `: ${parameter}`}</li>;
+          })}</ul>
         </div>
       )}
     </div>

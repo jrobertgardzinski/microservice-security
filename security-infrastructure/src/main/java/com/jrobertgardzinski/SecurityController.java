@@ -4,6 +4,7 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.system.registration.Register;
+import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.system.registration.RegisterResult;
 import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
 import com.jrobertgardzinski.security.system.verification.RequestEmailVerification;
@@ -20,6 +21,7 @@ import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.http.annotation.Post;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,7 +32,11 @@ import java.util.Map;
  *   <li>{@code Registered}        &rarr; 201 Created, {@code {"status": "CHECK_YOUR_MAILBOX"}};
  *       a verification link is e-mailed — sign-in stays blocked until the address is verified</li>
  *   <li>{@code Rejected}          &rarr; 422 Unprocessable Entity,
- *       {@code {"emailErrors": [...], "passwordErrors": [...]}}</li>
+ *       {@code {"emailErrors": ["..."], "passwordErrors": [{"CODE": parameter}, ...]}} — each
+ *       password error is one code with the parameter in force for this very attempt behind
+ *       it ({@code {"MIN_LENGTH_NOT_MET": 12}}), or {@code true} for a rule that has none;
+ *       the policy is live configuration, so a bare code would leave the caller guessing what
+ *       the minimum was</li>
  *   <li>{@code EmailAlreadyTaken} &rarr; the same 201 and the same body as {@code Registered}
  *       (anti-enumeration: the wire never confirms an account exists). What differs is the mail,
  *       readable only by the address owner: a still-unverified account gets a fresh verification
@@ -101,7 +107,7 @@ public class SecurityController {
                     HttpResponse.<Map<String, Object>>status(HttpStatus.UNPROCESSABLE_ENTITY)
                             .body(Map.of(
                                     "emailErrors", rejected.emailErrors().codes(),
-                                    "passwordErrors", rejected.passwordErrors().codes()));
+                                    "passwordErrors", passwordErrors(rejected.passwordErrors().codes(), rejected.passwordPolicy())));
             case RegisterResult.EmailAlreadyTaken alreadyTaken -> {
                 // quiet refusal: the caller sees a fresh-looking registration; the address owner
                 // is told by mail — a lost-mail re-register gets a fresh link, a real account a notice
@@ -116,5 +122,18 @@ public class SecurityController {
                 yield HttpResponse.<Map<String, Object>>created(CHECK_YOUR_MAILBOX);
             }
         };
+    }
+
+    /**
+     * One entry per failed password rule, keyed by its code, valued by the rule's parameter in
+     * force for this attempt — or {@code true} where the rule has none (digit, uppercase,
+     * lowercase say everything in their code already).
+     */
+    static List<Map<String, Object>> passwordErrors(List<String> codes, PasswordPolicy policy) {
+        return codes.stream().map(code -> Map.<String, Object>of(code, switch (code) {
+            case "MIN_LENGTH_NOT_MET" -> policy.minLength().value();
+            case "SPECIAL_CHAR_REQUIRED" -> policy.specialChars().value();
+            default -> Boolean.TRUE;
+        })).toList();
     }
 }

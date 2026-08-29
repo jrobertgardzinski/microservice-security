@@ -40,6 +40,7 @@ import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
 import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import com.jrobertgardzinski.security.system.settings.SetMinPasswordLength;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -291,5 +292,27 @@ class JdbcAdaptersTest {
         // a hand-edited row never takes password validation down
         assertThat(settings.find("security.settings.broken")).isNull();
         assertThat(settings.find("security.settings.never.set")).isNull();
+    }
+
+    @Test
+    void the_admin_store_upserts_the_min_length_row_and_the_ladder_reads_it_back() throws Exception {
+        var store = context.getBean(com.jrobertgardzinski.security.system.settings.MinPasswordLengthStore.class);
+        LiveConfigPort<?> settings = context.getBean(LiveConfigPort.class);
+        try {
+            store.save(new com.jrobertgardzinski.password.security.config.MinLength(10));
+            assertThat(settings.find(SetMinPasswordLength.KEY)).isEqualTo(10);
+
+            // a second decision replaces the row - one key, one row, never a duplicate
+            store.save(new com.jrobertgardzinski.password.security.config.MinLength(12));
+            assertThat(settings.find(SetMinPasswordLength.KEY)).isEqualTo(12);
+        } finally {
+            // the shared container outlives this method and the settings test next door inserts
+            // the same key by hand - leave the table as found, whatever the run order
+            try (var connection = java.sql.DriverManager.getConnection(
+                    POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+                 var delete = connection.createStatement()) {
+                delete.execute("DELETE FROM security_settings WHERE name = '" + SetMinPasswordLength.KEY + "'");
+            }
+        }
     }
 }
