@@ -61,7 +61,7 @@ final class VerifyEmailController {
         }
         Email email;
         try {
-            email = Email.of((String) body.get("email"));
+            email = Email.of(JsonBody.text(body, "email"));
         } catch (InvalidEmailException malformed) {
             // This endpoint answers the same whether or not the address has an account, so that
             // nobody can probe who is registered here. A malformed address must be just as quiet:
@@ -78,7 +78,13 @@ final class VerifyEmailController {
 
     @Post(consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> verify(@Body Map<String, Object> body) {
-        VerificationToken token = new VerificationToken((String) body.get("token"));
+        VerificationToken token;
+        try {
+            token = new VerificationToken(JsonBody.text(body, "token"));
+        } catch (IllegalArgumentException missingOrBlank) {
+            // a token that cannot even be constructed is simply not a valid token
+            return HttpResponse.badRequest().body(Map.of("status", "INVALID_TOKEN"));
+        }
         VerifyEmailResult result = transactionBoundary.execute(() -> verifyEmail.execute(token));
         if (result instanceof VerifyEmailResult.Verified verified) {
             return HttpResponse.ok(Map.of("status", "EMAIL_VERIFIED", "email", verified.email().value()));

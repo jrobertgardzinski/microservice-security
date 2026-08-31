@@ -57,7 +57,7 @@ final class EmailChangeController {
                 request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow());
         Email newEmail;
         try {
-            newEmail = Email.of((String) body.get("newEmail"));
+            newEmail = Email.of(JsonBody.text(body, "newEmail"));
         } catch (IllegalArgumentException invalid) {
             return HttpResponse.badRequest().body(Map.of("status", "INVALID_EMAIL"));
         }

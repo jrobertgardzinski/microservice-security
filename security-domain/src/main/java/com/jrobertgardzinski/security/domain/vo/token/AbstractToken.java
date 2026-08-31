@@ -8,7 +8,9 @@ public abstract class AbstractToken {
     private final String value;
 
     protected AbstractToken(String value) {
-        if (value.isBlank()) throw new IllegalArgumentException("Token value must not be blank");
+        // null, not just empty: a caller who omits the field (or sends a number, which the boundary
+        // reads as absent) used to get "Cannot invoke String.isBlank()" — an NPE escaping as a 500
+        if (value == null || value.isBlank()) throw new IllegalArgumentException("Token value must not be blank");
         this.value = value;
     }
 

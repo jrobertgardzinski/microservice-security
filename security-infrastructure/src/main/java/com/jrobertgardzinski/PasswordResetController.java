@@ -62,7 +62,7 @@ final class PasswordResetController {
         }
         Email email;
         try {
-            email = Email.of((String) body.get("email"));
+            email = Email.of(JsonBody.text(body, "email"));
         } catch (InvalidEmailException malformed) {
             // This endpoint answers the same whether or not the address has an account, so that
             // nobody can probe who is registered here. A malformed address must be just as quiet:
@@ -79,8 +79,14 @@ final class PasswordResetController {
 
     @Post(consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> reset(@Body Map<String, Object> body) {
-        PasswordResetToken token = new PasswordResetToken((String) body.get("token"));
-        String password = (String) body.get("password");
+        PasswordResetToken token;
+        try {
+            token = new PasswordResetToken(JsonBody.text(body, "token"));
+        } catch (IllegalArgumentException missingOrBlank) {
+            // a token that cannot even be constructed is simply not a valid token
+            return HttpResponse.badRequest().body(Map.of("status", "INVALID_TOKEN"));
+        }
+        String password = JsonBody.text(body, "password");
         ResetPasswordResult result = transactionBoundary.execute(
                 () -> resetPassword.execute(token, () -> PlaintextPassword.of(password)));
         return switch (result) {

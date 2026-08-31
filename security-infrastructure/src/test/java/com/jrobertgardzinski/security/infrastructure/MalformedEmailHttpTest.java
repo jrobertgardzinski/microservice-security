@@ -4,6 +4,7 @@ import io.micronaut.context.ApplicationContext;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
+import io.micronaut.http.MediaType;
 import io.micronaut.http.client.BlockingHttpClient;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
@@ -19,6 +20,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * An address the domain cannot even read is a typo, not a fault of the server.
@@ -37,6 +39,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Epic("Registration")
 @Feature("Malformed input at the HTTP boundary")
 class MalformedEmailHttpTest {
+
+    /** A body whose field carries the wrong JSON type, or no field at all. */
+    private static final String NUMBER_INSTEAD_OF_TEXT = "{\"email\": 123, \"token\": 456, \"password\": 789}";
+    private static final String NOTHING_AT_ALL = "{}";
 
     private EmbeddedServer server;
     private BlockingHttpClient client;
@@ -76,6 +82,32 @@ class MalformedEmailHttpTest {
     @DisplayName("a reset request stays quiet, malformed address or not")
     void resetRequestStaysQuiet(String email) {
         assertSameAsForAValidAddress("/reset-password/request", email, "RESET_LINK_SENT");
+    }
+
+    @ParameterizedTest(name = "POST {0} with a number where text belongs")
+    @ValueSource(strings = {"/authenticate", "/verify-email", "/verify-email/request", "/reset-password", "/reset-password/request"})
+    @DisplayName("a field sent with the wrong JSON type is refused, never a 500")
+    void wrongJsonTypeIsRefused(String path) {
+        assertNotAnInternalError(path, NUMBER_INSTEAD_OF_TEXT);
+    }
+
+    @ParameterizedTest(name = "POST {0} with an empty body")
+    @ValueSource(strings = {"/authenticate", "/verify-email", "/verify-email/request", "/reset-password", "/reset-password/request"})
+    @DisplayName("a missing field is refused, never a 500")
+    void missingFieldIsRefused(String path) {
+        assertNotAnInternalError(path, NOTHING_AT_ALL);
+    }
+
+    /**
+     * The value objects reject null and blank, and the boundary reads a non-text field as absent —
+     * so every one of these lands in an endpoint's own vocabulary. A 5xx here means an exception
+     * escaped again, and with it the class name of whatever broke.
+     */
+    private void assertNotAnInternalError(String path, String body) {
+        HttpResponse<?> response = exchange(HttpRequest.POST(path, body).contentType(MediaType.APPLICATION_JSON));
+
+        assertTrue(response.getStatus().getCode() < 500,
+                () -> path + " answered " + response.getStatus() + " for " + body);
     }
 
     /** The malformed attempt must be indistinguishable from one for a well-formed stranger. */

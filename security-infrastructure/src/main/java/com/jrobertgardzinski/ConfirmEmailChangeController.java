@@ -32,7 +32,12 @@ final class ConfirmEmailChangeController {
 
     @Post(consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> confirm(@Body Map<String, Object> body) {
-        VerificationToken token = new VerificationToken((String) body.get("token"));
+        VerificationToken token;
+        try {
+            token = new VerificationToken(JsonBody.text(body, "token"));
+        } catch (IllegalArgumentException missingOrBlank) {
+            return HttpResponse.badRequest().body(Map.of("status", "INVALID_TOKEN"));
+        }
         ConfirmEmailChangeResult result = transactionBoundary.execute(() -> confirmEmailChange.execute(token));
         return switch (result) {
             case ConfirmEmailChangeResult.EmailChanged changed ->
