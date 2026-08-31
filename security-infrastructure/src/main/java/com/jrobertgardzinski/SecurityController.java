@@ -32,11 +32,12 @@ import java.util.Map;
  *   <li>{@code Registered}        &rarr; 201 Created, {@code {"status": "CHECK_YOUR_MAILBOX"}};
  *       a verification link is e-mailed — sign-in stays blocked until the address is verified</li>
  *   <li>{@code Rejected}          &rarr; 422 Unprocessable Entity,
- *       {@code {"emailErrors": ["..."], "passwordErrors": [{"CODE": parameter}, ...]}} — each
- *       password error is one code with the parameter in force for this very attempt behind
- *       it ({@code {"MIN_LENGTH_NOT_MET": 12}}), or {@code true} for a rule that has none;
- *       the policy is live configuration, so a bare code would leave the caller guessing what
- *       the minimum was</li>
+ *       {@code {"emailErrors": [{"CODE": parameter}], "passwordErrors": [{"CODE": parameter}]}} —
+ *       both channels speak ONE shape: one code per broken rule, valued by the parameter in force
+ *       for this very attempt ({@code {"MIN_LENGTH_NOT_MET": 12}}) or {@code true} where the rule
+ *       has none. The password policy is live configuration, so a bare code would leave the caller
+ *       guessing what the minimum was; the email rules carry no parameter today, and the slot is
+ *       there for the day one does</li>
  *   <li>{@code EmailAlreadyTaken} &rarr; the same 201 and the same body as {@code Registered}
  *       (anti-enumeration: the wire never confirms an account exists). What differs is the mail,
  *       readable only by the address owner: a still-unverified account gets a fresh verification
@@ -106,7 +107,7 @@ public class SecurityController {
             case RegisterResult.Rejected rejected ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.UNPROCESSABLE_ENTITY)
                             .body(Map.of(
-                                    "emailErrors", rejected.emailErrors().codes(),
+                                    "emailErrors", emailErrors(rejected.emailErrors().codes()),
                                     "passwordErrors", passwordErrors(rejected.passwordErrors().codes(), rejected.passwordPolicy())));
             case RegisterResult.EmailAlreadyTaken alreadyTaken -> {
                 // quiet refusal: the caller sees a fresh-looking registration; the address owner
@@ -122,6 +123,17 @@ public class SecurityController {
                 yield HttpResponse.<Map<String, Object>>created(CHECK_YOUR_MAILBOX);
             }
         };
+    }
+
+    /**
+     * One entry per failed email rule, keyed by its code. No email rule carries a parameter today
+     * — the address itself is the caller's, and echoing it back would say nothing new — so every
+     * entry is {@code true}. The SHAPE matches the password channel deliberately: a client
+     * renders both with one piece of code, and a rule that grows a parameter later needs no new
+     * contract.
+     */
+    static List<Map<String, Object>> emailErrors(List<String> codes) {
+        return codes.stream().map(code -> Map.<String, Object>of(code, (Object) Boolean.TRUE)).toList();
     }
 
     /**

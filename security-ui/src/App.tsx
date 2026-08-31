@@ -16,6 +16,15 @@ import { ForgotScreen, InboxScreen, ResetScreen, SignInUpScreen } from './EntryS
  * entry screens) are presentational and receive it grouped by concern. The data-testids that the
  * e2e glue clicks live in the screen files.
  */
+/**
+ * One broken rule as the wire sends it: {CODE: the parameter in force} — or {CODE: true} where the
+ * rule has none. E-mail and password answer in the SAME shape, so one renderer serves both.
+ */
+const renderFieldError = (error: Record<string, unknown>) => {
+  const [code, parameter] = Object.entries(error)[0];
+  return <li key={code}>{prettify(code)}{parameter === true ? '' : `: ${String(parameter)}`}</li>;
+};
+
 export function App() {
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
@@ -26,7 +35,7 @@ export function App() {
   const [compliant, setCompliant] = useState(true);
   const [floor, setFloor] = useState({ required: 1, have: 1 });
   const [notice, setNotice] = useState<string | null>(null);
-  const [emailErrors, setEmailErrors] = useState<string[]>([]);
+  const [emailErrors, setEmailErrors] = useState<Record<string, unknown>[]>([]);
   // one entry per failed rule: { CODE: parameter in force } — e.g. { MIN_LENGTH_NOT_MET: 12 },
   // or { CODE: true } for a rule without a parameter
   const [passwordErrors, setPasswordErrors] = useState<Record<string, unknown>[]>([]);
@@ -251,7 +260,8 @@ export function App() {
     if (r.status === 201) {
       setMode('inbox');
     } else if (r.status === 422) {
-      const errors: { emailErrors?: string[]; passwordErrors?: Record<string, unknown>[] } = await r.json();
+      // both channels answer in one shape: {CODE: the parameter in force} or {CODE: true}
+      const errors: { emailErrors?: Record<string, unknown>[]; passwordErrors?: Record<string, unknown>[] } = await r.json();
       setEmailErrors(errors.emailErrors ?? []);
       setPasswordErrors(errors.passwordErrors ?? []);
     } else {
@@ -654,11 +664,8 @@ export function App() {
       {(emailErrors.length > 0 || passwordErrors.length > 0) && (
         <div data-testid="validation-errors" className="notice">
           That will not do:
-          <ul data-testid="email-errors">{emailErrors.map((e) => <li key={e}>{prettify(e)}</li>)}</ul>
-          <ul data-testid="password-errors">{passwordErrors.map((e) => {
-            const [code, parameter] = Object.entries(e)[0];
-            return <li key={code}>{prettify(code)}{parameter === true ? '' : `: ${parameter}`}</li>;
-          })}</ul>
+          <ul data-testid="email-errors">{emailErrors.map(renderFieldError)}</ul>
+          <ul data-testid="password-errors">{passwordErrors.map(renderFieldError)}</ul>
         </div>
       )}
     </div>
