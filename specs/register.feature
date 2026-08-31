@@ -21,10 +21,13 @@ Feature: Registration
       And the password is flagged as <password_check>
 
       Examples:
-        | case                      | email          | password         | email_check | password_check |
-        | both invalid              | invalid        | weak             | invalid     | invalid        |
-        | only the email invalid    | invalid        | StrongPassword1! | invalid     | accepted       |
-        | only the password invalid | user@gmail.com | weak             | accepted    | invalid        |
+        | case                      | email           | password         | email_check | password_check |
+        | both invalid              | invalid         | weak             | invalid     | invalid        |
+        | only the email invalid    | invalid         | StrongPassword1! | invalid     | accepted       |
+        | only the password invalid | user@gmail.com  | weak             | accepted    | invalid        |
+        # a dot separates atoms, so two in a row separate nothing - and an address the mail chain
+        # can never deliver to must not become an account
+        | two dots in the address   | a..b@gmail.com  | StrongPassword1! | invalid     | accepted       |
 
   Rule: 3. An EMAIL that is already REGISTERED is refused quietly, so nobody can probe who has an account
 
