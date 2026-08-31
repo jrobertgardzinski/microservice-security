@@ -69,8 +69,19 @@ public class AuthenticationController {
     public HttpResponse<Map<String, Object>> authenticate(@Body Map<String, String> body, HttpRequest<?> request) {
         Source source = new Source(ipResolver.resolve(request),
                 request.getHeaders().findFirst("User-Agent").orElse(""));
-        AuthenticationRequest authenticationRequest = new AuthenticationRequest(
-                source, Email.of(body.get("email")), PlaintextPassword.of(body.get("password")));
+        AuthenticationRequest authenticationRequest;
+        try {
+            authenticationRequest = new AuthenticationRequest(
+                    source, Email.of(body.get("email")), PlaintextPassword.of(body.get("password")));
+        } catch (IllegalArgumentException unreadable) {
+            // A credential the domain cannot even construct used to escape as a 500 carrying the
+            // domain's own sentence: an Internal Server Error for a typo, plus a stack trace in the
+            // log for every one of them. To the caller it is not a different KIND of failure — an
+            // address that cannot exist owns no account — so it answers exactly like a wrong
+            // password, and learns nothing the 401 did not already say. It costs no lookup and
+            // therefore no brute-force count: there is no account here to guess at.
+            return HttpResponse.status(HttpStatus.UNAUTHORIZED);
+        }
         AuthenticationResult result = transactionBoundary.execute(() -> authentication.execute(authenticationRequest));
 
         return switch (result) {

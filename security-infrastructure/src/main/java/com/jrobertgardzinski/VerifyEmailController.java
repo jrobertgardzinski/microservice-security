@@ -1,6 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.email.domain.InvalidEmailException;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
 import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
@@ -58,7 +59,16 @@ final class VerifyEmailController {
                     .header("Retry-After", String.valueOf(decision.retryAfterSeconds()))
                     .body(Map.of("error", "TOO_MANY_VERIFICATION_REQUESTS"));
         }
-        Email email = Email.of((String) body.get("email"));
+        Email email;
+        try {
+            email = Email.of((String) body.get("email"));
+        } catch (InvalidEmailException malformed) {
+            // This endpoint answers the same whether or not the address has an account, so that
+            // nobody can probe who is registered here. A malformed address must be just as quiet:
+            // a different answer for it would be a different answer for SOME inputs, and it used to
+            // be the loudest one of all — a 500 quoting the domain back at the caller.
+            return HttpResponse.accepted().body(Map.of("status", "VERIFICATION_LINK_SENT"));
+        }
         transactionBoundary.execute(() -> {
             requestEmailVerification.execute(email);
             return null;

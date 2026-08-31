@@ -1,6 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.email.domain.InvalidEmailException;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.vo.token.PasswordResetToken;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
@@ -59,7 +60,16 @@ final class PasswordResetController {
                     .header("Retry-After", String.valueOf(decision.retryAfterSeconds()))
                     .body(Map.of("error", "TOO_MANY_RESET_REQUESTS"));
         }
-        Email email = Email.of((String) body.get("email"));
+        Email email;
+        try {
+            email = Email.of((String) body.get("email"));
+        } catch (InvalidEmailException malformed) {
+            // This endpoint answers the same whether or not the address has an account, so that
+            // nobody can probe who is registered here. A malformed address must be just as quiet:
+            // a different answer for it would be a different answer for SOME inputs, and it used to
+            // be the loudest one of all — a 500 quoting the domain back at the caller.
+            return HttpResponse.accepted().body(Map.of("status", "RESET_LINK_SENT"));
+        }
         transactionBoundary.execute(() -> {
             requestPasswordReset.execute(email);
             return null;
