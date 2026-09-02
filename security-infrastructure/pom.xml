@@ -29,7 +29,7 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>email-security-config</artifactId>
+            <artifactId>email-config</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
