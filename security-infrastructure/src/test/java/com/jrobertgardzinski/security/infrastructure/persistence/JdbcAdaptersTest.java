@@ -40,7 +40,7 @@ import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
 import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import com.jrobertgardzinski.password.settings.SetMinPasswordLength;
+import com.jrobertgardzinski.password.policy.ladder.SetMinPasswordLength;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -296,7 +296,7 @@ class JdbcAdaptersTest {
 
     @Test
     void the_admin_store_upserts_the_min_length_row_and_the_ladder_reads_it_back() throws Exception {
-        var store = context.getBean(com.jrobertgardzinski.password.settings.MinLengthRepository.class);
+        var store = context.getBean(com.jrobertgardzinski.password.policy.ladder.MinLengthRepository.class);
         LiveConfigPort<?> settings = context.getBean(LiveConfigPort.class);
         try {
             store.save(new com.jrobertgardzinski.password.security.config.MinLength(10));

@@ -16,7 +16,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import com.jrobertgardzinski.password.settings.PasswordPolicyInForce;
+import com.jrobertgardzinski.password.policy.ladder.PasswordPolicyInForce;
 
 import java.util.function.Supplier;
 

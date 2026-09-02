@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.infrastructure.feature.passwordpolicy;
 
 import com.jrobertgardzinski.CapturingEmailVerificationNotifier;
 import com.jrobertgardzinski.persistence.InMemorySecuritySettings;
-import com.jrobertgardzinski.password.settings.SetMinPasswordLength;
+import com.jrobertgardzinski.password.policy.ladder.SetMinPasswordLength;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;

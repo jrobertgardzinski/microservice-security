@@ -34,6 +34,10 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>password-security-usecase-ladder</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
             <artifactId>email-domain</artifactId>
         </dependency>
         <dependency>
