@@ -5,13 +5,12 @@ import com.jrobertgardzinski.config.source.restart.RestartConfigPort;
 import com.jrobertgardzinski.config.source.restart.RestartConfigSource;
 import com.jrobertgardzinski.config.source.live.CachingLiveConfigPort;
 import com.jrobertgardzinski.config.source.live.LiveConfigPort;
-import com.jrobertgardzinski.config.source.live.LiveConfigSource;
 import com.jrobertgardzinski.email.config.BlockedDomains;
 import com.jrobertgardzinski.email.config.CanRegisterConfig;
 import com.jrobertgardzinski.email.config.CompanyDomains;
 import com.jrobertgardzinski.email.config.DisposableDomains;
 import com.jrobertgardzinski.email.domain.DomainPart;
-import com.jrobertgardzinski.password.security.config.MinLength;
+import com.jrobertgardzinski.password.security.config.MinLengthLadder;
 import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
@@ -41,9 +40,10 @@ import com.jrobertgardzinski.security.system.session.Logout;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RevokeAllSessions;
 import com.jrobertgardzinski.security.system.account.ChangePassword;
-import com.jrobertgardzinski.security.system.settings.MinPasswordLengthStore;
-import com.jrobertgardzinski.security.system.settings.PasswordPolicyInForce;
-import com.jrobertgardzinski.security.system.settings.SetMinPasswordLength;
+import com.jrobertgardzinski.password.settings.MinPasswordLengthStore;
+import com.jrobertgardzinski.password.settings.LadderedPasswordPolicy;
+import com.jrobertgardzinski.password.settings.PasswordPolicyInForce;
+import com.jrobertgardzinski.password.settings.SetMinPasswordLength;
 import com.jrobertgardzinski.security.system.account.ConfirmEmailChange;
 import com.jrobertgardzinski.security.domain.port.AccountDeletionSaga;
 import com.jrobertgardzinski.security.system.account.DeleteAccount;
@@ -83,9 +83,10 @@ public class BeanFactory {
 
     /**
      * The minimal password length as a layered ladder — the canonical precedence law: the source
-     * bound latest in the lifecycle wins. A {@code security_settings} row (runtime — an
-     * administrator's decision now) over the {@code security.password.policy.min.length} property
-     * (deployment) over {@link MinLength#DEFAULT} (compile time). The database rung is read
+     * bound latest in the lifecycle wins. Which rungs, which key and which gate is
+     * {@link MinLengthLadder}'s business, next to the value it produces; this factory only decides
+     * what stands behind the ports: a {@code security_settings} row (runtime — an
+     * administrator's decision now) over a property (deployment). The database rung is read
      * through a TTL cache whose TTL is itself RESTART-level configuration — meta-configuration
      * lives one rung below what it governs, so a bad TTL can never delay its own correction — and
      * a zero TTL switches the cache off. Use cases resolve per attempt, so a change is honoured
@@ -102,12 +103,9 @@ public class BeanFactory {
                     if (seconds < 0) throw new IllegalArgumentException("ttl seconds must not be negative");
                 },
                 restartSource).resolve();
-        var liveSource = new LiveConfigSource<>(new CachingLiveConfigPort<>(
-                settingsRows, java.time.Duration.ofSeconds(cacheTtlSeconds), clock));
-        return ConfigLadder.live(
-                SetMinPasswordLength.KEY, MinLength.DEFAULT.value(),
-                length -> new MinLength(length),
-                liveSource, restartSource);
+        return MinLengthLadder.over(
+                new CachingLiveConfigPort<>(settingsRows, java.time.Duration.ofSeconds(cacheTtlSeconds), clock),
+                properties);
     }
 
     /** The admin's hand on the live rung: the value object is the gate, the store is the row. */
@@ -120,7 +118,8 @@ public class BeanFactory {
      * The read side of the password settings, for every place a password is established: register,
      * reset, change. The use cases behind this port only ever learn the answer, and ask again on
      * the next attempt. Which of the five rules move, and which stand on the rebuild rung, is
-     * written out in {@link LadderedPasswordPolicy} — not implied by a constructor.
+     * written out in {@link LadderedPasswordPolicy}, in the password library — not implied by a
+     * constructor, and not in this module.
      */
     @Singleton
     PasswordPolicyInForce passwordPolicyInForce(ConfigLadder<Integer> minPasswordLength) {

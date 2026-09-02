@@ -2,8 +2,8 @@ package com.jrobertgardzinski.persistence;
 
 import com.jrobertgardzinski.config.source.live.LiveConfigPort;
 import com.jrobertgardzinski.password.security.config.MinLength;
-import com.jrobertgardzinski.security.system.settings.MinPasswordLengthStore;
-import com.jrobertgardzinski.security.system.settings.SetMinPasswordLength;
+import com.jrobertgardzinski.password.settings.MinPasswordLengthStore;
+import com.jrobertgardzinski.password.settings.SetMinPasswordLength;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 

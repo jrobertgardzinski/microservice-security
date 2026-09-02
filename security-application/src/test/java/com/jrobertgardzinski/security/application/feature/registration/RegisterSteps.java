@@ -29,7 +29,7 @@ public class RegisterSteps {
             users,
             new CanRegisterConfig(),
             new Argon2HashAlgorithm(),
-            () -> new PasswordPolicy(new MinLength(12), new SpecialChars("#?!")));
+            () -> PasswordPolicy.defaultsExcept(new MinLength(12), new SpecialChars("#?!")));
 
     private RegisterResult result;
 

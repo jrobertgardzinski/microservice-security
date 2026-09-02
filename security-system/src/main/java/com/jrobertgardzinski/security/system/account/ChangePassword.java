@@ -11,7 +11,7 @@ import com.jrobertgardzinski.security.domain.repository.AuthorizationDataReposit
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 
 import java.util.Optional;
-import com.jrobertgardzinski.security.system.settings.PasswordPolicyInForce;
+import com.jrobertgardzinski.password.settings.PasswordPolicyInForce;
 
 import java.util.function.Supplier;
 

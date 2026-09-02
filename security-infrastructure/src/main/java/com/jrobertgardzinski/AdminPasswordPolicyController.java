@@ -5,7 +5,7 @@ import com.jrobertgardzinski.config.ladder.Resolution;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.Role;
-import com.jrobertgardzinski.security.system.settings.SetMinPasswordLength;
+import com.jrobertgardzinski.password.settings.SetMinPasswordLength;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;

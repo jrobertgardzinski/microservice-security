@@ -50,7 +50,7 @@ class RegistrationRefusalShapeTest {
     @Test
     @DisplayName("the password channel keeps its shape: the minimum length and the special characters in force")
     void passwordChannelUnchanged() {
-        var policy = new PasswordPolicy(new MinLength(12), new SpecialChars("#?!"));
+        var policy = PasswordPolicy.defaultsExcept(new MinLength(12), new SpecialChars("#?!"));
 
         var errors = SecurityController.passwordErrors(
                 List.of("MIN_LENGTH_NOT_MET", "SPECIAL_CHAR_REQUIRED", "DIGIT_REQUIRED"), policy);

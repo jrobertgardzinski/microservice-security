@@ -5,7 +5,7 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.system.settings.PasswordPolicyInForce;
+import com.jrobertgardzinski.password.settings.PasswordPolicyInForce;
 
 import java.util.function.Supplier;
 
