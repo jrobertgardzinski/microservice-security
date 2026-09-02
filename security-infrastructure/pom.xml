@@ -37,15 +37,15 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>password-security-usecase</artifactId>
+            <artifactId>password-usecase</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>password-security-usecase-ladder</artifactId>
+            <artifactId>password-ladder</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>password-security-config</artifactId>
+            <artifactId>password-config</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>

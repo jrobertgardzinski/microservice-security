@@ -4,8 +4,8 @@ import com.jrobertgardzinski.email.config.CanRegisterConfig;
 import com.jrobertgardzinski.email.config.CompanyDomains;
 import com.jrobertgardzinski.email.domain.DomainPart;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
-import com.jrobertgardzinski.password.security.config.MinLength;
-import com.jrobertgardzinski.password.security.config.SpecialChars;
+import com.jrobertgardzinski.password.config.MinLength;
+import com.jrobertgardzinski.password.config.SpecialChars;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

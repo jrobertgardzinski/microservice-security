@@ -299,11 +299,11 @@ class JdbcAdaptersTest {
         var store = context.getBean(com.jrobertgardzinski.password.policy.ladder.MinLengthRepository.class);
         LiveConfigPort<?> settings = context.getBean(LiveConfigPort.class);
         try {
-            store.save(new com.jrobertgardzinski.password.security.config.MinLength(10));
+            store.save(new com.jrobertgardzinski.password.config.MinLength(10));
             assertThat(settings.find(SetMinPasswordLength.KEY)).isEqualTo(10);
 
             // a second decision replaces the row - one key, one row, never a duplicate
-            store.save(new com.jrobertgardzinski.password.security.config.MinLength(12));
+            store.save(new com.jrobertgardzinski.password.config.MinLength(12));
             assertThat(settings.find(SetMinPasswordLength.KEY)).isEqualTo(12);
         } finally {
             // the shared container outlives this method and the settings test next door inserts
