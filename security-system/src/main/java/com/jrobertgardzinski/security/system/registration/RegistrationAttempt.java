@@ -7,15 +7,6 @@ import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 
-/**
- * One registration attempt: the two verdicts — each an outcome with the policy it was measured
- * against — plus the repository needed to persist a successful one.
- *
- * The input suppliers were already consumed into these verdicts before this
- * object existed, so {@link #resolve} cannot re-run them. It rejects with the
- * collected error codes and both policies if either input failed; otherwise, once
- * the email is confirmed free, it builds and persists the user from the accepted values.
- */
 class RegistrationAttempt {
 
     private final _EmailVerdict email;

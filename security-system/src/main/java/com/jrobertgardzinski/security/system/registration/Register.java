@@ -9,17 +9,6 @@ import com.jrobertgardzinski.password.policy.ladder.PasswordPolicyInForce;
 
 import java.util.function.Supplier;
 
-/**
- * Registers a new user from an email and a plaintext password: the email must
- * be allowed to register and not already taken, and the password is hashed
- * before the user is stored. The outcome is reported as a {@link RegisterResult}.
- *
- * The two policies differ in how they move, and the signature says so. The email policy (blocked,
- * disposable and company domains) is a deployment-rung value: fixed for the life of this object,
- * so it is held as one. The password policy can change while the system runs, so it is ASKED FOR
- * per attempt through {@link PasswordPolicyInForce}. Either way the policy that judged an attempt
- * travels with the refusal it produced.
- */
 public class Register {
     private final UserRepository userRepository;
     private final CanRegisterConfig emailPolicy;

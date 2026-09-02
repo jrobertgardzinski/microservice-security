@@ -8,13 +8,8 @@ import com.jrobertgardzinski.util.constraint.Outcome;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-/**
- * The email half of one registration attempt: the outcome and the policy it was measured against,
- * kept together so a refusal can always say against WHAT the address was judged.
- */
 record _EmailVerdict(Outcome<Email> outcome, CanRegisterConfig policy) {
 
-    /** Judges the candidate against the policy in force; an absent domain list is an absent rule. */
     static _EmailVerdict judge(CanRegisterConfig policy, Supplier<Email> candidate) {
         CanRegister canRegister = CanRegister.builder()
                 .blockingDomains(policy.blockedDomains())
