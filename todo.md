@@ -300,6 +300,17 @@ w UI zadziała bez przebudowy.
 czy sekwencja czyta się jako historia. Powiązane otwarte: password-policy przez 3 warstwy
 (brak: kroki application dla `SetMinPasswordLength` + panel admina w security-ui).
 
+## Otwarte — nazwy pól po wprowadzeniu portu odczytu (2026-09-02, drobne)
+
+Po `5656eb9` pole i argument nazywają się `passwordPolicy`, a mają typ `PasswordPolicyInForce`
+— nazwa kłamie: trzymamy PYTAJĄCEGO o politykę, nie politykę. Do przemianowania na
+`passwordPolicyInForce` w: `Register`, `ChangePassword`, `ResetPassword` (pole + argument
+konstruktora) oraz `BeanFactory` (metoda fabryki i trzy argumenty wstrzyknięć).
+
+Przy okazji zanotowane: asymetria `CanRegisterConfig` (wartość, stopień Restart) vs
+`PasswordPolicyInForce` (port, stopień Live) jest CELOWA — jeśli domeny e-maila dostaną kiedyś
+stopień Live, dostaną taki sam port i asymetria zniknie.
+
 ## Otwarte — wejścia i dokumentacja
 
 - ~~UI jako 3. wejście~~ — ZROBIONE W CAŁOŚCI (2026-07-07, playbook S1, kroki 0–7): KAŻDY
