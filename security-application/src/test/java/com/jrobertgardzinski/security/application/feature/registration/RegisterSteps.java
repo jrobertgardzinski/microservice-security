@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.application.feature.registration;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.email.policy.CanRegister;
+import com.jrobertgardzinski.email.config.CanRegisterConfig;
 import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
@@ -27,7 +27,7 @@ public class RegisterSteps {
     private final InMemoryUserRepository users = new InMemoryUserRepository();
     private final Register register = new Register(
             users,
-            CanRegister.builder().build(),
+            CanRegisterConfig::new,
             new Argon2HashAlgorithm(),
             () -> new PasswordPolicy(new MinLength(12), new SpecialChars("#?!")));
 

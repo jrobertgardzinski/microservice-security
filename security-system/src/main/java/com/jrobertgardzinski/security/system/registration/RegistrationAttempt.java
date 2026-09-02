@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.security.system.registration;
 
+import com.jrobertgardzinski.email.config.CanRegisterConfig;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.password.domain.HashedPassword;
@@ -10,8 +11,8 @@ import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.util.constraint.Outcome;
 
 /**
- * One registration attempt: the email and password outcomes plus the repository
- * needed to persist a successful one.
+ * One registration attempt: the email and password outcomes, the two policies they
+ * were measured against, plus the repository needed to persist a successful one.
  *
  * The input suppliers were already consumed into these outcomes before this
  * object existed, so {@link #resolve} cannot re-run them. It rejects with the
@@ -21,13 +22,16 @@ import com.jrobertgardzinski.util.constraint.Outcome;
 class RegistrationAttempt {
 
     private final Outcome<Email> emailOutcome;
+    private final CanRegisterConfig emailPolicy;
     private final Outcome<HashedPassword> passwordOutcome;
     private final PasswordPolicy passwordPolicy;
     private final UserRepository userRepository;
 
-    RegistrationAttempt(Outcome<Email> emailOutcome, Outcome<HashedPassword> passwordOutcome,
-                        PasswordPolicy passwordPolicy, UserRepository userRepository) {
+    RegistrationAttempt(Outcome<Email> emailOutcome, CanRegisterConfig emailPolicy,
+                        Outcome<HashedPassword> passwordOutcome, PasswordPolicy passwordPolicy,
+                        UserRepository userRepository) {
         this.emailOutcome = emailOutcome;
+        this.emailPolicy = emailPolicy;
         this.passwordOutcome = passwordOutcome;
         this.passwordPolicy = passwordPolicy;
         this.userRepository = userRepository;
@@ -37,7 +41,9 @@ class RegistrationAttempt {
         var optionalEmail = emailOutcome.findValue();
         var optionalHashedPassword = passwordOutcome.findValue();
         if (optionalEmail.isEmpty() || optionalHashedPassword.isEmpty()) {
-            return new RegisterResult.Rejected(EmailErrorCodes.of(emailOutcome), PasswordErrorCodes.of(passwordOutcome), passwordPolicy);
+            return new RegisterResult.Rejected(
+                    EmailErrorCodes.of(emailOutcome), emailPolicy,
+                    PasswordErrorCodes.of(passwordOutcome), passwordPolicy);
         }
         Email email = optionalEmail.get();
         HashedPassword hashedPassword = optionalHashedPassword.get();

@@ -6,7 +6,11 @@ import com.jrobertgardzinski.config.source.restart.RestartConfigSource;
 import com.jrobertgardzinski.config.source.live.CachingLiveConfigPort;
 import com.jrobertgardzinski.config.source.live.LiveConfigPort;
 import com.jrobertgardzinski.config.source.live.LiveConfigSource;
-import com.jrobertgardzinski.email.policy.CanRegister;
+import com.jrobertgardzinski.email.config.BlockedDomains;
+import com.jrobertgardzinski.email.config.CanRegisterConfig;
+import com.jrobertgardzinski.email.config.CompanyDomains;
+import com.jrobertgardzinski.email.config.DisposableDomains;
+import com.jrobertgardzinski.email.domain.DomainPart;
 import com.jrobertgardzinski.password.security.config.MinLength;
 import com.jrobertgardzinski.password.security.config.SpecialChars;
 import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
@@ -50,11 +54,17 @@ import com.jrobertgardzinski.security.system.passwordreset.ResetPassword;
 import com.jrobertgardzinski.security.system.verification.RequestEmailVerification;
 import com.jrobertgardzinski.security.system.verification.VerifyEmail;
 import io.micronaut.context.annotation.Factory;
+import io.micronaut.context.env.Environment;
+import io.micronaut.core.type.Argument;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 
 import java.time.Clock;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Production wiring for the use cases behind the HTTP entry points. Each use case the controllers
@@ -111,12 +121,38 @@ public class BeanFactory {
         return () -> new PasswordPolicy(new MinLength(minPasswordLength.resolve()), SpecialChars.DEFAULT);
     }
 
+    /**
+     * The email policy for registration — which domains may not register (blocked, disposable)
+     * and, for a closed shop, which ones alone may (company). Deployment-rung only for now: the
+     * three lists are read from properties once at startup, so a misspelt domain fails the boot
+     * rather than the first registration; an absent or empty list is an absent rule. The policy
+     * travels with every refusal, next to the password policy, so a client can say WHICH
+     * domains an employee may register from — not merely that this one was not among them.
+     */
+    private static Supplier<CanRegisterConfig> emailPolicy(Environment environment) {
+        var policy = new CanRegisterConfig(
+                domains(environment, "security.email.blocked.domains", BlockedDomains::new),
+                domains(environment, "security.email.disposable.domains", DisposableDomains::new),
+                domains(environment, "security.email.company.domains", CompanyDomains::new));
+        return () -> policy;
+    }
+
+    /** An empty list is a vacant rung: {@code null}, which the policy reads as "no such rule". */
+    private static <T> T domains(Environment environment, String property, Function<Set<DomainPart>, T> rule) {
+        List<String> values = environment.getProperty(property, Argument.listOf(String.class)).orElse(List.of());
+        Set<DomainPart> domains = values.stream()
+                .map(String::strip).filter(value -> !value.isEmpty())
+                .map(DomainPart::of)
+                .collect(Collectors.toSet());
+        return domains.isEmpty() ? null : rule.apply(domains);
+    }
+
     @Singleton
     Register register(UserRepository userRepository, HashAlgorithmPort hashAlgorithm,
-                      ConfigLadder<Integer> minPasswordLength) {
+                      ConfigLadder<Integer> minPasswordLength, Environment environment) {
         return new Register(
                 userRepository,
-                CanRegister.builder().build(),
+                emailPolicy(environment),
                 hashAlgorithm, passwordPolicy(minPasswordLength));
     }
 

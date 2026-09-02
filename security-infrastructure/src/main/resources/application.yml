@@ -47,6 +47,15 @@ security:
   #                                  # database rung ON PURPOSE: meta-configuration lives one
   #                                  # rung below what it governs, or a bad TTL (say 24h) would
   #                                  # delay the very correction that fixes it by 24h.
+  #
+  # The email policy for registration lives on the deployment rung only (BeanFactory#emailPolicy):
+  # comma-separated domain lists, each ABSENT by default, so no email rule is in force until a
+  # deployment says so. A rejection carries the policy back, so a client can name the company
+  # domains an employee may register from.
+  #
+  # email.blocked.domains: example.org,spam.example
+  # email.disposable.domains: mailinator.com
+  # email.company.domains: acme.com        # a closed shop: only these domains may register
   saga:
     # The saga-listener lamp's stall tolerance, wired to an environment variable ON PURPOSE rather
     # than left to the @Value default. OffboardingListenerHealth refuses to start on a value below

@@ -4,6 +4,8 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.system.registration.Register;
+import com.jrobertgardzinski.email.config.CanRegisterConfig;
+import com.jrobertgardzinski.email.domain.DomainPart;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.system.registration.RegisterResult;
 import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
@@ -34,10 +36,10 @@ import java.util.Map;
  *   <li>{@code Rejected}          &rarr; 422 Unprocessable Entity,
  *       {@code {"emailErrors": [{"CODE": parameter}], "passwordErrors": [{"CODE": parameter}]}} —
  *       both channels speak ONE shape: one code per broken rule, valued by the parameter in force
- *       for this very attempt ({@code {"MIN_LENGTH_NOT_MET": 12}}) or {@code true} where the rule
- *       has none. The password policy is live configuration, so a bare code would leave the caller
- *       guessing what the minimum was; the email rules carry no parameter today, and the slot is
- *       there for the day one does</li>
+ *       for this very attempt ({@code {"MIN_LENGTH_NOT_MET": 12}},
+ *       {@code {"NOT_A_COMPANY_DOMAIN": ["acme.com"]}}) or {@code true} where the rule has none.
+ *       Both policies are configuration, so a bare code would leave the caller guessing what the
+ *       minimum was, or which domains an employee may register from</li>
  *   <li>{@code EmailAlreadyTaken} &rarr; the same 201 and the same body as {@code Registered}
  *       (anti-enumeration: the wire never confirms an account exists). What differs is the mail,
  *       readable only by the address owner: a still-unverified account gets a fresh verification
@@ -107,7 +109,7 @@ public class SecurityController {
             case RegisterResult.Rejected rejected ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.UNPROCESSABLE_ENTITY)
                             .body(Map.of(
-                                    "emailErrors", emailErrors(rejected.emailErrors().codes()),
+                                    "emailErrors", emailErrors(rejected.emailErrors().codes(), rejected.emailPolicy()),
                                     "passwordErrors", passwordErrors(rejected.passwordErrors().codes(), rejected.passwordPolicy())));
             case RegisterResult.EmailAlreadyTaken alreadyTaken -> {
                 // quiet refusal: the caller sees a fresh-looking registration; the address owner
@@ -126,14 +128,19 @@ public class SecurityController {
     }
 
     /**
-     * One entry per failed email rule, keyed by its code. No email rule carries a parameter today
-     * — the address itself is the caller's, and echoing it back would say nothing new — so every
-     * entry is {@code true}. The SHAPE matches the password channel deliberately: a client
-     * renders both with one piece of code, and a rule that grows a parameter later needs no new
-     * contract.
+     * One entry per failed email rule, keyed by its code and valued by the email policy in force
+     * for this attempt — the same shape as the password channel, so a client renders both with one
+     * piece of code. Only the company rule carries a parameter: the domains an employee MAY
+     * register from are the hint the caller needs. The blocked and disposable rules stay
+     * {@code true}: those lists are denylists, and enumerating them would only tell an abuser
+     * which domains to try next; the caller already knows which domain they typed.
      */
-    static List<Map<String, Object>> emailErrors(List<String> codes) {
-        return codes.stream().map(code -> Map.<String, Object>of(code, (Object) Boolean.TRUE)).toList();
+    static List<Map<String, Object>> emailErrors(List<String> codes, CanRegisterConfig policy) {
+        return codes.stream().map(code -> Map.<String, Object>of(code, switch (code) {
+            case "NOT_A_COMPANY_DOMAIN" -> policy.companyDomains().values().stream()
+                    .map(DomainPart::value).sorted().toList();
+            default -> Boolean.TRUE;
+        })).toList();
     }
 
     /**

@@ -22,7 +22,8 @@ import { ForgotScreen, InboxScreen, ResetScreen, SignInUpScreen } from './EntryS
  */
 const renderFieldError = (error: Record<string, unknown>) => {
   const [code, parameter] = Object.entries(error)[0];
-  return <li key={code}>{prettify(code)}{parameter === true ? '' : `: ${String(parameter)}`}</li>;
+  const shown = Array.isArray(parameter) ? parameter.join(', ') : String(parameter);
+  return <li key={code}>{prettify(code)}{parameter === true ? '' : `: ${shown}`}</li>;
 };
 
 export function App() {
