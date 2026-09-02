@@ -12,7 +12,6 @@ import com.jrobertgardzinski.email.config.CompanyDomains;
 import com.jrobertgardzinski.email.config.DisposableDomains;
 import com.jrobertgardzinski.email.domain.DomainPart;
 import com.jrobertgardzinski.password.security.config.MinLength;
-import com.jrobertgardzinski.password.security.config.SpecialChars;
 import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
@@ -119,12 +118,13 @@ public class BeanFactory {
 
     /**
      * The read side of the password settings, for every place a password is established: register,
-     * reset, change. The adapter is where the ladder lives; the use cases behind this port only
-     * ever learn the answer, and ask again on the next attempt.
+     * reset, change. The use cases behind this port only ever learn the answer, and ask again on
+     * the next attempt. Which of the five rules move, and which stand on the rebuild rung, is
+     * written out in {@link LadderedPasswordPolicy} — not implied by a constructor.
      */
     @Singleton
     PasswordPolicyInForce passwordPolicyInForce(ConfigLadder<Integer> minPasswordLength) {
-        return () -> new PasswordPolicy(new MinLength(minPasswordLength.resolve()), SpecialChars.DEFAULT);
+        return new LadderedPasswordPolicy(minPasswordLength);
     }
 
     /**
