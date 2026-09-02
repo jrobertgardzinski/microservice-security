@@ -244,6 +244,62 @@ brak potwierdzenia w limicie (`account-deletion.purge-timeout`, domyślnie 2 min
   kontekstu obserwowanego). Zweryfikowane live (V9 + kolumna wypełniana). Rozważane kiedyś:
   `DeviceFingerprint`/`RequestContext`, gdy obserwowanych atrybutów przybędzie.
 
+## Otwarte — specs: rejestracja → aktywacja jako PROCES (2026-09-02, do przemyślenia)
+
+Ustalenia z rozmowy 2026-09-02 (Robert: „nie mam teraz do tego głowy" — nic nie wdrożone).
+Kontekst i reguła katalogu: `specs/README.md` (literały = próbki stopnia Rebuild, tagi asymetryczne).
+
+**Problem.** `register.feature` Rule 1 („the USER is REGISTERED") jest zielony, ale dowodzi tylko
+odpowiedzi systemu: w application typ `Registered`, w infra 201, w UI widoczny ekran skrzynki.
+Nikt nie mówi, że zarejestrowany ≠ aktywny i że logowanie odmawia do kliknięcia linku.
+Sam proces nie ma domu — jego fragmenty siedzą w cudzych plikach: `verify-email.feature` Rule 3
+(„Registration automatically starts VERIFICATION") i `authenticate.feature` Rule 7 (poprawne dane
+nie wystarczą przy niezweryfikowanym e-mailu).
+
+**Kierunek (Roberta): trzy pliki — dwa atomowe + orkiestrator.** Analogia: atomowe use-case'y vs
+orkiestrator. UWAGA do analogii: `security-application` NIE ma `src/main` — to wyłącznie runner
+i glue testów bez HTTP; orkiestracja w kodzie (Authentication+ContinueAuthentication, MfaChain)
+żyje w `security-system`. Dla specs analogia i tak działa: plik atomowy = kontrakt jednego
+polecenia, plik procesu = sekwencja poleceń i kamienie milowe między nimi.
+
+1. `register.feature` — zostaje kontraktem rejestracji (nie dopisywać do niego aktywacji).
+2. `activation.feature` — to DZIŚ `verify-email.feature` (właściwy token aktywuje, śmieciowy
+   odrzuca). Decyzja: nazwa od mechanizmu (verify-email) czy od skutku biznesowego (activation)?
+   Reszta plików nazywa się od skutku → skłaniamy się do zmiany nazwy.
+3. Plik procesu (nazwa robocza `register-and-activate.feature`; nie „e2e" — to technika, nie
+   biznes; alternatywa `account-activation.feature` / onboarding): rejestracja → logowanie
+   ODMAWIA (nieaktywne) → link z maila → logowanie PRZECHODZI. Nie powtarza reguł atomowych,
+   tylko je sekwencjonuje. Rule 3 z verify-email i Rule 7 z authenticate to kandydaci do
+   przeniesienia (decyzja o duplikacji otwarta).
+   Warstwy: **infra + UI** (proces potrzebuje poczty; testowa skrzynka + `?verify=` już są).
+   Application NIE — nie ma transportu i nie powinno go udawać. Tag `@ui`.
+
+**Odrzucone po drodze.** Klasa `Fact` (wyrocznia stanu przez repozytoria: user istnieje, hash
+zgadza się, aktywowany). W procesie zbędna: udane logowanie po kliknięciu dowodzi istnienia,
+hasła i aktywacji naraz, bez zaglądania do bazy; odmowa przed kliknięciem dowodzi, że aktywacja
+nie jest automatyczna. Sonda hashy na drucie = zły pomysł. `User` nie ma pola statusu —
+aktywacja żyje w `EmailVerificationRepository.isVerified(email)`.
+
+**Blokada techniczna — glue infra nie jest atomowe (to trzeba zrobić PRZED plikiem procesu):**
+- każdy `RunHttp*Test` ładuje JEDEN pakiet glue; każda klasa kroków startuje własny
+  `EmbeddedServer` w `@Before`;
+- `@Given("a registered USER {string} with password {string}")` ma **13 kopii** w 13 pakietach
+  (`the USER has AUTHENTICATED` — 6, `REGISTRATION is rejected` — 2, itd.);
+- runner procesu ładujący pakiety registration + verification dostanie od Cucumbera
+  DuplicateStepDefinitionException, a gdyby przeszedł — dwa serwery na scenariusz.
+Refaktor: rozdzielić AKCJE (obiekty Javy: zarejestruj, odczytaj token ze skrzynki, zaloguj) od
+KROKÓW (wiązania zdań); jeden wspólny kontekst (serwer, klient, ostatnia odpowiedź) dzielony przez
+picocontainer (już w `bdd-test-starter`); wspólne kroki w jednym pakiecie `feature.common`.
+Runner procesu = własna klasa z listą kilku pakietów glue, zero nowych akcji.
+Ten refaktor broni się sam (spłaca 13 kopii) i można go zrobić niezależnie od decyzji o procesie.
+**UI już tak działa**: cucumber-js ładuje `e2e/steps/*.mjs` naraz przez jeden World; kolizja
+zdania = ambiguous → suita by padła; skoro zielona, kroki są tam współdzielone. Plik procesu
+w UI zadziała bez przebudowy.
+
+**Najmniejszy pierwszy krok, gdy Robert wróci:** sam TEKST pliku procesu, bez glue — sprawdzić,
+czy sekwencja czyta się jako historia. Powiązane otwarte: password-policy przez 3 warstwy
+(brak: kroki application dla `SetMinPasswordLength` + panel admina w security-ui).
+
 ## Otwarte — wejścia i dokumentacja
 
 - ~~UI jako 3. wejście~~ — ZROBIONE W CAŁOŚCI (2026-07-07, playbook S1, kroki 0–7): KAŻDY
