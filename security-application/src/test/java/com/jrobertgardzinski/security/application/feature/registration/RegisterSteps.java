@@ -27,7 +27,7 @@ public class RegisterSteps {
     private final InMemoryUserRepository users = new InMemoryUserRepository();
     private final Register register = new Register(
             users,
-            CanRegisterConfig::new,
+            new CanRegisterConfig(),
             new Argon2HashAlgorithm(),
             () -> new PasswordPolicy(new MinLength(12), new SpecialChars("#?!")));
 

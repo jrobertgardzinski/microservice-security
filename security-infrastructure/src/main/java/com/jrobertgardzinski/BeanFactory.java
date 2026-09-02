@@ -43,6 +43,7 @@ import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RevokeAllSessions;
 import com.jrobertgardzinski.security.system.account.ChangePassword;
 import com.jrobertgardzinski.security.system.settings.MinPasswordLengthStore;
+import com.jrobertgardzinski.security.system.settings.PasswordPolicyInForce;
 import com.jrobertgardzinski.security.system.settings.SetMinPasswordLength;
 import com.jrobertgardzinski.security.system.account.ConfirmEmailChange;
 import com.jrobertgardzinski.security.domain.port.AccountDeletionSaga;
@@ -116,8 +117,13 @@ public class BeanFactory {
         return new SetMinPasswordLength(store);
     }
 
-    /** One policy for every place a password is established: register, reset, change. */
-    private static Supplier<PasswordPolicy> passwordPolicy(ConfigLadder<Integer> minPasswordLength) {
+    /**
+     * The read side of the password settings, for every place a password is established: register,
+     * reset, change. The adapter is where the ladder lives; the use cases behind this port only
+     * ever learn the answer, and ask again on the next attempt.
+     */
+    @Singleton
+    PasswordPolicyInForce passwordPolicyInForce(ConfigLadder<Integer> minPasswordLength) {
         return () -> new PasswordPolicy(new MinLength(minPasswordLength.resolve()), SpecialChars.DEFAULT);
     }
 
@@ -125,16 +131,17 @@ public class BeanFactory {
      * The email policy for registration — which domains may not register (blocked, disposable)
      * and, for a closed shop, which ones alone may (company). Deployment-rung only for now: the
      * three lists are read from properties once at startup, so a misspelt domain fails the boot
-     * rather than the first registration; an absent or empty list is an absent rule. The policy
-     * travels with every refusal, next to the password policy, so a client can say WHICH
-     * domains an employee may register from — not merely that this one was not among them.
+     * rather than the first registration; an absent or empty list is an absent rule. Being fixed
+     * for the life of the service, it is handed to the use case as a value — unlike the password
+     * policy, which is asked for per attempt. The policy travels with every refusal, next to the
+     * password policy, so a client can say WHICH domains an employee may register from — not
+     * merely that this one was not among them.
      */
-    private static Supplier<CanRegisterConfig> emailPolicy(Environment environment) {
-        var policy = new CanRegisterConfig(
+    private static CanRegisterConfig emailPolicy(Environment environment) {
+        return new CanRegisterConfig(
                 domains(environment, "security.email.blocked.domains", BlockedDomains::new),
                 domains(environment, "security.email.disposable.domains", DisposableDomains::new),
                 domains(environment, "security.email.company.domains", CompanyDomains::new));
-        return () -> policy;
     }
 
     /** An empty list is a vacant rung: {@code null}, which the policy reads as "no such rule". */
@@ -149,11 +156,8 @@ public class BeanFactory {
 
     @Singleton
     Register register(UserRepository userRepository, HashAlgorithmPort hashAlgorithm,
-                      ConfigLadder<Integer> minPasswordLength, Environment environment) {
-        return new Register(
-                userRepository,
-                emailPolicy(environment),
-                hashAlgorithm, passwordPolicy(minPasswordLength));
+                      PasswordPolicyInForce passwordPolicy, Environment environment) {
+        return new Register(userRepository, emailPolicy(environment), hashAlgorithm, passwordPolicy);
     }
 
     /**
@@ -421,9 +425,9 @@ public class BeanFactory {
                                 @io.micronaut.context.annotation.Value("${security.password-reset.ttl-minutes:60}")
                                 int resetTtlMinutes,
                                 Clock clock,
-                                ConfigLadder<Integer> minPasswordLength) {
+                                PasswordPolicyInForce passwordPolicy) {
         return new ResetPassword(passwordResetRepository, userRepository,
-                hashAlgorithm, passwordPolicy(minPasswordLength), passwordless,
+                hashAlgorithm, passwordPolicy, passwordless,
                 sessions, java.time.Duration.ofMinutes(resetTtlMinutes), clock);
     }
 
@@ -492,9 +496,8 @@ public class BeanFactory {
     @Singleton
     ChangePassword changePassword(UserRepository userRepository, HashAlgorithmPort hashAlgorithm,
                                   AuthorizationDataRepository sessions,
-                                  ConfigLadder<Integer> minPasswordLength) {
-        return new ChangePassword(userRepository, hashAlgorithm,
-                passwordPolicy(minPasswordLength), sessions);
+                                  PasswordPolicyInForce passwordPolicy) {
+        return new ChangePassword(userRepository, hashAlgorithm, passwordPolicy, sessions);
     }
 
     @Singleton

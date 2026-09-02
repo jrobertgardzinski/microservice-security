@@ -16,6 +16,8 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import com.jrobertgardzinski.security.system.settings.PasswordPolicyInForce;
+
 import java.util.function.Supplier;
 
 /**
@@ -44,14 +46,14 @@ public class ResetPassword {
     private final PasswordResetRepository passwordResetRepository;
     private final UserRepository userRepository;
     private final HashAlgorithmPort hashAlgorithm;
-    private final Supplier<PasswordPolicy> passwordPolicy;
+    private final PasswordPolicyInForce passwordPolicy;
     private final PasswordlessAccountRepository passwordlessAccounts;
     private final AuthorizationDataRepository sessions;
     private final Duration tokenTtl;
     private final Clock clock;
 
     public ResetPassword(PasswordResetRepository passwordResetRepository, UserRepository userRepository,
-                         HashAlgorithmPort hashAlgorithm, Supplier<PasswordPolicy> passwordPolicy,
+                         HashAlgorithmPort hashAlgorithm, PasswordPolicyInForce passwordPolicy,
                          PasswordlessAccountRepository passwordlessAccounts,
                          AuthorizationDataRepository sessions, Duration tokenTtl, Clock clock) {
         this.passwordResetRepository = passwordResetRepository;
@@ -65,7 +67,7 @@ public class ResetPassword {
     }
 
     public ResetPasswordResult execute(PasswordResetToken token, Supplier<PlaintextPassword> newPassword) {
-        Optional<HashedPassword> hashed = new CreatePasswordHash(hashAlgorithm, passwordPolicy.get())
+        Optional<HashedPassword> hashed = new CreatePasswordHash(hashAlgorithm, passwordPolicy.current())
                 .create(newPassword).findValue();
         if (hashed.isEmpty()) {
             return new ResetPasswordResult.WeakPassword();

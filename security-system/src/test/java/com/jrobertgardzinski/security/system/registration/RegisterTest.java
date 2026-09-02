@@ -51,7 +51,7 @@ class RegisterTest {
     @BeforeTry
     void init() {
         userRepository = Mockito.mock(UserRepository.class);
-        register = new Register(userRepository, () -> EMAIL_POLICY, FAKE_ALGORITHM, PasswordPolicy::withDefaults);
+        register = new Register(userRepository, EMAIL_POLICY, FAKE_ALGORITHM, PasswordPolicy::withDefaults);
     }
 
     @Property

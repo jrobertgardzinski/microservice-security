@@ -11,6 +11,8 @@ import com.jrobertgardzinski.security.domain.repository.AuthorizationDataReposit
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 
 import java.util.Optional;
+import com.jrobertgardzinski.security.system.settings.PasswordPolicyInForce;
+
 import java.util.function.Supplier;
 
 /**
@@ -30,11 +32,11 @@ public class ChangePassword {
 
     private final UserRepository userRepository;
     private final HashAlgorithmPort hashAlgorithm;
-    private final Supplier<PasswordPolicy> passwordPolicy;
+    private final PasswordPolicyInForce passwordPolicy;
     private final AuthorizationDataRepository sessions;
 
     public ChangePassword(UserRepository userRepository, HashAlgorithmPort hashAlgorithm,
-                          Supplier<PasswordPolicy> passwordPolicy, AuthorizationDataRepository sessions) {
+                          PasswordPolicyInForce passwordPolicy, AuthorizationDataRepository sessions) {
         this.userRepository = userRepository;
         this.hashAlgorithm = hashAlgorithm;
         this.passwordPolicy = passwordPolicy;
@@ -47,7 +49,7 @@ public class ChangePassword {
         if (found.isEmpty() || !hashAlgorithm.verify(found.get().passwordHash(), currentPassword.get())) {
             return new ChangePasswordResult.WrongCurrentPassword();
         }
-        Optional<HashedPassword> newHash = new CreatePasswordHash(hashAlgorithm, passwordPolicy.get())
+        Optional<HashedPassword> newHash = new CreatePasswordHash(hashAlgorithm, passwordPolicy.current())
                 .create(newPassword).findValue();
         if (newHash.isEmpty()) {
             return new ChangePasswordResult.WeakPassword();
