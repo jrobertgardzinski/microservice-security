@@ -296,7 +296,7 @@ class JdbcAdaptersTest {
 
     @Test
     void the_admin_store_upserts_the_min_length_row_and_the_ladder_reads_it_back() throws Exception {
-        var store = context.getBean(com.jrobertgardzinski.password.settings.MinPasswordLengthStore.class);
+        var store = context.getBean(com.jrobertgardzinski.password.settings.MinLengthRepository.class);
         LiveConfigPort<?> settings = context.getBean(LiveConfigPort.class);
         try {
             store.save(new com.jrobertgardzinski.password.security.config.MinLength(10));

@@ -2,7 +2,7 @@ package com.jrobertgardzinski.persistence;
 
 import com.jrobertgardzinski.config.source.live.LiveConfigPort;
 import com.jrobertgardzinski.password.security.config.MinLength;
-import com.jrobertgardzinski.password.settings.MinPasswordLengthStore;
+import com.jrobertgardzinski.password.settings.MinLengthRepository;
 import com.jrobertgardzinski.password.settings.SetMinPasswordLength;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
@@ -16,12 +16,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * the other InMemory* fallbacks — the service boots and behaves identically, resolution simply
  * falls through to properties and the hardcoded default. Both sides of the rung live here: the
  * ladder reads through {@link LiveConfigPort}, the admin use case writes through
- * {@link MinPasswordLengthStore}, and {@link #put} is the test's stand-in for a hand at the
+ * {@link MinLengthRepository}, and {@link #put} is the test's stand-in for a hand at the
  * database console — it bypasses the value object on purpose.
  */
 @Singleton
 @Requires(missingBeans = DataSource.class)
-public final class InMemorySecuritySettings implements LiveConfigPort<Integer>, MinPasswordLengthStore {
+public final class InMemorySecuritySettings implements LiveConfigPort<Integer>, MinLengthRepository {
 
     private final Map<String, Integer> rows = new ConcurrentHashMap<>();
 

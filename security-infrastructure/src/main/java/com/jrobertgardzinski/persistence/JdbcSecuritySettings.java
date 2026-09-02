@@ -2,7 +2,7 @@ package com.jrobertgardzinski.persistence;
 
 import com.jrobertgardzinski.config.source.live.LiveConfigPort;
 import com.jrobertgardzinski.password.security.config.MinLength;
-import com.jrobertgardzinski.password.settings.MinPasswordLengthStore;
+import com.jrobertgardzinski.password.settings.MinLengthRepository;
 import com.jrobertgardzinski.password.settings.SetMinPasswordLength;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
  * whose floor is 5), log it and fall through, and to say so in its report. Had this side built a
  * {@link MinLength} itself, the refusal would blow up here instead of being told.
  *
- * <p><b>Write side</b> ({@link MinPasswordLengthStore}): one row per key, upserted, the value
+ * <p><b>Write side</b> ({@link MinLengthRepository}): one row per key, upserted, the value
  * stored as the text the read side parses back. Only a {@link MinLength} gets in, so every row
  * this class writes is one the gate will accept; a row the gate refuses can only have come from
  * elsewhere — a hand at the console — and the ladder reports it as such. {@code updated_at}
@@ -34,7 +34,7 @@ import java.time.LocalDateTime;
  */
 @Singleton
 @Requires(beans = DataSource.class)
-final class JdbcSecuritySettings implements LiveConfigPort<Integer>, MinPasswordLengthStore {
+final class JdbcSecuritySettings implements LiveConfigPort<Integer>, MinLengthRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(JdbcSecuritySettings.class);
 

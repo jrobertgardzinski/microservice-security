@@ -40,7 +40,7 @@ import com.jrobertgardzinski.security.system.session.Logout;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RevokeAllSessions;
 import com.jrobertgardzinski.security.system.account.ChangePassword;
-import com.jrobertgardzinski.password.settings.MinPasswordLengthStore;
+import com.jrobertgardzinski.password.settings.MinLengthRepository;
 import com.jrobertgardzinski.password.settings.LadderedPasswordPolicy;
 import com.jrobertgardzinski.password.settings.PasswordPolicyInForce;
 import com.jrobertgardzinski.password.settings.SetMinPasswordLength;
@@ -110,7 +110,7 @@ public class BeanFactory {
 
     /** The admin's hand on the live rung: the value object is the gate, the store is the row. */
     @Singleton
-    SetMinPasswordLength setMinPasswordLength(MinPasswordLengthStore store) {
+    SetMinPasswordLength setMinPasswordLength(MinLengthRepository store) {
         return new SetMinPasswordLength(store);
     }
 
