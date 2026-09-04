@@ -52,6 +52,7 @@ import com.jrobertgardzinski.security.system.passwordreset.RequestPasswordReset;
 import com.jrobertgardzinski.security.system.passwordreset.ResetPassword;
 import com.jrobertgardzinski.security.system.verification.RequestEmailVerification;
 import com.jrobertgardzinski.security.system.verification.VerifyEmail;
+import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.env.Environment;
 import io.micronaut.core.type.Argument;
@@ -90,7 +91,7 @@ public class BeanFactory {
      * a zero TTL switches the cache off. Use cases resolve per attempt, so a change is honoured
      * by the next request within one TTL, no restart.
      */
-    @Singleton
+    @Context
     ConfigLadder<Integer> minPasswordLength(LiveConfigPort<Integer> settingsRows,
                                             RestartConfigPort<Integer> properties,
                                             Clock clock) {
