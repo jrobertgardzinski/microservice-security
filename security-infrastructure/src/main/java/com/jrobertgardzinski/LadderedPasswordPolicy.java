@@ -16,8 +16,9 @@ import com.jrobertgardzinski.password.policy.PasswordPolicyInForce;
 
 /**
  * The password policy in force: every rule on the same ladder - a {@code security_settings} row
- * (live) over the deployment's property (restart) over the library default (rebuild), each under
- * the record's own key. The five ladders are declared once, so a property that is not its type
+ * (live) over the deployment's property (restart) over the library default (rebuild), each
+ * declared from the record alone: its {@code ConfigValue} contract says the key and the default,
+ * its constructor is the gate. The five ladders are declared once, so a property that is not its type
  * or is below a rule's floor refuses the policy where it is built, at startup, and never on a
  * password; a row like that is refused per resolution and the ladder falls through. The live
  * level is one snapshot of the table, so asking five ladders costs one read.
@@ -31,21 +32,21 @@ public final class LadderedPasswordPolicy implements PasswordPolicyInForce {
     private final ConfigLadder<Boolean> requiresDigit;
 
     public LadderedPasswordPolicy(LiveConfigPort<String> rows, RestartConfigPort<String> properties) {
-        minLength = ConfigLadder.of(MinLength.KEY, MinLength::new,
+        minLength = ConfigLadder.of(MinLength.DEFAULT.key(), MinLength::new,
                 Rung.live(rows, Parse::integer), Rung.restart(properties, Parse::integer),
-                Rung.rebuild(MinLength.DEFAULT.value()));
-        specialChars = ConfigLadder.of(SpecialChars.KEY, SpecialChars::new,
+                Rung.rebuild(MinLength.DEFAULT.defaultValue()));
+        specialChars = ConfigLadder.of(SpecialChars.DEFAULT.key(), SpecialChars::new,
                 Rung.live(rows, Parse::text), Rung.restart(properties, Parse::text),
-                Rung.rebuild(SpecialChars.DEFAULT.value()));
-        requiresUppercase = ConfigLadder.of(RequiresUppercase.KEY, RequiresUppercase::new,
+                Rung.rebuild(SpecialChars.DEFAULT.defaultValue()));
+        requiresUppercase = ConfigLadder.of(RequiresUppercase.DEFAULT.key(), RequiresUppercase::new,
                 Rung.live(rows, Parse::bool), Rung.restart(properties, Parse::bool),
-                Rung.rebuild(RequiresUppercase.DEFAULT.value()));
-        requiresLowercase = ConfigLadder.of(RequiresLowercase.KEY, RequiresLowercase::new,
+                Rung.rebuild(RequiresUppercase.DEFAULT.defaultValue()));
+        requiresLowercase = ConfigLadder.of(RequiresLowercase.DEFAULT.key(), RequiresLowercase::new,
                 Rung.live(rows, Parse::bool), Rung.restart(properties, Parse::bool),
-                Rung.rebuild(RequiresLowercase.DEFAULT.value()));
-        requiresDigit = ConfigLadder.of(RequiresDigit.KEY, RequiresDigit::new,
+                Rung.rebuild(RequiresLowercase.DEFAULT.defaultValue()));
+        requiresDigit = ConfigLadder.of(RequiresDigit.DEFAULT.key(), RequiresDigit::new,
                 Rung.live(rows, Parse::bool), Rung.restart(properties, Parse::bool),
-                Rung.rebuild(RequiresDigit.DEFAULT.value()));
+                Rung.rebuild(RequiresDigit.DEFAULT.defaultValue()));
     }
 
     @Override
