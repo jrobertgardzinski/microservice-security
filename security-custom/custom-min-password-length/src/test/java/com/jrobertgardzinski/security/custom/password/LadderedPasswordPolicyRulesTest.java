@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Epic("Security")
 @Feature("Custom: minimum password length")
-@Story("Password policy in force: minimum length from the ladder, every other rule DEFAULT")
+@Story("Password policy in force: minimum length from the ladder, every other rule the deployment's")
 class LadderedPasswordPolicyRulesTest {
 
     private static final String KEY = "any.key";
@@ -45,19 +45,22 @@ class LadderedPasswordPolicyRulesTest {
     void liveWins(@ForAll("legalLength") int live) {
         Allure.parameter("live", live);
         Allure.parameter("restart", RESTART_LENGTH);
-        PasswordPolicy policy = new LadderedPasswordPolicy(ladder(new AtomicReference<>(live), RESTART_LENGTH)).current();
+        PasswordPolicy policy = new LadderedPasswordPolicy(ladder(new AtomicReference<>(live), RESTART_LENGTH), PasswordPolicy::withDefaults).current();
         assertThat(policy.minLength()).isEqualTo(new MinLength(live));
     }
 
     @Property
-    @Label("whatever the ladder says, the four other rules stay DEFAULT")
-    void otherRulesStayDefault(@ForAll("legalLength") int live) {
+    @Label("whatever the ladder says, the four other rules are the deployment's, untouched")
+    void otherRulesAreTheDeployments(@ForAll("legalLength") int live) {
         Allure.parameter("live", live);
-        PasswordPolicy policy = new LadderedPasswordPolicy(ladder(new AtomicReference<>(live), null)).current();
-        assertThat(policy.specialChars()).isEqualTo(SpecialChars.DEFAULT);
-        assertThat(policy.requiresUppercase()).isEqualTo(RequiresUppercase.DEFAULT);
-        assertThat(policy.requiresLowercase()).isEqualTo(RequiresLowercase.DEFAULT);
-        assertThat(policy.requiresDigit()).isEqualTo(RequiresDigit.DEFAULT);
+        PasswordPolicy deployment = new PasswordPolicy(new MinLength(RESTART_LENGTH), new SpecialChars("#?!"),
+                new RequiresUppercase(false), new RequiresLowercase(false), new RequiresDigit(false));
+        PasswordPolicy policy = new LadderedPasswordPolicy(ladder(new AtomicReference<>(live), null), () -> deployment).current();
+        assertThat(policy.minLength()).isEqualTo(new MinLength(live));
+        assertThat(policy.specialChars()).isEqualTo(deployment.specialChars());
+        assertThat(policy.requiresUppercase()).isEqualTo(deployment.requiresUppercase());
+        assertThat(policy.requiresLowercase()).isEqualTo(deployment.requiresLowercase());
+        assertThat(policy.requiresDigit()).isEqualTo(deployment.requiresDigit());
     }
 
     @Provide
@@ -68,14 +71,14 @@ class LadderedPasswordPolicyRulesTest {
     @Example
     @Label("the live level is vacant → minimum length is the restart value")
     void restartWhenLiveVacant() {
-        PasswordPolicy policy = new LadderedPasswordPolicy(ladder(new AtomicReference<>(null), RESTART_LENGTH)).current();
+        PasswordPolicy policy = new LadderedPasswordPolicy(ladder(new AtomicReference<>(null), RESTART_LENGTH), PasswordPolicy::withDefaults).current();
         assertThat(policy.minLength()).isEqualTo(new MinLength(RESTART_LENGTH));
     }
 
     @Example
     @Label("both levels are vacant → minimum length is MinLength.DEFAULT")
     void defaultWhenBothVacant() {
-        PasswordPolicy policy = new LadderedPasswordPolicy(ladder(new AtomicReference<>(null), null)).current();
+        PasswordPolicy policy = new LadderedPasswordPolicy(ladder(new AtomicReference<>(null), null), PasswordPolicy::withDefaults).current();
         assertThat(policy.minLength()).isEqualTo(MinLength.DEFAULT);
     }
 
@@ -83,7 +86,7 @@ class LadderedPasswordPolicyRulesTest {
     @Label("current() re-reads the live level: a changed row is a changed policy")
     void currentFollowsTheLiveRow() {
         AtomicReference<Integer> liveRow = new AtomicReference<>(8);
-        LadderedPasswordPolicy inForce = new LadderedPasswordPolicy(ladder(liveRow, null));
+        LadderedPasswordPolicy inForce = new LadderedPasswordPolicy(ladder(liveRow, null), PasswordPolicy::withDefaults);
         assertThat(inForce.current().minLength()).isEqualTo(new MinLength(8));
         liveRow.set(16);
         assertThat(inForce.current().minLength()).isEqualTo(new MinLength(16));

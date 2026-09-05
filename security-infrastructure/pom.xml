@@ -41,6 +41,10 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>password-application</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
             <artifactId>security-roles</artifactId>
         </dependency>
         <dependency>

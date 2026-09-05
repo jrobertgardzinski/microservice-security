@@ -43,7 +43,11 @@ security:
   # default (MinLength.DEFAULT = 5, TTL 10 s) answers until a deployment or an administrator says
   # otherwise. Setting a value here (or the equivalent env var) claims the deployment level.
   #
-  # password.policy.min.length: 12
+  # password.policy.min.length: 12          # every rule of the policy has a key of its own,
+  # password.policy.special.chars: "#?!"     # translated in password-application; only the
+  # password.policy.requires.uppercase: true # length has a live level above the property
+  # password.policy.requires.lowercase: true # (security-custom). A property that is not its
+  # password.policy.requires.digit: true     # type or is below the rule's floor fails the boot.
   # settings.cache.ttl.seconds: 10   # zero switches the settings cache off. The TTL has NO
   #                                  # database level ON PURPOSE: meta-configuration lives one
   #                                  # level below what it governs, or a bad TTL (say 24h) would

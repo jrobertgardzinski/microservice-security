@@ -4,6 +4,7 @@ import com.jrobertgardzinski.config.ladder.Level;
 import com.jrobertgardzinski.config.ladder.Resolution;
 import com.jrobertgardzinski.config.source.live.LiveConfigPort;
 import com.jrobertgardzinski.config.source.restart.RestartConfigPort;
+import com.jrobertgardzinski.password.application.PasswordPolicyProperties;
 import com.jrobertgardzinski.password.config.MinLength;
 import io.qameta.allure.Allure;
 import io.qameta.allure.Epic;
@@ -29,11 +30,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class MinPasswordLengthLadderRulesTest {
 
     private static final LiveConfigPort<Integer> NO_LIVE_ROW = name -> null;
-    private static final RestartConfigPort<Integer> NO_PROPERTY = name -> null;
+    private static final PasswordPolicyProperties NO_PROPERTY = properties(name -> null);
+
+    private static PasswordPolicyProperties properties(RestartConfigPort<String> text) {
+        return new PasswordPolicyProperties(text);
+    }
 
     @Example
-    @Label("the key follows the dotted convention: security.password.policy.min.length")
+    @Label("the key is the library's own for the length, so the deployment's property is the same on both sides")
     void key() {
+        assertThat(MinPasswordLengthLadder.KEY).isEqualTo(PasswordPolicyProperties.MIN_LENGTH);
         assertThat(MinPasswordLengthLadder.KEY).isEqualTo("security.password.policy.min.length");
         assertThat(MinPasswordLengthLadder.over(NO_LIVE_ROW, NO_PROPERTY).key()).isEqualTo(MinPasswordLengthLadder.KEY);
     }
@@ -43,8 +49,8 @@ class MinPasswordLengthLadderRulesTest {
     void portsAreAskedUnderTheKey() {
         List<String> asked = new ArrayList<>();
         LiveConfigPort<Integer> live = name -> { asked.add("live:" + name); return null; };
-        RestartConfigPort<Integer> restart = name -> { asked.add("restart:" + name); return null; };
-        MinPasswordLengthLadder.over(live, restart).resolve();
+        RestartConfigPort<String> restart = name -> { asked.add("restart:" + name); return null; };
+        MinPasswordLengthLadder.over(live, properties(restart)).resolve();
         assertThat(asked).containsExactlyInAnyOrder("restart:" + MinPasswordLengthLadder.KEY, "live:" + MinPasswordLengthLadder.KEY);
     }
 
@@ -73,7 +79,7 @@ class MinPasswordLengthLadderRulesTest {
     @Label("a property below the boundary refuses to build the ladder at all, naming the key")
     void illegalPropertyRefusesTheLadder(@ForAll("belowBoundary") int property) {
         Allure.parameter("property", property);
-        assertThatThrownBy(() -> MinPasswordLengthLadder.over(NO_LIVE_ROW, name -> property))
+        assertThatThrownBy(() -> MinPasswordLengthLadder.over(NO_LIVE_ROW, properties(name -> Integer.toString(property))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(MinPasswordLengthLadder.KEY)
                 .hasMessageContaining(Level.RESTART.label());

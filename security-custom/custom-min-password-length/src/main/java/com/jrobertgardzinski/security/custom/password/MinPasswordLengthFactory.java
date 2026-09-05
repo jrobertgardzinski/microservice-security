@@ -3,7 +3,8 @@ package com.jrobertgardzinski.security.custom.password;
 import com.jrobertgardzinski.config.ladder.ConfigLadder;
 import com.jrobertgardzinski.config.source.live.CachingLiveConfigPort;
 import com.jrobertgardzinski.config.source.live.LiveConfigPort;
-import com.jrobertgardzinski.config.source.restart.RestartConfigPort;
+import com.jrobertgardzinski.password.application.PasswordPolicyProperties;
+import com.jrobertgardzinski.password.application.RestartBoundPasswordPolicy;
 import com.jrobertgardzinski.password.policy.PasswordPolicyInForce;
 import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.Factory;
@@ -17,17 +18,17 @@ import java.time.Duration;
 /**
  * Wires this order: the ladder over a {@code security_settings} row and the deployment's property,
  * the admin's use case that writes the row, and the policy in force that the neutral service's
- * use cases ask. {@code @Primary} so it stands in for the neutral, restart-bound policy the
- * application declares as {@code @Secondary}; {@code @Context} so an illegal property fails the
- * boot and never the first request. The row is read through a TTL cache; the TTL is a property of
- * this deployment and a zero switches the cache off.
+ * use cases ask — the deployment's own policy with the live length on top. {@code @Primary} so it
+ * stands in for the neutral, restart-bound policy the application declares as {@code @Secondary};
+ * {@code @Context} so an illegal property fails the boot and never the first request. The row is
+ * read through a TTL cache; the TTL is a property of this deployment and a zero switches it off.
  */
 @Factory
 final class MinPasswordLengthFactory {
 
     @Context
     ConfigLadder<Integer> minPasswordLength(LiveConfigPort<Integer> settingsRows,
-                                            RestartConfigPort<Integer> properties,
+                                            PasswordPolicyProperties properties,
                                             Clock clock,
                                             @Value("${security.settings.cache.ttl.seconds:10}") int cacheTtlSeconds) {
         return MinPasswordLengthLadder.over(
@@ -42,7 +43,8 @@ final class MinPasswordLengthFactory {
 
     @Singleton
     @Primary
-    PasswordPolicyInForce passwordPolicyInForce(ConfigLadder<Integer> minPasswordLength) {
-        return new LadderedPasswordPolicy(minPasswordLength);
+    PasswordPolicyInForce passwordPolicyInForce(ConfigLadder<Integer> minPasswordLength,
+                                                PasswordPolicyProperties properties) {
+        return new LadderedPasswordPolicy(minPasswordLength, new RestartBoundPasswordPolicy(properties));
     }
 }

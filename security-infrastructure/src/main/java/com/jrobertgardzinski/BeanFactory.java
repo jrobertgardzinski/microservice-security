@@ -1,7 +1,5 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.config.ladder.ConfigLadder;
-import com.jrobertgardzinski.config.ladder.Rung;
 import com.jrobertgardzinski.config.source.restart.RestartConfigPort;
 import com.jrobertgardzinski.email.config.BlockedDomains;
 import com.jrobertgardzinski.email.config.CanRegisterConfig;
@@ -9,9 +7,8 @@ import com.jrobertgardzinski.email.config.CompanyDomains;
 import com.jrobertgardzinski.email.config.DisposableDomains;
 import com.jrobertgardzinski.email.domain.DomainPart;
 import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
-import com.jrobertgardzinski.password.config.MinLength;
-import com.jrobertgardzinski.password.config.SpecialChars;
-import com.jrobertgardzinski.password.policy.PasswordPolicy;
+import com.jrobertgardzinski.password.application.PasswordPolicyProperties;
+import com.jrobertgardzinski.password.application.RestartBoundPasswordPolicy;
 import com.jrobertgardzinski.password.policy.PasswordPolicyInForce;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
@@ -53,6 +50,7 @@ import com.jrobertgardzinski.security.system.passwordreset.RequestPasswordReset;
 import com.jrobertgardzinski.security.system.passwordreset.ResetPassword;
 import com.jrobertgardzinski.security.system.verification.RequestEmailVerification;
 import com.jrobertgardzinski.security.system.verification.VerifyEmail;
+import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Secondary;
 import io.micronaut.context.annotation.Value;
@@ -83,18 +81,26 @@ public class BeanFactory {
     }
 
     /**
-     * The password policy of the NEUTRAL service: the minimum length from a property (restart) over
-     * the library default (rebuild), the four other rules on their defaults. {@code @Secondary} so
-     * a custom order that puts a live level above it (security-custom) takes precedence by being
-     * {@code @Primary}; without such an order this is the policy the use cases ask.
+     * The deployment's primitives for the password policy, one key per rule
+     * ({@code security.password.policy.*}), translated in the library's application layer. Every
+     * consumer of the policy — the neutral service and any custom order — reads the deployment
+     * through this one object.
      */
     @Singleton
+    PasswordPolicyProperties passwordPolicyProperties(RestartConfigPort<String> properties) {
+        return new PasswordPolicyProperties(properties);
+    }
+
+    /**
+     * The password policy of the NEUTRAL service: every rule from its property (restart) over the
+     * library default (rebuild). {@code @Secondary} so a custom order that puts a live level above
+     * a rule (security-custom) takes precedence by being {@code @Primary}; without such an order
+     * this is the policy the use cases ask. {@code @Context} so an illegal property fails the boot.
+     */
+    @Context
     @Secondary
-    PasswordPolicyInForce restartBoundPasswordPolicy(RestartConfigPort<Integer> properties) {
-        ConfigLadder<Integer> minLength = ConfigLadder.of("security.password.policy.min.length",
-                length -> new MinLength(length),
-                Rung.restart(properties), Rung.rebuild(MinLength.DEFAULT.value()));
-        return () -> PasswordPolicy.defaultsExcept(new MinLength(minLength.resolve()), SpecialChars.DEFAULT);
+    PasswordPolicyInForce restartBoundPasswordPolicy(PasswordPolicyProperties properties) {
+        return new RestartBoundPasswordPolicy(properties);
     }
 
     /**

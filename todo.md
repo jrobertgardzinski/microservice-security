@@ -327,10 +327,11 @@ jako `@Primary`.
   `custom-min-password-length` (Micronaut widzi beany tylko z jarów na classpath). Prawdziwy
   opt-in = osobny moduł składający runtime albo profil mavenowy — dopiero przy drugim produkcie.
 - **ADR do spisania** (właściciel): kontrakt drabinki + „zamówienia custom" + moduł ról.
-- **Pomysł Roberta (2026-09-05, nieoceniony do końca)**: `password-application` jako warstwa
-  biblioteki tłumacząca prymitywy deployu (int/boolean/String z properties) na `PasswordPolicy`,
-  czyli Restart dla WSZYSTKICH pięciu reguł, nie tylko długości. Dziś neutralny serwis ma w
-  BeanFactory tylko długość z property, reszta = DEFAULT.
+- **ZROBIONE tego samego dnia**: `password-application` (biblioteka) tłumaczy prymitywy deployu
+  na `PasswordPolicy` — `PasswordPolicyProperties` (5 kluczy `security.password.policy.*`, tekst
+  → int/boolean z odmową startu przy złym typie) + `RestartBoundPasswordPolicy`. Neutralny serwis
+  = `@Secondary` bean z tej klasy; zamówienie custom dekoruje ją tylko na długości. Adapter
+  `EnvironmentPropertiesConfig` jest teraz `RestartConfigPort<String>`.
 
 ## Otwarte — wejścia i dokumentacja
 
