@@ -311,27 +311,27 @@ Przy okazji zanotowane: asymetria `CanRegisterConfig` (wartość, stopień Resta
 `PasswordPolicyInForce` (port, stopień Live) jest CELOWA — jeśli domeny e-maila dostaną kiedyś
 stopień Live, dostaną taki sam port i asymetria zniknie.
 
-## Otwarte — po przeprojektowaniu drabinki (2026-09-05)
+## Otwarte — po przeprojektowaniu drabinki (2026-09-05, przepisane 2026-09-06)
 
-Zrobione tego dnia: `ConfigLadder` w `config` jest kontraktem (klucz + szczeble w dowolnym doborze,
-zawsze zakończone Rebuild); `password-ladder` skasowany, w bibliotece został tylko port odczytu
-`PasswordPolicyInForce` (password-usecase); cały kod długości hasła (use-case zapisu, port,
-drabinka, JDBC, kontroler admina) mieszka w `security-custom/custom-min-password-length`;
-bramka „czy admin" to jeden `RequireRole` w `security-roles` (constraint `_HasRoleConstraint`,
-port `RolesOf`, `BootstrapAdmins` jako config), a klej HTTP wspólny dla kontrolerów
-(`Caller`, `StepUpGuard`, `RoleGuard`) leży w `security-http`. Neutralny serwis ma politykę
-restart+rebuild (`BeanFactory#restartBoundPasswordPolicy`, `@Secondary`), zamówienie nadpisuje ją
-jako `@Primary`.
+Stan po 2026-09-06: poziom live to JEDEN snapshot tabeli `security_settings` co TTL
+(`SnapshotLiveConfigPort` w `shared/config`, TTL Restart+Rebuild, zero = odczyt przy każdym
+pytaniu), więc każdy klucz ma live/restart/rebuild i nie ma „zamówień" na live per klucz.
+Moduły `security-custom`, `security-roles`, `security-http` ROZPUSZCZONE w warstwach
+(reguła właściciela: 3–5 warstw, nie wymyślać nowych): `RequireRole`/`RolesOf`/`BootstrapAdmins`
+→ `security-system/roles`; `SetMinPasswordLength` + `MinLengthRepository` →
+`security-system/passwordpolicy`; `Caller`/`RoleGuard`/`StepUpGuard`, `AdminPasswordPolicyController`,
+`LadderedPasswordPolicy` (5 drabinek pod kluczami rekordów `password-config`, jedna polityka, bez
+@Primary/@Secondary) → `security-infrastructure`; `SecuritySettingsTable` (Jdbc + InMemory) →
+`security-infrastructure/persistence`. `password-application` w bibliotece SKASOWANY.
+Zapis admina odświeża snapshot własnej instancji (`BeanFactory#minLengthRepository`); inne
+instancje dochodzą w ciągu TTL. Nielegalny wiersz: warn RAZ per odmowa (nie per pytanie),
+raport `rejected` niesie to, co wiersz trzymał (liczbę albo surowy tekst).
 
-- **Opt-in zamówienia jest dziś teorią**: security-infrastructure zależy od
-  `custom-min-password-length` (Micronaut widzi beany tylko z jarów na classpath). Prawdziwy
-  opt-in = osobny moduł składający runtime albo profil mavenowy — dopiero przy drugim produkcie.
-- **ADR do spisania** (właściciel): kontrakt drabinki + „zamówienia custom" + moduł ról.
-- **ZROBIONE tego samego dnia**: `password-application` (biblioteka) tłumaczy prymitywy deployu
-  na `PasswordPolicy` — `PasswordPolicyProperties` (5 kluczy `security.password.policy.*`, tekst
-  → int/boolean z odmową startu przy złym typie) + `RestartBoundPasswordPolicy`. Neutralny serwis
-  = `@Secondary` bean z tej klasy; zamówienie custom dekoruje ją tylko na długości. Adapter
-  `EnvironmentPropertiesConfig` jest teraz `RestartConfigPort<String>`.
+- **Zaakceptowana konsekwencja**: admin przez wiersz w bazie nadpisze KAŻDY klucz polityki, także
+  bez endpointu; bramka drabinki chroni przed wartością nielegalną. Powiedziane w
+  `specs/password-policy.feature` i w `application.yml`.
+- **ADR do spisania** (właściciel): kontrakt drabinki + snapshot + dlaczego biblioteka nie zna
+  drabinki. `SourceThrottle` → Live = te same trzy szczeble w `BeanFactory`, bez nowego modułu.
 
 ## Otwarte — wejścia i dokumentacja
 

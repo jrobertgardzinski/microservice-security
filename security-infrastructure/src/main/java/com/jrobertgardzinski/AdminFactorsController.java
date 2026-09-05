@@ -1,8 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.http.StepUpGuard;
 
-import com.jrobertgardzinski.security.http.RoleGuard;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;

@@ -1,6 +1,5 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.http.Caller;
 
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
 import com.jrobertgardzinski.security.system.authorization.Authorize;

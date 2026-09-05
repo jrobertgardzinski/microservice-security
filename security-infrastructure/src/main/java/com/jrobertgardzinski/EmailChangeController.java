@@ -1,8 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.http.StepUpGuard;
 
-import com.jrobertgardzinski.security.http.Caller;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.system.account.RequestEmailChange;

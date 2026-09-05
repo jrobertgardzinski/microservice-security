@@ -33,10 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class StepUpCoverageTest {
 
-    /** The application's own controllers and every custom order's: one law over both roots. */
-    private static final List<Path> CONTROLLERS = List.of(
-            Path.of("src/main/java/com/jrobertgardzinski"),
-            Path.of("../security-custom/custom-min-password-length/src/main/java/com/jrobertgardzinski"));
+    private static final List<Path> CONTROLLERS = List.of(Path.of("src/main/java/com/jrobertgardzinski"));
 
     /**
      * Endpoints that must be behind a step-up, each with the durable access it would otherwise

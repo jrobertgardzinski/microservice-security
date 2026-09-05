@@ -46,10 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class StoresWithADeadlineEvictThemTest {
 
-    /** The application's stores and every custom order's: a twin is a twin wherever it lives. */
-    private static final List<Path> SOURCES = List.of(
-            Path.of("src/main/java/com/jrobertgardzinski"),
-            Path.of("../security-custom/custom-min-password-length/src/main/java/com/jrobertgardzinski"));
+    private static final List<Path> SOURCES = List.of(Path.of("src/main/java/com/jrobertgardzinski"));
 
     /** Wired unconditionally; holds something with a deadline. Must sweep. */
     private static final Map<String, String> PRODUCTION_WITH_A_DEADLINE = Map.of(

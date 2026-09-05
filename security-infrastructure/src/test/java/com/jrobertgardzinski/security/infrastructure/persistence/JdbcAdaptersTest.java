@@ -40,7 +40,9 @@ import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
 import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import com.jrobertgardzinski.security.custom.password.SetMinPasswordLength;
+import com.jrobertgardzinski.persistence.SecuritySettingsTable;
+import com.jrobertgardzinski.security.system.passwordpolicy.MinLengthRepository;
+import com.jrobertgardzinski.security.system.passwordpolicy.SetMinPasswordLength;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -277,37 +279,40 @@ class JdbcAdaptersTest {
     }
 
     @Test
-    void security_settings_rows_reach_the_ladder_and_garbage_reports_a_vacant_level() throws Exception {
+    void security_settings_rows_reach_the_snapshot_as_text_and_an_absent_row_is_a_vacant_level() throws Exception {
         LiveConfigPort<?> settings = context.getBean(LiveConfigPort.class);
         try (var connection = java.sql.DriverManager.getConnection(
                 POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
              var insert = connection.createStatement()) {
             insert.execute("INSERT INTO security_settings (name, value) VALUES"
-                    + " ('security.password.policy.min.length', '10'),"
+                    + " ('security.settings.sample', '10'),"
                     + " ('security.settings.broken', 'not-a-number')");
         }
 
-        assertThat(settings.find("security.password.policy.min.length")).isEqualTo(10);
-        // unparseable and absent both report as a vacant level - the ladder falls through,
-        // a hand-edited row never takes password validation down
-        assertThat(settings.find("security.settings.broken")).isNull();
+        // text in, text out: the ladder's rung parses and refuses, never the table
+        assertThat(settings.find("security.settings.sample")).isEqualTo("10");
+        assertThat(settings.find("security.settings.broken")).isEqualTo("not-a-number");
         assertThat(settings.find("security.settings.never.set")).isNull();
     }
 
     @Test
-    void the_admin_store_upserts_the_min_length_row_and_the_ladder_reads_it_back() throws Exception {
-        var store = context.getBean(com.jrobertgardzinski.security.custom.password.MinLengthRepository.class);
+    void the_admin_store_upserts_the_min_length_row_and_the_snapshot_sees_it_at_once() throws Exception {
+        var store = context.getBean(MinLengthRepository.class);
         LiveConfigPort<?> settings = context.getBean(LiveConfigPort.class);
+        SecuritySettingsTable table = context.getBean(SecuritySettingsTable.class);
         try {
             store.save(new com.jrobertgardzinski.password.config.MinLength(10));
-            assertThat(settings.find(SetMinPasswordLength.KEY)).isEqualTo(10);
+            assertThat(table.rows()).containsEntry(SetMinPasswordLength.KEY, "10");
+            assertThat(settings.find(SetMinPasswordLength.KEY)).isEqualTo("10");
 
-            // a second decision replaces the row - one key, one row, never a duplicate
+            // a second decision replaces the row - one key, one row, never a duplicate - and the
+            // writer's own snapshot is refreshed, whatever the TTL
             store.save(new com.jrobertgardzinski.password.config.MinLength(12));
-            assertThat(settings.find(SetMinPasswordLength.KEY)).isEqualTo(12);
+            assertThat(table.rows()).containsEntry(SetMinPasswordLength.KEY, "12");
+            assertThat(settings.find(SetMinPasswordLength.KEY)).isEqualTo("12");
         } finally {
             // the shared container outlives this method and the settings test next door inserts
-            // the same key by hand - leave the table as found, whatever the run order
+            // rows by hand - leave the table as found, whatever the run order
             try (var connection = java.sql.DriverManager.getConnection(
                     POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
                  var delete = connection.createStatement()) {

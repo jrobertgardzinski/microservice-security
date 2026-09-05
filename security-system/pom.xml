@@ -30,6 +30,10 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>password-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
             <artifactId>password-usecase</artifactId>
         </dependency>
         <dependency>

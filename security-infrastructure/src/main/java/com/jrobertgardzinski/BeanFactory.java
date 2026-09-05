@@ -1,21 +1,28 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.config.ladder.ConfigLadder;
+import com.jrobertgardzinski.config.ladder.Parse;
+import com.jrobertgardzinski.config.ladder.Rung;
+import com.jrobertgardzinski.config.source.live.LiveConfigPort;
+import com.jrobertgardzinski.config.source.live.SnapshotLiveConfigPort;
 import com.jrobertgardzinski.config.source.restart.RestartConfigPort;
+import com.jrobertgardzinski.password.config.MinLength;
+import com.jrobertgardzinski.persistence.SecuritySettingsTable;
+import com.jrobertgardzinski.security.system.passwordpolicy.MinLengthRepository;
+import com.jrobertgardzinski.security.system.passwordpolicy.SetMinPasswordLength;
 import com.jrobertgardzinski.email.config.BlockedDomains;
 import com.jrobertgardzinski.email.config.CanRegisterConfig;
 import com.jrobertgardzinski.email.config.CompanyDomains;
 import com.jrobertgardzinski.email.config.DisposableDomains;
 import com.jrobertgardzinski.email.domain.DomainPart;
 import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
-import com.jrobertgardzinski.password.application.PasswordPolicyProperties;
-import com.jrobertgardzinski.password.application.RestartBoundPasswordPolicy;
 import com.jrobertgardzinski.password.policy.PasswordPolicyInForce;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.roles.BootstrapAdmins;
-import com.jrobertgardzinski.security.roles.RequireRole;
-import com.jrobertgardzinski.security.roles.RolesOf;
+import com.jrobertgardzinski.security.system.roles.BootstrapAdmins;
+import com.jrobertgardzinski.security.system.roles.RequireRole;
+import com.jrobertgardzinski.security.system.roles.RolesOf;
 import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
 import com.jrobertgardzinski.security.domain.port.EmailVerificationNotifier;
 import com.jrobertgardzinski.security.domain.port.PasswordResetNotifier;
@@ -52,7 +59,6 @@ import com.jrobertgardzinski.security.system.verification.RequestEmailVerificati
 import com.jrobertgardzinski.security.system.verification.VerifyEmail;
 import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.Factory;
-import io.micronaut.context.annotation.Secondary;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.context.env.Environment;
 import io.micronaut.core.type.Argument;
@@ -81,26 +87,50 @@ public class BeanFactory {
     }
 
     /**
-     * The deployment's primitives for the password policy, one key per rule
-     * ({@code security.password.policy.*}), translated in the library's application layer. Every
-     * consumer of the policy — the neutral service and any custom order — reads the deployment
-     * through this one object.
+     * The live level of the configuration ladder: one snapshot of the {@code security_settings}
+     * table, taken at most once per TTL, answering every key. The TTL is itself on a ladder, but
+     * one level BELOW what it governs - a property over the default, never a row - so a bad TTL
+     * (say 24h) can never delay the very correction that fixes it. Zero reads the table on every
+     * question, which is what the feature suites want.
      */
     @Singleton
-    PasswordPolicyProperties passwordPolicyProperties(RestartConfigPort<String> properties) {
-        return new PasswordPolicyProperties(properties);
+    SnapshotLiveConfigPort settingsSnapshot(SecuritySettingsTable table, RestartConfigPort<String> properties,
+                                            Clock clock) {
+        ConfigLadder<Integer> ttlSeconds = ConfigLadder.of("security.settings.cache.ttl.seconds",
+                seconds -> {
+                    if (seconds < 0) throw new IllegalArgumentException("ttl must not be negative");
+                },
+                Rung.restart(properties, Parse::integer), Rung.rebuild(10));
+        return new SnapshotLiveConfigPort(table::rows, java.time.Duration.ofSeconds(ttlSeconds.resolve()), clock);
     }
 
     /**
-     * The password policy of the NEUTRAL service: every rule from its property (restart) over the
-     * library default (rebuild). {@code @Secondary} so a custom order that puts a live level above
-     * a rule (security-custom) takes precedence by being {@code @Primary}; without such an order
-     * this is the policy the use cases ask. {@code @Context} so an illegal property fails the boot.
+     * The password policy in force: every rule live over restart over rebuild, under the library's
+     * own keys ({@code security.password.policy.*}). {@code @Context} so an illegal property fails
+     * the boot and never the first request. The one bean of its kind: the use cases ask it as
+     * {@link PasswordPolicyInForce}, the admin report asks it for the length's provenance.
      */
     @Context
-    @Secondary
-    PasswordPolicyInForce restartBoundPasswordPolicy(PasswordPolicyProperties properties) {
-        return new RestartBoundPasswordPolicy(properties);
+    LadderedPasswordPolicy passwordPolicyInForce(LiveConfigPort<String> rows, RestartConfigPort<String> properties) {
+        return new LadderedPasswordPolicy(rows, properties);
+    }
+
+    /**
+     * The write side of the live level: an ADMIN's decision lands in the table under the record's
+     * key, and this instance refreshes its snapshot so the writer sees their own decision at once;
+     * other instances converge within one TTL.
+     */
+    @Singleton
+    MinLengthRepository minLengthRepository(SecuritySettingsTable table, SnapshotLiveConfigPort snapshot) {
+        return minLength -> {
+            table.put(MinLength.KEY, Integer.toString(minLength.value()));
+            snapshot.refresh();
+        };
+    }
+
+    @Singleton
+    SetMinPasswordLength setMinPasswordLength(MinLengthRepository store) {
+        return new SetMinPasswordLength(store);
     }
 
     /**

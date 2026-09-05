@@ -1,6 +1,5 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.http.Caller;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;

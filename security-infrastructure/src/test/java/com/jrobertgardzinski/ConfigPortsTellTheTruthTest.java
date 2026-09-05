@@ -21,14 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * and nobody can reason about when configuration takes effect any more. An Environment read
  * wired as a LIVE port makes the value LESS dynamic than declared: the level is forever stale
  * and the administrator's change quietly never arrives. Both are the declaration lying; both
- * are caught by the same scan.
+ * are caught by the same scan. The live level is a snapshot ({@code SnapshotLiveConfigPort},
+ * shared/config) over the settings table, so on this side the adapters to scan are the table's.
  */
 class ConfigPortsTellTheTruthTest {
 
-    /** The application's adapters and every custom order's: the promise is the same in both. */
-    private static final List<Path> SOURCES = List.of(
-            Path.of("src/main/java/com/jrobertgardzinski"),
-            Path.of("../security-custom/custom-min-password-length/src/main/java/com/jrobertgardzinski"));
+    private static final List<Path> SOURCES = List.of(Path.of("src/main/java/com/jrobertgardzinski"));
 
     /** Anything that smells of the database in a class claiming restart-bound semantics. */
     private static final List<String> DATABASE_SMELLS = List.of(
@@ -52,7 +50,7 @@ class ConfigPortsTellTheTruthTest {
 
     @Test
     void live_adapters_do_not_read_the_environment() throws IOException {
-        List<String> lying = adaptersOf("LiveConfigPort").stream()
+        List<String> lying = adaptersOf("SecuritySettingsTable").stream()
                 .filter(file -> START_TIME_SMELLS.stream().anyMatch(read(file)::contains))
                 .map(file -> file.getFileName().toString())
                 .toList();

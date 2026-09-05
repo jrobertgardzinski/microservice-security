@@ -25,6 +25,10 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>constraint</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
             <artifactId>email-domain</artifactId>
         </dependency>
         <dependency>
@@ -38,24 +42,6 @@
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>password-usecase</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>password-application</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-roles</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-http</artifactId>
-        </dependency>
-        <!-- the memes portal's order (see security-custom): packaged in here, beans discovered
-             from the jar; the neutral service has no compile-time reference to it -->
-        <dependency>
-            <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>custom-min-password-length</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
