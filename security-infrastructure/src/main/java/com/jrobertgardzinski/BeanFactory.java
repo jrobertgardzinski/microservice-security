@@ -18,7 +18,13 @@ import com.jrobertgardzinski.email.domain.DomainPart;
 import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
 import com.jrobertgardzinski.password.policy.PasswordPolicyInForce;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
+import com.jrobertgardzinski.config.ConfigValue;
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
+import com.jrobertgardzinski.security.config.bruteforce.vo.FailureWindowMinutes;
+import com.jrobertgardzinski.security.config.bruteforce.vo.MaxBlockMinutes;
+import com.jrobertgardzinski.security.config.bruteforce.vo.MaxFailures;
+import com.jrobertgardzinski.security.config.bruteforce.vo.MaxFailuresPerSource;
+import com.jrobertgardzinski.security.config.bruteforce.vo.MinBlockMinutes;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.system.roles.BootstrapAdmins;
 import com.jrobertgardzinski.security.system.roles.RequireRole;
@@ -238,16 +244,25 @@ public class BeanFactory {
      * Two limits inside one window. The per-account one stays tight (a guessed password is the
      * threat); the per-source ceiling is deliberately far above it, because an address is not a
      * person — behind one there may be an office, a CGNAT or a CI runner, and a number chosen for a
-     * single account locks all of them out over somebody else's typos.
+     * single account locks all of them out over somebody else's typos. Every limit is declared
+     * from its record alone ({@code ConfigValue}: key and default), the deployment's property over
+     * the code default; a property outside a limit's range fails the boot, by name.
      */
-    @Singleton
-    BruteForceConfig bruteForceConfig(
-            @io.micronaut.context.annotation.Value("${security.brute-force.max-failures:3}") int maxFailures,
-            @io.micronaut.context.annotation.Value("${security.brute-force.max-failures-per-source:30}") int maxFailuresPerSource) {
-        return BruteForceConfig.builder()
-                .maxFailures(maxFailures)
-                .maxFailuresPerSource(maxFailuresPerSource)
-                .build();
+    @Context
+    BruteForceConfig bruteForceConfig(RestartConfigPort<String> properties) {
+        return new BruteForceConfig(
+                new FailureWindowMinutes(restartBound(FailureWindowMinutes.DEFAULT, FailureWindowMinutes::new, properties)),
+                new MaxFailures(restartBound(MaxFailures.DEFAULT, MaxFailures::new, properties)),
+                new MaxFailuresPerSource(restartBound(MaxFailuresPerSource.DEFAULT, MaxFailuresPerSource::new, properties)),
+                new MinBlockMinutes(restartBound(MinBlockMinutes.DEFAULT, MinBlockMinutes::new, properties)),
+                new MaxBlockMinutes(restartBound(MaxBlockMinutes.DEFAULT, MaxBlockMinutes::new, properties)));
+    }
+
+    /** One integer limit on a restart-over-rebuild ladder, declared from its value object. */
+    private static int restartBound(ConfigValue<Integer> shipped, java.util.function.Consumer<Integer> gate,
+                                    RestartConfigPort<String> properties) {
+        return ConfigLadder.of(shipped.key(), gate,
+                Rung.restart(properties, Parse::integer), Rung.rebuild(shipped.defaultValue())).resolve();
     }
 
     @Singleton

@@ -62,6 +62,14 @@ security:
   # email.blocked.domains: example.org,spam.example
   # email.disposable.domains: mailinator.com
   # email.company.domains: acme.com        # a closed shop: only these domains may register
+  #
+  # The brute-force limits, restart over rebuild, each declared from its value object
+  # (security-config/bruteforce/vo); a value outside a limit's range fails the boot, by name:
+  # brute.force.failure.window.minutes: 15  # 3-120
+  # brute.force.max.failures: 3             # 1-20, per account
+  # brute.force.max.failures.per.source: 30 # 5-500, per address, never below max.failures
+  # brute.force.min.block.minutes: 3        # 1-60
+  # brute.force.max.block.minutes: 10       # 1-1440, never below min.block.minutes
   saga:
     # The saga-listener lamp's stall tolerance, wired to an environment variable ON PURPOSE rather
     # than left to the @Value default. OffboardingListenerHealth refuses to start on a value below

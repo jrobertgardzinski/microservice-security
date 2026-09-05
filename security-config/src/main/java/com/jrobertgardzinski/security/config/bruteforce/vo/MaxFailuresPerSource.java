@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.config.bruteforce.vo;
 
+import com.jrobertgardzinski.config.ConfigValue;
+
 /**
  * The ceiling on failures from ONE address against ANY account, inside the same window that
  * {@link MaxFailures} uses for a single account.
@@ -15,7 +17,10 @@ package com.jrobertgardzinski.security.config.bruteforce.vo;
  * which is exactly what this project's own test suite proved by blocking itself halfway through a
  * run.
  */
-public record MaxFailuresPerSource(int value) {
+public record MaxFailuresPerSource(Integer value) implements ConfigValue<Integer> {
+
+    /** The name this limit goes by on every level of a deployment's configuration ladder. */
+    public static final String KEY = "security.brute.force.max.failures.per.source";
     public static final int MIN = 5;
     public static final int MAX = 500;
     public static final MaxFailuresPerSource DEFAULT = new MaxFailuresPerSource(30);
@@ -24,5 +29,15 @@ public record MaxFailuresPerSource(int value) {
         if (value < MIN || value > MAX) {
             throw new IllegalArgumentException("Accepts values only from range " + MIN + "-" + MAX);
         }
+    }
+
+    @Override
+    public String key() {
+        return KEY;
+    }
+
+    @Override
+    public Integer defaultValue() {
+        return DEFAULT.value();
     }
 }
