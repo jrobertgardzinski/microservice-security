@@ -1,5 +1,7 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.http.Caller;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.system.account.ChangePassword;
@@ -35,7 +37,7 @@ final class ChangePasswordController {
 
     @Post(consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> change(HttpRequest<?> request, @Body Map<String, Object> body) {
-        Email email = Email.of(request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow());
+        Email email = Email.of(request.getAttribute(Caller.ATTRIBUTE, String.class).orElseThrow());
         String current = JsonBody.text(body, "currentPassword");
         String next = JsonBody.text(body, "newPassword");
         ChangePasswordResult result = transactionBoundary.execute(() -> changePassword.execute(

@@ -41,7 +41,17 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>password-ladder</artifactId>
+            <artifactId>security-roles</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>security-http</artifactId>
+        </dependency>
+        <!-- the memes portal's order (see security-custom): packaged in here, beans discovered
+             from the jar; the neutral service has no compile-time reference to it -->
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>custom-min-password-length</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
@@ -405,6 +415,9 @@
                                 <!-- supplies the Clock bean + time-control endpoint via Micronaut
                                      bean discovery from the jar; no compile-time reference here -->
                                 <ignoredUnusedDeclaredDependency>com.jrobertgardzinski:infrastructure-micronaut-clock</ignoredUnusedDeclaredDependency>
+                                <!-- a custom order: its beans are discovered from the jar, the
+                                     neutral service never references it — see security-custom -->
+                                <ignoredUnusedDeclaredDependency>com.jrobertgardzinski:custom-min-password-length</ignoredUnusedDeclaredDependency>
                                 <!-- runtime-only: JDBC driver + Flyway migrations, no compile-time reference -->
                                 <ignoredUnusedDeclaredDependency>org.postgresql:*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.flywaydb:*</ignoredUnusedDeclaredDependency>
@@ -419,6 +432,9 @@
                                 <!-- same story: compile scope on purpose (runtime need + test
                                      compile visibility); the analyzer sees only the test usage -->
                                 <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-databind</ignoredNonTestScopedDependency>
+                                <!-- the custom order is packaged for RUNTIME (bean discovery) and
+                                     only the tests name its classes; compile scope on purpose -->
+                                <ignoredNonTestScopedDependency>com.jrobertgardzinski:custom-min-password-length</ignoredNonTestScopedDependency>
                             </ignoredNonTestScopedDependencies>
                         </configuration>
                     </execution>

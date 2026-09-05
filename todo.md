@@ -311,7 +311,47 @@ Przy okazji zanotowane: asymetria `CanRegisterConfig` (wartość, stopień Resta
 `PasswordPolicyInForce` (port, stopień Live) jest CELOWA — jeśli domeny e-maila dostaną kiedyś
 stopień Live, dostaną taki sam port i asymetria zniknie.
 
+## Otwarte — po przeprojektowaniu drabinki (2026-09-05)
+
+Zrobione tego dnia: `ConfigLadder` w `config` jest kontraktem (klucz + szczeble w dowolnym doborze,
+zawsze zakończone Rebuild); `password-ladder` skasowany, w bibliotece został tylko port odczytu
+`PasswordPolicyInForce` (password-usecase); cały kod długości hasła (use-case zapisu, port,
+drabinka, JDBC, kontroler admina) mieszka w `security-custom/custom-min-password-length`;
+bramka „czy admin" to jeden `RequireRole` w `security-roles` (constraint `_HasRoleConstraint`,
+port `RolesOf`, `BootstrapAdmins` jako config), a klej HTTP wspólny dla kontrolerów
+(`Caller`, `StepUpGuard`, `RoleGuard`) leży w `security-http`. Neutralny serwis ma politykę
+restart+rebuild (`BeanFactory#restartBoundPasswordPolicy`, `@Secondary`), zamówienie nadpisuje ją
+jako `@Primary`.
+
+- **Opt-in zamówienia jest dziś teorią**: security-infrastructure zależy od
+  `custom-min-password-length` (Micronaut widzi beany tylko z jarów na classpath). Prawdziwy
+  opt-in = osobny moduł składający runtime albo profil mavenowy — dopiero przy drugim produkcie.
+- **ADR do spisania** (właściciel): kontrakt drabinki + „zamówienia custom" + moduł ról.
+- **Pomysł Roberta (2026-09-05, nieoceniony do końca)**: `password-application` jako warstwa
+  biblioteki tłumacząca prymitywy deployu (int/boolean/String z properties) na `PasswordPolicy`,
+  czyli Restart dla WSZYSTKICH pięciu reguł, nie tylko długości. Dziś neutralny serwis ma w
+  BeanFactory tylko długość z property, reszta = DEFAULT.
+
 ## Otwarte — wejścia i dokumentacja
+
+- **Dokumentacja use case'ów — do usprawnienia (2026-09-04, do przemyślenia).** Punkt
+  wyjścia: jest jeden `.feature` na klasę use case'u. Pomysł: opis spod `Feature:` przenieść
+  do javadoca klasy — `{@link User}`, `{@link Email}` dają nawigację po klasach i zdejmują
+  wersaliki (USER, EMAIL). Argumenty PRZECIW, spisane w rozmowie:
+  - opis Feature ma innego czytelnika niż javadoc — `specs/README.md` czyni `.feature` jedynym
+    źródłem prawdy dla trzech warstw; opis trafia do raportów Cucumbera (`report.html`,
+    cucumber-js) i do warstwy UI, która nie ma żadnej klasy Javy; javadoc widzi tylko IDE;
+  - wersaliki nie znikną — w `authenticate.feature` 27 z 78 linii ma CAPS i prawie wszystkie
+    siedzą w krokach (`the USER AUTHENTICATES with the correct CREDENTIALS`), nie w opisie;
+    CAPS to konwencja na słownik wspólny z biznesem (persony GUEST/USER/MODERATOR/ADMIN);
+  - commit 10a3609 (2026-09-02) „no javadoc from Register down — the code is the document"
+    wyciął 55 linii javadoców z rejestracji; javadoc na use case'ie to powrót do tego.
+  Co już jest za darmo: plugin Cucumber w IntelliJ skacze krok → glue, glue → `Authenticate`
+  / `User` przez Ctrl+B. Najtańszy most z `.feature` do klasy: jedna linia
+  `# use case: Authenticate` pod `Feature:`. Otwarte pytanie: CO konkretnie w dokumentacji
+  jest niewygodne (nawigacja? duplikacja opisu między `.feature` a kodem? raport?) — od tego
+  zależy, czy odpowiedzią jest komentarz w `.feature`, generator (jak `build_documentation.py`
+  w portalu), czy jednak javadoc.
 
 - ~~UI jako 3. wejście~~ — ZROBIONE W CAŁOŚCI (2026-07-07, playbook S1, kroki 0–7): KAŻDY
   feature ze `specs/` zadeklarował wejścia tagiem — `@ui` jedzie przez realną przeglądarkę

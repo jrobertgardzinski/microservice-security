@@ -46,7 +46,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class StoresWithADeadlineEvictThemTest {
 
-    private static final Path SOURCES = Path.of("src/main/java/com/jrobertgardzinski");
+    /** The application's stores and every custom order's: a twin is a twin wherever it lives. */
+    private static final List<Path> SOURCES = List.of(
+            Path.of("src/main/java/com/jrobertgardzinski"),
+            Path.of("../security-custom/custom-min-password-length/src/main/java/com/jrobertgardzinski"));
 
     /** Wired unconditionally; holds something with a deadline. Must sweep. */
     private static final Map<String, String> PRODUCTION_WITH_A_DEADLINE = Map.of(
@@ -82,7 +85,7 @@ class StoresWithADeadlineEvictThemTest {
      * deliberately set.
      */
     private static final Map<String, String> OPERATOR_OWNED_CONFIGURATION = Map.of(
-            "InMemorySecuritySettings", "the runtime rung of the configuration ladder —"
+            "InMemorySecuritySettings", "the runtime level of the configuration ladder —"
                     + " security_settings has no reaper, so neither may its twin");
 
     /** Assertion sinks. Keeping everything is what they are for. */
@@ -144,7 +147,7 @@ class StoresWithADeadlineEvictThemTest {
     @Test
     void the_reapers_named_here_exist() throws IOException {
         Set<String> present;
-        try (Stream<Path> files = Files.walk(SOURCES)) {
+        try (Stream<Path> files = walkAll()) {
             present = files.map(path -> path.getFileName().toString())
                     .filter(name -> name.endsWith(".java"))
                     .map(name -> name.substring(0, name.length() - ".java".length()))
@@ -184,7 +187,7 @@ class StoresWithADeadlineEvictThemTest {
     }
 
     private static Set<String> storesKeepingStateInMemory() throws IOException {
-        try (Stream<Path> files = Files.walk(SOURCES)) {
+        try (Stream<Path> files = walkAll()) {
             return files.filter(file -> file.toString().endsWith(".java"))
                     .filter(StoresWithADeadlineEvictThemTest::keepsStateInAMap)
                     .map(file -> file.getFileName().toString())
@@ -201,7 +204,7 @@ class StoresWithADeadlineEvictThemTest {
     }
 
     private static boolean sweeps(String store) {
-        try (Stream<Path> files = Files.walk(SOURCES)) {
+        try (Stream<Path> files = walkAll()) {
             Path source = files.filter(path -> path.getFileName().toString().equals(store + ".java"))
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException("no such store: " + store));
@@ -221,5 +224,12 @@ class StoresWithADeadlineEvictThemTest {
         } catch (IOException unreadable) {
             throw new IllegalStateException("cannot read " + file, unreadable);
         }
+    }
+    private static Stream<Path> walkAll() throws IOException {
+        Stream<Path> all = Stream.empty();
+        for (Path root : SOURCES) {
+            all = Stream.concat(all, Files.walk(root));
+        }
+        return all;
     }
 }

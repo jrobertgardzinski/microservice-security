@@ -1,5 +1,9 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.http.StepUpGuard;
+
+import com.jrobertgardzinski.security.http.Caller;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.vo.PurgeChoices;
 import com.jrobertgardzinski.security.system.account.StartAccountDeletion;
@@ -46,7 +50,7 @@ final class DeleteAccountController {
         if (stepUp.isPresent()) {
             return stepUp.get();
         }
-        Email email = Email.of(request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow());
+        Email email = Email.of(request.getAttribute(Caller.ATTRIBUTE, String.class).orElseThrow());
         PurgeChoices choices;
         try {
             choices = purgeChoices(body);

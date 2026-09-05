@@ -1,9 +1,9 @@
-package com.jrobertgardzinski.persistence;
+package com.jrobertgardzinski.security.custom.password.persistence;
 
 import com.jrobertgardzinski.config.source.live.LiveConfigPort;
 import com.jrobertgardzinski.password.config.MinLength;
-import com.jrobertgardzinski.password.policy.ladder.MinLengthRepository;
-import com.jrobertgardzinski.password.policy.ladder.SetMinPasswordLength;
+import com.jrobertgardzinski.security.custom.password.MinLengthRepository;
+import com.jrobertgardzinski.security.custom.password.SetMinPasswordLength;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 
@@ -12,12 +12,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Runtime rung without a database: vacant unless a test seeds it or an admin sets it. Mirrors
+ * The live level without a database: vacant unless a test seeds it or an admin sets it. Mirrors
  * the other InMemory* fallbacks — the service boots and behaves identically, resolution simply
- * falls through to properties and the hardcoded default. Both sides of the rung live here: the
- * ladder reads through {@link LiveConfigPort}, the admin use case writes through
- * {@link MinLengthRepository}, and {@link #put} is the test's stand-in for a hand at the
- * database console — it bypasses the value object on purpose.
+ * falls through to the property and the default. Both sides of the level live here: the ladder
+ * reads through {@link LiveConfigPort}, the admin use case writes through
+ * {@link MinLengthRepository}, and {@link #put} is the test's stand-in for a hand at the database
+ * console — it bypasses the value object on purpose.
  */
 @Singleton
 @Requires(missingBeans = DataSource.class)

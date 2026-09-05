@@ -33,7 +33,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class StepUpCoverageTest {
 
-    private static final Path CONTROLLERS = Path.of("src/main/java/com/jrobertgardzinski");
+    /** The application's own controllers and every custom order's: one law over both roots. */
+    private static final List<Path> CONTROLLERS = List.of(
+            Path.of("src/main/java/com/jrobertgardzinski"),
+            Path.of("../security-custom/custom-min-password-length/src/main/java/com/jrobertgardzinski"));
 
     /**
      * Endpoints that must be behind a step-up, each with the durable access it would otherwise
@@ -104,7 +107,7 @@ class StepUpCoverageTest {
     }
 
     private static Set<String> controllers() throws IOException {
-        try (Stream<Path> files = Files.walk(CONTROLLERS)) {
+        try (Stream<Path> files = walkAll()) {
             return files.map(Path::getFileName)
                     .map(Path::toString)
                     .filter(name -> name.endsWith("Controller.java"))
@@ -114,7 +117,7 @@ class StepUpCoverageTest {
     }
 
     private static boolean guards(String controller) {
-        try (Stream<Path> files = Files.walk(CONTROLLERS)) {
+        try (Stream<Path> files = walkAll()) {
             Path source = files.filter(path -> path.getFileName().toString().equals(controller + ".java"))
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException("no such controller: " + controller));
@@ -122,5 +125,12 @@ class StepUpCoverageTest {
         } catch (IOException unreadable) {
             throw new IllegalStateException("cannot read " + controller, unreadable);
         }
+    }
+    private static Stream<Path> walkAll() throws IOException {
+        Stream<Path> all = Stream.empty();
+        for (Path root : CONTROLLERS) {
+            all = Stream.concat(all, Files.walk(root));
+        }
+        return all;
     }
 }

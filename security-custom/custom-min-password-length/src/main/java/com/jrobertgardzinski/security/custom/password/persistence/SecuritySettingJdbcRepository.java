@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.persistence;
+package com.jrobertgardzinski.security.custom.password.persistence;
 
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;

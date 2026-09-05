@@ -40,7 +40,7 @@ import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
 import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import com.jrobertgardzinski.password.policy.ladder.SetMinPasswordLength;
+import com.jrobertgardzinski.security.custom.password.SetMinPasswordLength;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -277,7 +277,7 @@ class JdbcAdaptersTest {
     }
 
     @Test
-    void security_settings_rows_reach_the_ladder_and_garbage_reports_a_vacant_rung() throws Exception {
+    void security_settings_rows_reach_the_ladder_and_garbage_reports_a_vacant_level() throws Exception {
         LiveConfigPort<?> settings = context.getBean(LiveConfigPort.class);
         try (var connection = java.sql.DriverManager.getConnection(
                 POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
@@ -288,7 +288,7 @@ class JdbcAdaptersTest {
         }
 
         assertThat(settings.find("security.password.policy.min.length")).isEqualTo(10);
-        // unparseable and absent both report as a vacant rung - the ladder falls through,
+        // unparseable and absent both report as a vacant level - the ladder falls through,
         // a hand-edited row never takes password validation down
         assertThat(settings.find("security.settings.broken")).isNull();
         assertThat(settings.find("security.settings.never.set")).isNull();
@@ -296,7 +296,7 @@ class JdbcAdaptersTest {
 
     @Test
     void the_admin_store_upserts_the_min_length_row_and_the_ladder_reads_it_back() throws Exception {
-        var store = context.getBean(com.jrobertgardzinski.password.policy.ladder.MinLengthRepository.class);
+        var store = context.getBean(com.jrobertgardzinski.security.custom.password.MinLengthRepository.class);
         LiveConfigPort<?> settings = context.getBean(LiveConfigPort.class);
         try {
             store.save(new com.jrobertgardzinski.password.config.MinLength(10));

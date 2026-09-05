@@ -22,6 +22,9 @@
         <module>security-config</module>
         <module>security-system</module>
         <module>security-application</module>
+        <module>security-roles</module>
+        <module>security-http</module>
+        <module>security-custom</module>
         <module>security-infrastructure</module>
     </modules>
 
@@ -158,6 +161,21 @@
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-roles</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-http</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>custom-min-password-length</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
                 <artifactId>email-domain</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
             </dependency>
@@ -189,11 +207,6 @@
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
                 <artifactId>password-usecase</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>password-ladder</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>

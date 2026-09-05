@@ -1,5 +1,9 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.http.StepUpGuard;
+
+import com.jrobertgardzinski.security.http.Caller;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.vo.FactorType;
@@ -138,6 +142,6 @@ final class FactorsController {
     }
 
     private static Email caller(HttpRequest<?> request) {
-        return Email.of(request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow());
+        return Email.of(request.getAttribute(Caller.ATTRIBUTE, String.class).orElseThrow());
     }
 }

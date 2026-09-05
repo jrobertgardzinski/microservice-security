@@ -1,15 +1,12 @@
-package com.jrobertgardzinski;
+package com.jrobertgardzinski.security.custom.password;
 
 import com.jrobertgardzinski.config.ladder.ConfigLadder;
 import com.jrobertgardzinski.config.ladder.Resolution;
-import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.Role;
-import com.jrobertgardzinski.password.policy.ladder.SetMinPasswordLength;
-import io.micronaut.context.annotation.Value;
+import com.jrobertgardzinski.security.http.RoleGuard;
+import com.jrobertgardzinski.security.http.StepUpGuard;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
-import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
@@ -18,21 +15,16 @@ import io.micronaut.http.annotation.Post;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
- * Admin-only: the minimum password length as a live decision. POST sets it — through the use
- * case, so the value object is the only gate and a refused length changes nothing. GET reports
- * the value IN FORCE together with its provenance: which rung of the ladder answered and which
- * rungs were refused on the way, each with the gate's own words. That report is how an admin
- * learns that the row someone wrote at the database console is not the value the system uses.
- * Same double gate as the other admin surfaces — the caller must be an ADMIN — and setting the
- * policy takes a fresh step-up, since it widens or narrows what every future password must be.
+ * Admin-only: the minimum password length as a live decision. POST sets it through the use case,
+ * so the value object is the only gate and a refused length changes nothing. GET reports the value
+ * IN FORCE with its provenance: which level answered and what was refused on the way, in the
+ * gate's own words — how an admin learns that a row written at the database console is not the
+ * value the system uses. The caller must be an ADMIN, and setting the policy takes a fresh
+ * step-up, since it binds every future password.
  */
 @ExecuteOn(TaskExecutors.BLOCKING)
 @Controller("/admin/settings/password")
@@ -42,35 +34,32 @@ final class AdminPasswordPolicyController {
 
     private final SetMinPasswordLength setMinPasswordLength;
     private final ConfigLadder<Integer> minPasswordLength;
-    private final UserRepository users;
+    private final RoleGuard roleGuard;
     private final StepUpGuard stepUpGuard;
-    private final Set<String> bootstrapAdmins;
 
     AdminPasswordPolicyController(SetMinPasswordLength setMinPasswordLength,
                                   ConfigLadder<Integer> minPasswordLength,
-                                  UserRepository users, StepUpGuard stepUpGuard,
-                                  @Value("${security.bootstrap-admins:}") List<String> bootstrapAdmins) {
+                                  RoleGuard roleGuard, StepUpGuard stepUpGuard) {
         this.setMinPasswordLength = setMinPasswordLength;
         this.minPasswordLength = minPasswordLength;
-        this.users = users;
+        this.roleGuard = roleGuard;
         this.stepUpGuard = stepUpGuard;
-        this.bootstrapAdmins = bootstrapAdmins.stream()
-                .map(s -> s.trim().toLowerCase(Locale.ROOT)).filter(s -> !s.isBlank())
-                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Get(value = "/min-length", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map<String, Object>> report(HttpRequest<?> request) {
-        if (!isAdmin(callerOf(request))) {
-            return notAnAdmin();
+        Optional<HttpResponse<Map<String, Object>>> notAnAdmin = roleGuard.require(request, Role.ADMIN);
+        if (notAnAdmin.isPresent()) {
+            return notAnAdmin.get();
         }
         return HttpResponse.ok(report(minPasswordLength.resolution()));
     }
 
     @Post(value = "/min-length", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map<String, Object>> set(HttpRequest<?> request, @Body Map<String, Object> body) {
-        if (!isAdmin(callerOf(request))) {
-            return notAnAdmin();
+        Optional<HttpResponse<Map<String, Object>>> notAnAdmin = roleGuard.require(request, Role.ADMIN);
+        if (notAnAdmin.isPresent()) {
+            return notAnAdmin.get();
         }
         Optional<HttpResponse<Map<String, Object>>> stepUp = stepUpGuard.requireElevation(request, STEP_UP_ACTION);
         if (stepUp.isPresent()) {
@@ -96,20 +85,5 @@ final class AdminPasswordPolicyController {
                 "rejected", resolution.rejected().stream()
                         .map(r -> Map.<String, Object>of("source", r.source(), "value", r.value(), "reason", r.reason()))
                         .toList());
-    }
-
-    private static String callerOf(HttpRequest<?> request) {
-        return request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow();
-    }
-
-    private static HttpResponse<Map<String, Object>> notAnAdmin() {
-        return HttpResponse.<Map<String, Object>>status(HttpStatus.FORBIDDEN).body(Map.of("status", "NOT_AN_ADMIN"));
-    }
-
-    private boolean isAdmin(String email) {
-        if (bootstrapAdmins.contains(email.toLowerCase(Locale.ROOT))) {
-            return true;
-        }
-        return users.findBy(Email.of(email)).map(u -> u.hasRole(Role.ADMIN)).orElse(false);
     }
 }

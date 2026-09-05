@@ -1,8 +1,8 @@
 package com.jrobertgardzinski.security.infrastructure.feature.passwordpolicy;
 
 import com.jrobertgardzinski.CapturingEmailVerificationNotifier;
-import com.jrobertgardzinski.persistence.InMemorySecuritySettings;
-import com.jrobertgardzinski.password.policy.ladder.SetMinPasswordLength;
+import com.jrobertgardzinski.security.custom.password.persistence.InMemorySecuritySettings;
+import com.jrobertgardzinski.security.custom.password.SetMinPasswordLength;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * verified, tokens are obtained by authenticating, the length is set via
  * POST /admin/settings/password/min-length (behind a step-up, like every admin hand) and read back
  * via GET. "admin@example.com" is a bootstrap admin (test config). The one thing done behind the
- * API's back is done on purpose: "written at the console" seeds the in-memory settings rung
+ * API's back is done on purpose: "written at the console" seeds the in-memory settings level
  * directly, bypassing the value object — which is exactly what a hand at psql does.
  */
 public class HttpPasswordPolicySteps {

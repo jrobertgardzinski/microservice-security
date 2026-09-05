@@ -15,7 +15,7 @@ Feature: Setting the minimum password length while the system runs
 
   # The ladder for this key: a security_settings row (live) over the
   # security.password.policy.min.length property (restart) over MinLength.DEFAULT (rebuild).
-  # The test deployment sets no property, so a vacant live rung falls to the default of 5.
+  # The test deployment sets no property, so a vacant live level falls to the default of 5.
 
   Background:
     Given a registered USER "member@example.com" with password "StrongPassword1!"

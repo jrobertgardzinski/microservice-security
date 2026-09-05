@@ -10,7 +10,7 @@ security:
   # from localhost across scenarios); it is exercised in isolation by RegisterThrottleHttpTest
   registration:
     max-per-window: 0
-  # the live rung is read uncached in the feature suites, so a value an ADMIN sets (or a row a
+  # the live level is read uncached in the feature suites, so a value an ADMIN sets (or a row a
   # test writes "at the console") is in force on the very next request; the TTL itself is
   # exercised in isolation by shared/config's caching-live-config.feature
   settings:

@@ -1,5 +1,9 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.http.StepUpGuard;
+
+import com.jrobertgardzinski.security.http.Caller;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.system.account.RequestEmailChange;
 import com.jrobertgardzinski.security.system.account.RequestEmailChangeResult;
@@ -54,7 +58,7 @@ final class EmailChangeController {
             return stepUp.get();
         }
         Email currentEmail = Email.of(
-                request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow());
+                request.getAttribute(Caller.ATTRIBUTE, String.class).orElseThrow());
         Email newEmail;
         try {
             newEmail = Email.of(JsonBody.text(body, "newEmail"));

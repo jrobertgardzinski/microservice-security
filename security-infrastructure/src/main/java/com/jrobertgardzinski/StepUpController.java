@@ -1,5 +1,9 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.http.StepUpGuard;
+
+import com.jrobertgardzinski.security.http.Caller;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.system.mfa.StepUp;
@@ -45,7 +49,7 @@ final class StepUpController {
         if (throttled != null) {
             return throttled;
         }
-        Email email = Email.of(request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow());
+        Email email = Email.of(request.getAttribute(Caller.ATTRIBUTE, String.class).orElseThrow());
         String token = StepUpGuard.bearerToken(request);
         return respond(stepUp.start(email, body.getOrDefault("action", ""), token, body.get("password")));
     }

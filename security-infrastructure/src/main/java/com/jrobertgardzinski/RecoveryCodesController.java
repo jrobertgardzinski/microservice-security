@@ -1,5 +1,9 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.http.StepUpGuard;
+
+import com.jrobertgardzinski.security.http.Caller;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository;
 import com.jrobertgardzinski.security.system.mfa.GenerateRecoveryCodes;
@@ -60,6 +64,6 @@ final class RecoveryCodesController {
     }
 
     private static Email caller(HttpRequest<?> request) {
-        return Email.of(request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow());
+        return Email.of(request.getAttribute(Caller.ATTRIBUTE, String.class).orElseThrow());
     }
 }

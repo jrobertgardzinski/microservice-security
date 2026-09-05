@@ -12,7 +12,7 @@ import static io.cucumber.junit.platform.engine.Constants.PLUGIN_PROPERTY_NAME;
 /**
  * Drives the shared {@code password-policy.feature} through the HTTP entry point: the minimum
  * password length is set and reported via {@code /admin/settings/password/min-length}, and the
- * "row written at the console" is the in-memory settings rung seeded behind the value object's
+ * "row written at the console" is the in-memory settings level seeded behind the value object's
  * back — exactly what a hand at psql does.
  */
 @Suite

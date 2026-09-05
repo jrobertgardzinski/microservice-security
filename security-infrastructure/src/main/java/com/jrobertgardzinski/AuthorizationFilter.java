@@ -1,5 +1,7 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.http.Caller;
+
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
 import com.jrobertgardzinski.security.system.authorization.Authorize;
 import com.jrobertgardzinski.security.system.authorization.AuthorizationResult;
@@ -12,7 +14,7 @@ import io.micronaut.http.annotation.ServerFilter;
 /**
  * Guards protected resources. Reads the {@code Authorization: Bearer <accessToken>} header, runs the
  * {@link Authorize} use case, and either lets the request through (publishing the authenticated
- * email as a request attribute for the resource to read) or rejects it with 401 — for a missing,
+ * email under {@link Caller#ATTRIBUTE} for the resource to read) or rejects it with 401 — for a missing,
  * malformed, unknown or expired token alike.
  *
  * <p>It also enforces the MFA role floor: a caller whose roles demand more factors than they have
@@ -22,8 +24,6 @@ import io.micronaut.http.annotation.ServerFilter;
  */
 @ServerFilter({"/me", "/sessions", "/sessions/**", "/account/**", "/admin/**"})
 final class AuthorizationFilter {
-
-    static final String AUTHENTICATED_EMAIL = "authenticatedEmail";
 
     private final Authorize authorize;
     private final com.jrobertgardzinski.security.domain.repository.UserRepository users;
@@ -40,14 +40,14 @@ final class AuthorizationFilter {
     @RequestFilter
     @Nullable
     HttpResponse<?> authorize(HttpRequest<?> request) {
-        String token = bearerToken(request);
+        String token = Caller.bearerToken(request);
         if (token == null) {
             return HttpResponse.unauthorized();
         }
         if (!(authorize.execute(new AccessToken(token)) instanceof AuthorizationResult.Authorized authorized)) {
             return HttpResponse.unauthorized();
         }
-        request.setAttribute(AUTHENTICATED_EMAIL, authorized.email().value());
+        request.setAttribute(Caller.ATTRIBUTE, authorized.email().value());
         if (!enrolmentExempt(request.getPath()) && !isCompliant(authorized.email())) {
             return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN)
                     .body(java.util.Map.of("error", "MFA_ENROLMENT_REQUIRED"));
@@ -72,11 +72,4 @@ final class AuthorizationFilter {
         return compliance.isCompliant(email, roles);
     }
 
-    private static String bearerToken(HttpRequest<?> request) {
-        return request.getHeaders().getAuthorization()
-                .filter(header -> header.startsWith("Bearer "))
-                .map(header -> header.substring("Bearer ".length()).trim())
-                .filter(token -> !token.isEmpty())
-                .orElse(null);
-    }
 }

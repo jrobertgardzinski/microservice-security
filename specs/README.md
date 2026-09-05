@@ -25,10 +25,10 @@ the files their `@SelectClasspathResource` names.
 So `register.feature` (`@ui`) runs in all three layers; `password-policy.feature` (`@http-only`)
 runs in the infrastructure layer alone until a page reads the policy.
 
-## Literals are samples of the REBUILD rung
+## Literals are samples of the REBUILD level
 
 Values in these files are literals, not placeholders. `user@example.com` and `StrongPassword1!`
-mean "an email and a password that pass the DEFAULT policy" — the rebuild rung of the
+mean "an email and a password that pass the DEFAULT policy" — the rebuild level of the
 configuration ladder, the one that changes only with a release. The specs live in the repo and are
 versioned with the code, so they move at the same cadence as the defaults: if a release changes
 `MinLength.DEFAULT`, these files are SUPPOSED to go red, because they document the defaults.
@@ -39,7 +39,7 @@ Two consequences:
   nine characters because the scenario set the minimum to ten; `a..b@gmail.com` has two dots
   because two dots are the rule under test. Replacing either with "an invalid password" would hide
   which rule the scenario proves.
-- **A scenario that moves the LIVE rung owns its own samples.** `password-policy.feature` raises
+- **A scenario that moves the LIVE level owns its own samples.** `password-policy.feature` raises
   the minimum to ten and relies on the Background accounts having sixteen-character passwords.
   A scenario raising it above what the reference literals satisfy must register its own users or
   change the number — visibly, in the same file.

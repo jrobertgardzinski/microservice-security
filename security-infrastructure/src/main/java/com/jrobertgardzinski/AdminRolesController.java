@@ -1,10 +1,12 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.http.StepUpGuard;
+
+import com.jrobertgardzinski.security.http.RoleGuard;
+
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.Role;
 import com.jrobertgardzinski.security.system.roles.SetUserRoles;
-import io.micronaut.context.annotation.Value;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
@@ -23,37 +25,29 @@ import java.util.stream.Collectors;
 
 /**
  * Admin-only: grant or revoke another user's roles. {@link AuthorizationFilter} has already
- * authorized the caller; this controller adds the second gate — the caller must themselves be an
- * ADMIN. The first admin is bootstrapped from config ({@code security.bootstrap-admins}), which
- * breaks the chicken-and-egg: a bootstrap admin is treated as ADMIN even before any grant, and can
- * then hand out persisted roles to everyone else.
+ * authorized the caller; {@link RoleGuard} adds the second gate — the caller must themselves be an
+ * ADMIN, from a persisted grant or the deployment's bootstrap list, which breaks the
+ * chicken-and-egg: a bootstrap admin is ADMIN before any grant and can hand out roles to everyone else.
  */
 @ExecuteOn(TaskExecutors.BLOCKING)
 @Controller("/admin/users")
 final class AdminRolesController {
 
     private final SetUserRoles setUserRoles;
-    private final UserRepository users;
-    private final Set<String> bootstrapAdmins;
+    private final RoleGuard roleGuard;
     private final StepUpGuard stepUpGuard;
 
-    AdminRolesController(SetUserRoles setUserRoles, UserRepository users,
-                         @Value("${security.bootstrap-admins:}") List<String> bootstrapAdmins,
-                         StepUpGuard stepUpGuard) {
+    AdminRolesController(SetUserRoles setUserRoles, RoleGuard roleGuard, StepUpGuard stepUpGuard) {
         this.setUserRoles = setUserRoles;
-        this.users = users;
+        this.roleGuard = roleGuard;
         this.stepUpGuard = stepUpGuard;
-        this.bootstrapAdmins = bootstrapAdmins.stream()
-                .map(s -> s.trim().toLowerCase(Locale.ROOT)).filter(s -> !s.isBlank())
-                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Put(value = "/{email}/roles", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> setRoles(HttpRequest<?> request, @PathVariable String email, @Body Map<String, Object> body) {
-        String caller = request.getAttribute(AuthorizationFilter.AUTHENTICATED_EMAIL, String.class).orElseThrow();
-        if (!isAdmin(caller)) {
-            return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN)
-                    .body(Map.of("status", "NOT_AN_ADMIN"));
+        java.util.Optional<HttpResponse<Map<String, Object>>> notAnAdmin = roleGuard.require(request, Role.ADMIN);
+        if (notAnAdmin.isPresent()) {
+            return notAnAdmin.get();
         }
         // AFTER the role check, so a non-admin still learns only that they are not an admin. A
         // granted role is a permanent widening of what a session may do, so a stolen admin session
@@ -76,13 +70,6 @@ final class AdminRolesController {
         }
         return HttpResponse.ok(Map.of("email", email,
                 "roles", result.roles().stream().map(Role::name).sorted().toList()));
-    }
-
-    private boolean isAdmin(String email) {
-        if (bootstrapAdmins.contains(email.toLowerCase(Locale.ROOT))) {
-            return true;
-        }
-        return users.findBy(Email.of(email)).map(u -> u.hasRole(Role.ADMIN)).orElse(false);
     }
 
     @SuppressWarnings("unchecked")

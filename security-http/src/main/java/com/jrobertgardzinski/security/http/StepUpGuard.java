@@ -1,4 +1,4 @@
-package com.jrobertgardzinski;
+package com.jrobertgardzinski.security.http;
 
 import com.jrobertgardzinski.security.system.mfa.SessionElevation;
 import io.micronaut.http.HttpRequest;
@@ -15,7 +15,7 @@ import java.util.Optional;
  * {@code STEP_UP_REQUIRED}, and the caller is told which action to step up for.
  */
 @Singleton
-final class StepUpGuard {
+public final class StepUpGuard {
 
     private final SessionElevation elevation;
 
@@ -24,8 +24,8 @@ final class StepUpGuard {
     }
 
     /** A 403 response if the caller has not stepped up, otherwise empty (proceed). */
-    Optional<HttpResponse<Map<String, Object>>> requireElevation(HttpRequest<?> request, String action) {
-        String token = bearerToken(request);
+    public Optional<HttpResponse<Map<String, Object>>> requireElevation(HttpRequest<?> request, String action) {
+        String token = Caller.bearerToken(request);
         if (token != null && elevation.consume(token, action)) {
             return Optional.empty();
         }
@@ -33,11 +33,7 @@ final class StepUpGuard {
                 .body(Map.of("status", "STEP_UP_REQUIRED", "action", action)));
     }
 
-    static String bearerToken(HttpRequest<?> request) {
-        return request.getHeaders().getAuthorization()
-                .filter(header -> header.startsWith("Bearer "))
-                .map(header -> header.substring("Bearer ".length()).trim())
-                .filter(token -> !token.isEmpty())
-                .orElse(null);
+    public static String bearerToken(HttpRequest<?> request) {
+        return Caller.bearerToken(request);
     }
 }

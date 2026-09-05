@@ -19,13 +19,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * <p>The mistake is dangerous in both directions. A database read wired as a RESTART port makes
  * the value MORE dynamic than declared: it changes without the restart everyone was promised,
  * and nobody can reason about when configuration takes effect any more. An Environment read
- * wired as a LIVE port makes the value LESS dynamic than declared: the rung is forever stale
+ * wired as a LIVE port makes the value LESS dynamic than declared: the level is forever stale
  * and the administrator's change quietly never arrives. Both are the declaration lying; both
  * are caught by the same scan.
  */
 class ConfigPortsTellTheTruthTest {
 
-    private static final Path SOURCES = Path.of("src/main/java/com/jrobertgardzinski");
+    /** The application's adapters and every custom order's: the promise is the same in both. */
+    private static final List<Path> SOURCES = List.of(
+            Path.of("src/main/java/com/jrobertgardzinski"),
+            Path.of("../security-custom/custom-min-password-length/src/main/java/com/jrobertgardzinski"));
 
     /** Anything that smells of the database in a class claiming restart-bound semantics. */
     private static final List<String> DATABASE_SMELLS = List.of(
@@ -55,12 +58,12 @@ class ConfigPortsTellTheTruthTest {
                 .toList();
 
         assertEquals(List.of(), lying,
-                "these classes promise live semantics but read start-time properties - the rung"
+                "these classes promise live semantics but read start-time properties - the level"
                         + " is forever stale and an administrator's change never arrives: " + lying);
     }
 
     private static List<Path> adaptersOf(String port) throws IOException {
-        try (Stream<Path> files = Files.walk(SOURCES)) {
+        try (Stream<Path> files = walkAll()) {
             return files.filter(file -> file.toString().endsWith(".java"))
                     .filter(file -> read(file).contains("implements " + port))
                     .toList();
@@ -73,5 +76,12 @@ class ConfigPortsTellTheTruthTest {
         } catch (IOException unreadable) {
             throw new IllegalStateException("cannot read " + file, unreadable);
         }
+    }
+    private static Stream<Path> walkAll() throws IOException {
+        Stream<Path> all = Stream.empty();
+        for (Path root : SOURCES) {
+            all = Stream.concat(all, Files.walk(root));
+        }
+        return all;
     }
 }

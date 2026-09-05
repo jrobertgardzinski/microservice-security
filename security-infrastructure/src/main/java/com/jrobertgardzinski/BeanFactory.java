@@ -1,19 +1,24 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.config.ladder.ConfigLadder;
+import com.jrobertgardzinski.config.ladder.Rung;
 import com.jrobertgardzinski.config.source.restart.RestartConfigPort;
-import com.jrobertgardzinski.config.source.restart.RestartConfigSource;
-import com.jrobertgardzinski.config.source.live.CachingLiveConfigPort;
-import com.jrobertgardzinski.config.source.live.LiveConfigPort;
 import com.jrobertgardzinski.email.config.BlockedDomains;
 import com.jrobertgardzinski.email.config.CanRegisterConfig;
 import com.jrobertgardzinski.email.config.CompanyDomains;
 import com.jrobertgardzinski.email.config.DisposableDomains;
 import com.jrobertgardzinski.email.domain.DomainPart;
-import com.jrobertgardzinski.password.policy.ladder.MinLengthLadder;
 import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
+import com.jrobertgardzinski.password.config.MinLength;
+import com.jrobertgardzinski.password.config.SpecialChars;
+import com.jrobertgardzinski.password.policy.PasswordPolicy;
+import com.jrobertgardzinski.password.policy.PasswordPolicyInForce;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
+import com.jrobertgardzinski.security.domain.entity.User;
+import com.jrobertgardzinski.security.roles.BootstrapAdmins;
+import com.jrobertgardzinski.security.roles.RequireRole;
+import com.jrobertgardzinski.security.roles.RolesOf;
 import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
 import com.jrobertgardzinski.security.domain.port.EmailVerificationNotifier;
 import com.jrobertgardzinski.security.domain.port.PasswordResetNotifier;
@@ -39,10 +44,6 @@ import com.jrobertgardzinski.security.system.session.Logout;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RevokeAllSessions;
 import com.jrobertgardzinski.security.system.account.ChangePassword;
-import com.jrobertgardzinski.password.policy.ladder.MinLengthRepository;
-import com.jrobertgardzinski.password.policy.ladder.LadderedPasswordPolicy;
-import com.jrobertgardzinski.password.policy.ladder.PasswordPolicyInForce;
-import com.jrobertgardzinski.password.policy.ladder.SetMinPasswordLength;
 import com.jrobertgardzinski.security.system.account.ConfirmEmailChange;
 import com.jrobertgardzinski.security.domain.port.AccountDeletionSaga;
 import com.jrobertgardzinski.security.system.account.DeleteAccount;
@@ -52,8 +53,9 @@ import com.jrobertgardzinski.security.system.passwordreset.RequestPasswordReset;
 import com.jrobertgardzinski.security.system.passwordreset.ResetPassword;
 import com.jrobertgardzinski.security.system.verification.RequestEmailVerification;
 import com.jrobertgardzinski.security.system.verification.VerifyEmail;
-import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.Factory;
+import io.micronaut.context.annotation.Secondary;
+import io.micronaut.context.annotation.Value;
 import io.micronaut.context.env.Environment;
 import io.micronaut.core.type.Argument;
 import jakarta.inject.Named;
@@ -81,53 +83,43 @@ public class BeanFactory {
     }
 
     /**
-     * The minimal password length as a layered ladder — the canonical precedence law: the source
-     * bound latest in the lifecycle wins. Which rungs, which key and which gate is
-     * {@link MinLengthLadder}'s business, next to the value it produces; this factory only decides
-     * what stands behind the ports: a {@code security_settings} row (runtime — an
-     * administrator's decision now) over a property (deployment). The database rung is read
-     * through a TTL cache whose TTL is itself RESTART-level configuration — meta-configuration
-     * lives one rung below what it governs, so a bad TTL can never delay its own correction — and
-     * a zero TTL switches the cache off. Use cases resolve per attempt, so a change is honoured
-     * by the next request within one TTL, no restart.
+     * The password policy of the NEUTRAL service: the minimum length from a property (restart) over
+     * the library default (rebuild), the four other rules on their defaults. {@code @Secondary} so
+     * a custom order that puts a live level above it (security-custom) takes precedence by being
+     * {@code @Primary}; without such an order this is the policy the use cases ask.
      */
-    @Context
-    ConfigLadder<Integer> minPasswordLength(LiveConfigPort<Integer> settingsRows,
-                                            RestartConfigPort<Integer> properties,
-                                            Clock clock) {
-        var restartSource = new RestartConfigSource<>(properties);
-        int cacheTtlSeconds = ConfigLadder.restart(
-                "security.settings.cache.ttl.seconds", 10,
-                seconds -> {
-                    if (seconds < 0) throw new IllegalArgumentException("ttl seconds must not be negative");
-                },
-                restartSource).resolve();
-        return MinLengthLadder.over(
-                new CachingLiveConfigPort<>(settingsRows, java.time.Duration.ofSeconds(cacheTtlSeconds), clock),
-                properties);
-    }
-
-    /** The admin's hand on the live rung: the value object is the gate, the store is the row. */
     @Singleton
-    SetMinPasswordLength setMinPasswordLength(MinLengthRepository store) {
-        return new SetMinPasswordLength(store);
+    @Secondary
+    PasswordPolicyInForce restartBoundPasswordPolicy(RestartConfigPort<Integer> properties) {
+        ConfigLadder<Integer> minLength = ConfigLadder.of("security.password.policy.min.length",
+                length -> new MinLength(length),
+                Rung.restart(properties), Rung.rebuild(MinLength.DEFAULT.value()));
+        return () -> PasswordPolicy.defaultsExcept(new MinLength(minLength.resolve()), SpecialChars.DEFAULT);
     }
 
     /**
-     * The read side of the password settings, for every place a password is established: register,
-     * reset, change. The use cases behind this port only ever learn the answer, and ask again on
-     * the next attempt. Which of the five rules move, and which stand on the rebuild rung, is
-     * written out in {@link LadderedPasswordPolicy}, in the password library — not implied by a
-     * constructor, and not in this module.
+     * Who holds which role, for every admin gate at once: the persisted grants behind the port, and
+     * the deployment's bootstrap admins ({@code security.bootstrap-admins}) as the way the first
+     * admin exists before any grant.
      */
     @Singleton
-    PasswordPolicyInForce passwordPolicyInForce(ConfigLadder<Integer> minPasswordLength) {
-        return new LadderedPasswordPolicy(minPasswordLength);
+    RolesOf rolesOf(UserRepository users) {
+        return email -> users.findBy(email).map(User::roles).orElse(Set.of());
+    }
+
+    @Singleton
+    BootstrapAdmins bootstrapAdmins(@Value("${security.bootstrap-admins:}") List<String> addresses) {
+        return BootstrapAdmins.of(addresses);
+    }
+
+    @Singleton
+    RequireRole requireRole(BootstrapAdmins bootstrapAdmins, RolesOf rolesOf) {
+        return new RequireRole(bootstrapAdmins, rolesOf);
     }
 
     /**
      * The email policy for registration — which domains may not register (blocked, disposable)
-     * and, for a closed shop, which ones alone may (company). Deployment-rung only for now: the
+     * and, for a closed shop, which ones alone may (company). Deployment-level only for now: the
      * three lists are read from properties once at startup, so a misspelt domain fails the boot
      * rather than the first registration; an absent or empty list is an absent rule. Being fixed
      * for the life of the service, it is handed to the use case as a value — unlike the password
@@ -142,7 +134,7 @@ public class BeanFactory {
                 domains(environment, "security.email.company.domains", CompanyDomains::new));
     }
 
-    /** An empty list is a vacant rung: {@code null}, which the policy reads as "no such rule". */
+    /** An empty list is a vacant level: {@code null}, which the policy reads as "no such rule". */
     private static <T> T domains(Environment environment, String property, Function<Set<DomainPart>, T> rule) {
         List<String> values = environment.getProperty(property, Argument.listOf(String.class)).orElse(List.of());
         Set<DomainPart> domains = values.stream()
