@@ -80,7 +80,7 @@ class SessionLineageRaceTest {
         Clock clock = context.getBean(Clock.class);
 
         SessionFamily family = SessionFamily.start();
-        SessionTokens original = SessionTokens.createFor(USER, CONFIG, clock);
+        SessionTokens original = SessionTokens.createFor(USER, CONFIG, clock, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
         transactions.execute(() -> sessions.create(original, family));
 
         CountDownLatch rotationIsHalfDone = new CountDownLatch(1);
@@ -91,7 +91,7 @@ class SessionLineageRaceTest {
         // successor. It waits there, exactly where the window is.
         Thread refreshing = new Thread(() -> transactions.execute(() ->
                 sessions.rotateAndCreate(original.refreshToken(), () -> {
-                    SessionTokens next = SessionTokens.createFor(USER, CONFIG, clock);
+                    SessionTokens next = SessionTokens.createFor(USER, CONFIG, clock, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
                     successor.set(next);
                     rotationIsHalfDone.countDown();
                     try {
@@ -141,7 +141,7 @@ class SessionLineageRaceTest {
         // leaves rows for USER whichever order the two run in
         Email user = Email.of("race-everywhere@example.com");
         SessionFamily family = SessionFamily.start();
-        SessionTokens original = SessionTokens.createFor(user, CONFIG, clock);
+        SessionTokens original = SessionTokens.createFor(user, CONFIG, clock, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
         transactions.execute(() -> sessions.create(original, family));
 
         CountDownLatch rotationIsHalfDone = new CountDownLatch(1);
@@ -150,7 +150,7 @@ class SessionLineageRaceTest {
 
         Thread refreshing = new Thread(() -> transactions.execute(() ->
                 sessions.rotateAndCreate(original.refreshToken(), () -> {
-                    SessionTokens next = SessionTokens.createFor(user, CONFIG, clock);
+                    SessionTokens next = SessionTokens.createFor(user, CONFIG, clock, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
                     successor.set(next);
                     rotationIsHalfDone.countDown();
                     try {

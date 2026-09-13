@@ -102,7 +102,7 @@ class RefreshSessionTest {
     @Label("Refreshed: an active, unexpired token rotates to a new one in the same family")
     void refreshed_when_active_and_not_expired() {
         StoredSession session = storedSession(LocalDateTime.now(CLOCK).plusHours(1), SessionStatus.ACTIVE);
-        SessionTokens createdTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK);
+        SessionTokens createdTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
         Mockito.when(authorizationDataRepository.findByRefreshToken(GIVEN.refreshToken))
                 .thenReturn(Optional.of(session));
         Mockito.when(authorizationDataRepository.create(Mockito.any(), Mockito.eq(FAMILY)))

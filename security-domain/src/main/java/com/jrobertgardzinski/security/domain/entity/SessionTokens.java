@@ -21,10 +21,13 @@ public record SessionTokens(
         RefreshTokenExpiration refreshTokenExpiration,
         AuthorizationTokenExpiration authorizationTokenExpiration) {
 
-    public static SessionTokens createFor(Email email, SessionTokensConfig config, Clock clock) {
-        return createFor(email, config, clock, AccessTokenMint.RANDOM);
-    }
-
+    /**
+     * @param mint how the access token is made — and it is a PARAMETER because there is no sensible
+     *             default. There used to be an overload without it that quietly chose
+     *             {@code AccessTokenMint.RANDOM}; nothing in production ever called it (every path
+     *             mints a JWT), so its only effect was that a handful of tests exercised a token
+     *             this service does not issue, while reading as though they exercised the real one.
+     */
     public static SessionTokens createFor(Email email, SessionTokensConfig config, Clock clock, AccessTokenMint mint) {
         AuthorizationTokenExpiration accessExpiration =
                 AuthorizationTokenExpiration.validInHours(config.accessTokenValidityInHours(), clock);

@@ -139,7 +139,8 @@ public class FederatedSignInSteps {
     public void anActiveSession(String email) {
         sessions.create(SessionTokens.createFor(Email.of(email),
                 new SessionTokensConfig(new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1)),
-                Clock.systemUTC()), SessionFamily.start());
+                Clock.systemUTC(), com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM),
+                SessionFamily.start());
         assertFalse(sessions.listActiveSessions(Email.of(email)).isEmpty(), "failed to seed a session");
     }
 

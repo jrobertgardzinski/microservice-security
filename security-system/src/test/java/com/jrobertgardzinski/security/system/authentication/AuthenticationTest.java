@@ -136,7 +136,7 @@ class AuthenticationTest {
     @Example
     @Label("Authenticated when the guard allows and credentials are valid")
     void authenticated_when_guard_allows_and_credentials_valid() {
-        SessionTokens sessionTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK);
+        SessionTokens sessionTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
         Mockito.when(bruteForceGuard.execute(Mockito.any()))
                 .thenReturn(new BruteForceProtectionEvent.Allowed());
         Mockito.when(verifyCredentials.execute(GIVEN.credentials))

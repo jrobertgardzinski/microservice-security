@@ -185,7 +185,8 @@ class JdbcAdaptersTest {
         AuthorizationDataRepository sessions = context.getBean(AuthorizationDataRepository.class);
         SessionFamily family = SessionFamily.start();
         SessionTokens session = SessionTokens.createFor(
-                Email.of("jdbc-session@example.com"), SESSION_CONFIG, Clock.systemUTC());
+                Email.of("jdbc-session@example.com"), SESSION_CONFIG, Clock.systemUTC(),
+                com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
 
         sessions.create(session, family);
 
@@ -207,7 +208,8 @@ class JdbcAdaptersTest {
     void an_access_token_authorizes_only_while_its_session_is_active() {
         AuthorizationDataRepository sessions = context.getBean(AuthorizationDataRepository.class);
         SessionTokens session = SessionTokens.createFor(
-                Email.of("jdbc-access@example.com"), SESSION_CONFIG, Clock.systemUTC());
+                Email.of("jdbc-access@example.com"), SESSION_CONFIG, Clock.systemUTC(),
+                com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
 
         sessions.create(session, SessionFamily.start());
 
@@ -226,13 +228,13 @@ class JdbcAdaptersTest {
         AuthorizationDataRepository sessions = context.getBean(AuthorizationDataRepository.class);
         Email email = Email.of("jdbc-lineage@example.com");
         SessionFamily family = SessionFamily.start();
-        SessionTokens first = SessionTokens.createFor(email, SESSION_CONFIG, Clock.systemUTC());
+        SessionTokens first = SessionTokens.createFor(email, SESSION_CONFIG, Clock.systemUTC(), com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
 
         sessions.create(first, family);
         LocalDateTime started = sessions.findByRefreshToken(first.refreshToken()).orElseThrow().familyStartedAt();
 
         SessionTokens second = sessions.rotateAndCreate(first.refreshToken(),
-                () -> SessionTokens.createFor(email, SESSION_CONFIG, Clock.systemUTC()), family).orElseThrow();
+                () -> SessionTokens.createFor(email, SESSION_CONFIG, Clock.systemUTC(), com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM), family).orElseThrow();
 
         assertThat(sessions.findByRefreshToken(second.refreshToken()).orElseThrow().familyStartedAt())
                 .as("if each refresh started the clock again, an absolute session lifetime would be"

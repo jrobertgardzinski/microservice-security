@@ -44,7 +44,7 @@ class _GenerateSessionTest {
     @Example
     @Label("Creates session tokens for the email and returns the persisted result")
     void creates_session_tokens_for_email() {
-        SessionTokens persisted = SessionTokens.createFor(EMAIL, CONFIG, CLOCK);
+        SessionTokens persisted = SessionTokens.createFor(EMAIL, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
         Mockito.when(authorizationDataRepository.create(Mockito.any(), Mockito.any())).thenReturn(persisted);
 
         SessionTokens result = generateSession.create(EMAIL);

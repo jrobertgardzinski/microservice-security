@@ -52,6 +52,25 @@ class UserAndBlockRulesTest {
     }
 
     @Test
+    @DisplayName("the normalized address is derived, never accepted")
+    void the_identity_cannot_be_handed_in_wrong() {
+        User user = new User(UUID.randomUUID(), Email.of("Alice+Promo@Gmail.com"), HASH,
+                // a caller's idea of the normalized form, and a wrong one: this is the shape of
+                // the mistake nothing prevented
+                com.jrobertgardzinski.email.domain.NormalizedEmail.of(Email.of("somebody-else@example.com")),
+                Set.of());
+
+        assertThat(user.normalizedEmail())
+                .as("this is the identity the unique index and every lookup use — an account whose"
+                        + " own record disagrees with it exists and cannot be signed into")
+                .isEqualTo(com.jrobertgardzinski.email.domain.NormalizedEmail.of(Email.of("Alice+Promo@Gmail.com")));
+
+        assertThat(new User(UUID.randomUUID(), EMAIL, HASH, null, Set.of()).normalizedEmail())
+                .as("and null is not a hole either — there is nothing to supply")
+                .isEqualTo(com.jrobertgardzinski.email.domain.NormalizedEmail.of(EMAIL));
+    }
+
+    @Test
     @DisplayName("the role set cannot be edited from outside the user")
     void the_role_set_is_the_users_own() {
         java.util.Set<Role> granted = new java.util.HashSet<>(Set.of(Role.MODERATOR));

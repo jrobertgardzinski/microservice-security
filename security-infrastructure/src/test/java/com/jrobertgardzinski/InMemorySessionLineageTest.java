@@ -45,7 +45,7 @@ class InMemorySessionLineageTest {
     @DisplayName("a revoke cannot land between the rotation and its successor")
     void the_rotation_and_its_successor_are_one_step() throws Exception {
         SessionFamily family = SessionFamily.start();
-        SessionTokens original = SessionTokens.createFor(USER, CONFIG, CLOCK);
+        SessionTokens original = SessionTokens.createFor(USER, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
         repository.create(original, family);
 
         // The thief's thread: it has detected reuse of this lineage and is revoking the family.
@@ -79,7 +79,7 @@ class InMemorySessionLineageTest {
                         Thread.currentThread().interrupt();
                     }
                     shutOut.set(reuseDetected.isAlive());
-                    return SessionTokens.createFor(USER, CONFIG, CLOCK);
+                    return SessionTokens.createFor(USER, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
                 },
                 family);
         reuseDetected.join();
@@ -99,7 +99,7 @@ class InMemorySessionLineageTest {
     @DisplayName("a losing rotation writes nothing at all")
     void a_lost_rotation_creates_no_successor() {
         SessionFamily family = SessionFamily.start();
-        SessionTokens original = SessionTokens.createFor(USER, CONFIG, CLOCK);
+        SessionTokens original = SessionTokens.createFor(USER, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
         repository.create(original, family);
         repository.markRotated(original.refreshToken());   // somebody else got there first
 
@@ -108,7 +108,7 @@ class InMemorySessionLineageTest {
                 original.refreshToken(),
                 () -> {
                     minted.set(true);
-                    return SessionTokens.createFor(USER, CONFIG, CLOCK);
+                    return SessionTokens.createFor(USER, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
                 },
                 family);
 
