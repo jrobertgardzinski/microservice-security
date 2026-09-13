@@ -327,6 +327,21 @@ public class BeanFactory {
                 configuration.boundOver(MaxBlockMinutes.DEFAULT));
     }
 
+    /**
+     * How long an account nobody ever verified is kept, from the deployment's property over the
+     * code default.
+     *
+     * <p>Two levels and not three, on purpose. Shortening a retention period DELETES accounts, so
+     * it belongs to a release or a deployment — a live setting would be a deletion button on a web
+     * form, reachable by whoever holds an admin session at the time.
+     */
+    @Context
+    com.jrobertgardzinski.security.config.retention.vo.UnverifiedAccountDays unverifiedAccountDays(
+            Configuration configuration) {
+        return configuration.boundOver(
+                com.jrobertgardzinski.security.config.retention.vo.UnverifiedAccountDays.DEFAULT);
+    }
+
     /** Token validities from the deployment's properties over the code defaults, declared from the value objects. */
     @Context
     SessionTokensConfig sessionTokensConfig(Configuration configuration) {

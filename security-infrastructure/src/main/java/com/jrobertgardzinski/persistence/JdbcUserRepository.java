@@ -28,9 +28,11 @@ import java.util.stream.Collectors;
 final class JdbcUserRepository implements UserRepository {
 
     private final UserJdbcRepository repository;
+    private final java.time.Clock clock;
 
-    JdbcUserRepository(UserJdbcRepository repository) {
+    JdbcUserRepository(UserJdbcRepository repository, java.time.Clock clock) {
         this.repository = repository;
+        this.clock = clock;
     }
 
     @Override
@@ -90,7 +92,7 @@ final class JdbcUserRepository implements UserRepository {
         try {
             repository.save(new UserEntity(
                     user.id(), user.email().value(), user.normalizedEmail().value(), user.passwordHash().value(),
-                    false, encodeRoles(user.roles())));
+                    false, encodeRoles(user.roles()), java.time.LocalDateTime.now(clock)));
             return user;
         } catch (DataAccessException e) {
             if (isUniqueViolation(e)) {

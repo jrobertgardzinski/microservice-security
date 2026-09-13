@@ -476,6 +476,20 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   `AuthorizationFilter` stosuje przy podłodze MFA). UI zamyka panel i mówi, co ZROBI robotę.
   Decyzja dopisana do `docs/mfa-design.md` jako „Decision 4" razem z odrzuconą alternatywą
   (re-auth u dostawcy — to funkcja, a dokument do dziś sugerował, że już działa).
+- **DECYZJA WŁAŚCICIELA, runda 3 (DB-14 cz. 2) — ZROBIONE 2026-09-13: „configurability, Rebuild =
+  wartość rekomendowana przez prawo".** Konto, którego adresu NIKT nigdy nie potwierdził, żyło
+  wiecznie: adres i hash hasła trzymane bez celu, i blokujące ten adres komuś, kto może naprawdę
+  jest jego właścicielem. Teraz `UnverifiedAccountDays` w drabince (`security.retention.unverified.
+  account.days`, 3-365) — DWA szczeble, nie trzy: skrócenie retencji KASUJE konta, więc to sprawa
+  release'u albo deploymentu, a nie przycisku w panelu. Default = 30 dni, bo prawo daje ZASADĘ
+  („nie dłużej, niż wymaga cel", art. 5(1)(e) RODO), a nie liczbę — a 30 to tyle samo, co retencja
+  samego WIERSZA weryfikacji, więc jedna liczba opowiada jedną historię: miesiąc po tym, jak ktoś
+  wpisał adres i nigdy go nie potwierdził, nie zostaje nic.
+  V30 dokłada `users.created_at` (istniejące wiersze backfillowane na DZIŚ — bezpieczny kierunek,
+  nikt nie traci konta przez zmianę schematu). Żniwiarz idzie przez `DeleteAccount`, a nie przez
+  DELETE: konto to nie jeden wiersz. Sagi nie otwiera — niezweryfikowane konto nigdy się nie
+  zalogowało, więc w portalu nie ma czego kasować. Wiersze `pending_deletion` pomija (nie wyścigamy
+  się z sagą, która już je kasuje).
 - **Otwarte z raportu — stan na 2026-09-12 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
   wszystkie MEDIUM (w tym DOM-2 i DB-8 po decyzji właściciela) oraz paczki LOW 1–10 (opisane
   wyżej). Zostaje:
@@ -492,8 +506,7 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
     COPY, więc zostawiam); MFA-13 — licznik podpisów ignorowany i flaga UV niewymagana (raport sam
     zauważa, że synchronizowane passkeye i tak raportują 0, a wymaganie UV zderza się z
     `userVerification: 'preferred'`); ACC-8 — żeby odmówić zdjęcia roli OSTATNIEMU
-    adminowi, `UserRepository` musi umieć policzyć adminów (nowa metoda portu); DB-14 cz. 2 — po ilu dniach kasujemy konto,
-    którego NIKT nigdy nie zweryfikował (to decyzja produktowa, nie sprzątanie); DOM-9 —
+    adminowi, `UserRepository` musi umieć policzyć adminów (nowa metoda portu); DOM-9 —
     `UserRegistration` jest martwy, ale to Twój pakiet domeny; DOM-12 — nazwy (`AccessToken` vs
     `AuthorizationTokenExpiration`/`AuthorizationDataRepository`); DOM-8 — `SessionTokens.createFor`
     domyśla `AccessTokenMint.RANDOM`, używają tego tylko testy; DOM-13 — ważność tokenu w pełnych

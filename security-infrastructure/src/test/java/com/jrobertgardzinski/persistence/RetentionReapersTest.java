@@ -18,7 +18,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Retention for the five tables that had none (poz. 10, 24), against a real PostgreSQL — the
+ * Retention for the six tables that had none (poz. 10, 24), against a real PostgreSQL — the
  * predicates carry the whole weight here, so a fake store would prove nothing about them.
  *
  * <p>Each case pins the same two things: the row that is history goes, and the row that still has a
@@ -186,12 +186,52 @@ class RetentionReapersTest {
                 .isPresent();
     }
 
+    @Test
+    @DisplayName("an account nobody ever verified is deleted; a verified one and a fresh one stay")
+    void unverifiedAccountRetention() {
+        UserJdbcRepository users = context.getBean(UserJdbcRepository.class);
+        EmailVerificationJdbcRepository verifications =
+                context.getBean(EmailVerificationJdbcRepository.class);
+        LocalDateTime now = LocalDateTime.now();
+        // the window is a deployment's choice and defaults to 30 days; twice that is past it under
+        // any zone, the same trick the verification sweep's case uses
+        LocalDateTime ancient = now.minus(ANCIENT.multipliedBy(2));
+
+        UUID abandoned = userRow(users, "never-confirmed@example.com", ancient);
+        UUID confirmed = userRow(users, "confirmed-long-ago@example.com", ancient);
+        verifications.save(new EmailVerificationEntity(
+                "confirmed-long-ago@example.com", null, true, ancient));
+        UUID fresh = userRow(users, "registered-today@example.com", now);
+
+        context.getBean(UnverifiedAccountReaper.class).reap();
+
+        assertThat(users.findById(abandoned))
+                .as("an address somebody typed once and never confirmed, with a password hash"
+                        + " beside it, kept for nothing — and holding that address against whoever"
+                        + " might really own it")
+                .isEmpty();
+        assertThat(users.findById(confirmed))
+                .as("a VERIFIED account is not retention's business at any age; deleting it here"
+                        + " would delete people's accounts on a timer")
+                .isPresent();
+        assertThat(users.findById(fresh))
+                .as("somebody who registered today still has a link to click")
+                .isPresent();
+    }
+
     private static UUID outboxRow(OutboxEventJdbcRepository events, Instant createdAt,
                                   Instant publishedAt, Instant failedAt) {
         UUID id = UUID.randomUUID();
         events.save(new OutboxEventEntity(id, "mail-requests", "subject@example.com",
                 "{\"type\":\"ACCOUNT_DELETED\",\"to\":\"subject@example.com\"}",
                 createdAt, publishedAt, null, null, failedAt));
+        return id;
+    }
+
+    /** A user row through the repository, with the one field retention reads. */
+    private static UUID userRow(UserJdbcRepository users, String email, LocalDateTime openedAt) {
+        UUID id = UUID.randomUUID();
+        users.save(new UserEntity(id, email, email, "argon2-hash", false, "USER", openedAt));
         return id;
     }
 

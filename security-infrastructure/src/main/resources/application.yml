@@ -96,6 +96,14 @@ security:
   # step.up.change.email: FULL_CHAIN
   # step.up.admin.roles: FULL_CHAIN
   # step.up.admin.settings: FULL_CHAIN
+  # How long an account whose address was NEVER verified is kept, in days (3-365, default 30).
+  # Two levels only — a release or a deployment — because shortening a retention period DELETES
+  # accounts, and a live setting would be a deletion button on a web form. The law gives the
+  # principle ("no longer than the purpose needs", GDPR art. 5(1)(e)) and leaves the number to
+  # whoever can say what the purpose is; 30 matches the verification ROW's own retention, so one
+  # number tells one story.
+  # retention.unverified.account.days: 30
+  #
   # The per-source windows, one instance per expensive endpoint so a burst against one cannot
   # starve another (BeanFactory, @Named). These are deployment-level only — a property or the
   # environment, never the live table — and 0 disables an instance (which is what the test profile
