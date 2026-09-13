@@ -1,3 +1,5 @@
+import { WEBAUTHN_RP_ID } from './lib';
+
 // The browser half of the WebAuthn factor: turn the server's challenge into a real
 // navigator.credentials call and pack the result into the flat base64url envelopes the
 // server verifies. All binary crosses the wire as base64url, matching WebauthnFactor.
@@ -27,6 +29,8 @@ interface CreationOptions {
   challenge: string;
   rpId: string;
   rpName: string;
+  /** Opaque, 32 bytes, minted by the server — never the address (see WebauthnFactor). */
+  userId?: string;
   userName: string;
 }
 
@@ -34,7 +38,12 @@ interface CreationOptions {
  *  attestation envelope the confirm endpoint expects (or null if the user cancels). */
 export async function enrolPasskey(display: string): Promise<string | null> {
   const options: CreationOptions = JSON.parse(display);
-  const userId = new TextEncoder().encode(options.userName);
+  // The handle the authenticator keeps for this account. It used to be the e-mail: personal data
+  // written into a device this service does not own and cannot erase, offered to every relying
+  // party the key is later presented to — and the spec caps the handle at 64 bytes, so a long
+  // address failed to enrol at all. The server now mints an opaque one; the fallback is for a
+  // server that has not been updated yet, and the address is still what the user SEES (userName).
+  const userId = options.userId ? dec(options.userId) : new TextEncoder().encode(options.userName);
   const credential = (await navigator.credentials.create({
     publicKey: {
       challenge: dec(options.challenge),
@@ -61,6 +70,13 @@ export async function assertPasskey(challengeNonce: string): Promise<string | nu
   const credential = (await navigator.credentials.get({
     publicKey: {
       challenge: dec(challengeNonce),
+      // Which relying party to look for a key under. Omitted, the browser uses the page's own
+      // effective domain — which is right only while the deployment's security.webauthn.rp-id
+      // happens to equal the host serving this page. Point the UI at a service whose rp id is the
+      // registrable domain (app.example.com vs example.com, the usual arrangement) and the
+      // credential enrolled under one name is invisible under the other: sign-in simply finds no
+      // passkey, with nothing to read anywhere.
+      ...(WEBAUTHN_RP_ID ? { rpId: WEBAUTHN_RP_ID } : {}),
       userVerification: 'preferred',
       timeout: 60000,
     },

@@ -380,6 +380,27 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   ODŁOŻONE: AUTH-11 (blok z pułapu SOURCE czyści tylko bieżącą parę, więc adres siedzi na pułapie do
   przesunięcia okna) — uczciwa naprawa potrzebuje `removeAllFor(Source)` w porcie
   `RejectedAuthenticationRepository`, czyli znowu zmiany kształtu Twojej domeny.
+- **LOW, paczka 13 — prawo zamiast przykładu i dwie rzeczy w przeglądarce
+  (TEST-5, TEST-12, TEST-13, UI-10, UI-11) — ZROBIONE 2026-09-13.**
+  TEST-5: zasięg `AuthorizationFilter` to lista wzorców pisana RĘCZNIE — nic nie wiązało jej ze
+  zbiorem kontrolerów, więc nowy kontroler był chroniony tylko wtedy, gdy ktoś pamiętał, a
+  zapomnienie NIE MA objawów (endpoint działa, testy wysyłają token). `GuardedPathsTest` to prawo:
+  każdy kontroler albo jest za filtrem, albo stoi na liście DELIBERATELY_PUBLIC z powodem. Od razu
+  złapał `/test/clock` (z biblioteki zegara), o którym nie wiedziałem.
+  TEST-13: `AccountDeletionTimeouts` jest `@Requires(notEnv = "test")`, więc ŻADNA suita nigdy go
+  nie uruchamiała — a to jedyna rzecz, która odblokowuje konto, na które werdykt portalu nie
+  przyszedł. Dowody: zamiatanie idzie W TRANSAKCJI (odblokowanie + mail przeprosinowy to jedna
+  jednostka pracy) i tik, który padł, NIE JEST ostatni (dodany `catch` jak w reaperach).
+  TEST-12: `StartAccountDeletion` nie miał żadnego testu — scenariusz przeglądarkowy sprawdzał
+  tylko token WOŁAJĄCEGO, co spełniłoby też unieważnienie jednej sesji. Teraz: blokada PRZED
+  purge'em, `revokeAllSessions` (nie `revokeFamily`), i że żądanie WŁAŚCICIELA gubi warunki.
+  UI-11: uchwytem użytkownika w passkeyu był E-MAIL — dane osobowe zapisane w cudzym urządzeniu,
+  którego ta usługa nie skasuje, a spec ma twardy limit 64 bajtów (dłuższy adres NIE ENROLOWAŁ
+  SIĘ). Serwer mintuje teraz nieprzezroczysty uchwyt (32 B, SHA-256 po `rpId|adres`), adres zostaje
+  tylko jako `userName`, czyli to, co widzi człowiek.
+  UI-10: asercja passkeya nie podawała `rpId`, więc przeglądarka szukała klucza pod domeną STRONY —
+  dobre tylko dopóki `security.webauthn.rp-id` równa się hostowi UI. `WEBAUTHN_RP_ID` w `lib.ts`
+  tą samą drabinką co `SECURITY` (window → VITE → puste = domena strony).
 - **Otwarte z raportu — stan na 2026-09-12 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
   wszystkie MEDIUM (w tym DOM-2 i DB-8 po decyzji właściciela) oraz paczki LOW 1–10 (opisane
   wyżej). Zostaje:
@@ -397,7 +418,7 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   - **czysta robota, nikogo nie pytam (następna kolejka):** MFA-9 (passwordless z zerem czynników
     jest „elevated" dla FULL_CHAIN), MFA-10 (ziarna TOTP jawne, choć javadoc/V11/docs obiecują
     szyfrowanie — potrzebny klucz, więc pół-decyzja), AUTH-15 i TEST-2/5/6/7/11/12/13 (testy
-    pinowane wyłącznie mockami), UI-9/10/11/13/14. ATK-8 (limity po dokładnym adresie, IPv6 rotuje
+    pinowane wyłącznie mockami), UI-9/13/14, TEST-2/6/7. ATK-8 (limity po dokładnym adresie, IPv6 rotuje
     w /64) raport SAM nazywa udokumentowaną osią — nic do roboty poza decyzją o podsieci.
 
 ## ~~Otwarte — pilne (2026-08-08)~~ — ZAMKNIĘTE, sekcja była NIEAKTUALNA (sprostowane 2026-09-12)

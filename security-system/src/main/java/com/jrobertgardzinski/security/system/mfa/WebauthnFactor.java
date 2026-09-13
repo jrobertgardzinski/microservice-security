@@ -83,8 +83,27 @@ public class WebauthnFactor implements AuthenticationFactor {
                 + "\"challenge\":\"" + b64(nonce) + "\","
                 + "\"rpId\":\"" + rpId + "\","
                 + "\"rpName\":\"" + rpName + "\","
+                + "\"userId\":\"" + b64(userHandleFor(accountName)) + "\","
                 + "\"userName\":\"" + accountName + "\"}";
         return new EnrolmentSetup("", creationOptions, challengeOf(nonce));
+    }
+
+    /**
+     * The opaque handle the authenticator stores for this account — 32 bytes, and never the
+     * address itself.
+     *
+     * <p>The browser used to send the e-mail as the user handle, which is personal data written
+     * into a device the service does not own and cannot erase, readable by every relying party the
+     * key is later offered to. It also has a hard 64-byte ceiling in the spec, so a long address
+     * simply failed to enrol. A hash over the rp id and the address is stable (the same account
+     * gets the same handle, which is what a resident key needs), meaningless outside this service,
+     * and always the same size.
+     *
+     * <p>It is derived rather than stored because nothing needs to reverse it: WebAuthn hands the
+     * handle back at sign-in, and this service identifies the credential by its id.
+     */
+    private byte[] userHandleFor(String accountName) {
+        return sha256((rpId + "|" + accountName).getBytes(StandardCharsets.UTF_8));
     }
 
     @Override

@@ -13,6 +13,15 @@ export const SECURITY =
   ?? (import.meta.env?.VITE_SECURITY_URL as string | undefined)
   ?? 'http://localhost:8080';
 
+// The relying-party id this deployment's passkeys live under — the server's
+// security.webauthn.rp-id, answered the same way SECURITY is (runtime injection, then build time).
+// Empty means "the page's own domain", which is the right answer whenever the two agree and the
+// only answer the browser can work out for itself.
+export const WEBAUTHN_RP_ID =
+  (window as unknown as { WEBAUTHN_RP_ID?: string }).WEBAUTHN_RP_ID
+  ?? (import.meta.env?.VITE_WEBAUTHN_RP_ID as string | undefined)
+  ?? '';
+
 export type Mode = 'signin' | 'signup' | 'inbox' | 'mfa' | 'me' | 'forgot' | 'reset';
 export type Factor = { type: string; label: string };
 export type Session = { family: string; expiresAt: string };
