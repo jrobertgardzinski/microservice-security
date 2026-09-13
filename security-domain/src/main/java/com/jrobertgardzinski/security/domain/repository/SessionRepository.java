@@ -22,7 +22,7 @@ import java.util.Optional;
  * {@link SessionFamily} revoked. How tokens are matched (e.g. by a stored hash) is left to the
  * implementation.
  */
-public interface AuthorizationDataRepository {
+public interface SessionRepository {
 
     SessionTokens create(SessionTokens sessionTokens, SessionFamily family);
 

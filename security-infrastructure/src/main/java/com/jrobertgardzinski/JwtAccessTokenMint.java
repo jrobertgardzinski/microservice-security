@@ -5,7 +5,7 @@ import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.Role;
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.AuthorizationTokenExpiration;
+import com.jrobertgardzinski.security.domain.vo.token.expiration.AccessTokenExpiration;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.json.JsonMapper;
 import jakarta.inject.Singleton;
@@ -82,7 +82,7 @@ class JwtAccessTokenMint implements AccessTokenMint {
     }
 
     @Override
-    public AccessToken mint(Email email, AuthorizationTokenExpiration expiration) {
+    public AccessToken mint(Email email, AccessTokenExpiration expiration) {
         // the roles IN FORCE, which include the ADMIN a bootstrap administrator holds by
         // configuration rather than by a row — the claim other services gate on must say the same
         // thing /admin/** does

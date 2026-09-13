@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.session;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 
 /**
  * Logs a user out everywhere: revokes every session the user holds, across all lineages, so no
@@ -10,13 +10,13 @@ import com.jrobertgardzinski.security.domain.repository.AuthorizationDataReposit
  */
 public class RevokeAllSessions {
 
-    private final AuthorizationDataRepository authorizationDataRepository;
+    private final SessionRepository sessionRepository;
 
-    public RevokeAllSessions(AuthorizationDataRepository authorizationDataRepository) {
-        this.authorizationDataRepository = authorizationDataRepository;
+    public RevokeAllSessions(SessionRepository sessionRepository) {
+        this.sessionRepository = sessionRepository;
     }
 
     public void execute(Email email) {
-        authorizationDataRepository.revokeAllSessions(email);
+        sessionRepository.revokeAllSessions(email);
     }
 }

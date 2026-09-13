@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.system.account;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.port.ContentPurge;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.AccountClosure;
 
@@ -19,20 +19,20 @@ import com.jrobertgardzinski.security.domain.vo.AccountClosure;
 public class StartAccountDeletion {
 
     private final UserRepository userRepository;
-    private final AuthorizationDataRepository authorizationDataRepository;
+    private final SessionRepository sessionRepository;
     private final ContentPurge contentPurge;
 
     public StartAccountDeletion(UserRepository userRepository,
-                                AuthorizationDataRepository authorizationDataRepository,
+                                SessionRepository sessionRepository,
                                 ContentPurge contentPurge) {
         this.userRepository = userRepository;
-        this.authorizationDataRepository = authorizationDataRepository;
+        this.sessionRepository = sessionRepository;
         this.contentPurge = contentPurge;
     }
 
     public void execute(AccountClosure closure) {
         Email email = closure.target();
-        authorizationDataRepository.revokeAllSessions(email);
+        sessionRepository.revokeAllSessions(email);
         userRepository.markPendingDeletion(email);
         contentPurge.begin(closure);
     }

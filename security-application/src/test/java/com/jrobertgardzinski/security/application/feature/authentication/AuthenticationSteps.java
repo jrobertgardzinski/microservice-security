@@ -4,7 +4,7 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.application.feature.support.FakeHashAlgorithm;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryAuthenticationBlockRepository;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryAuthorizationDataRepository;
+import com.jrobertgardzinski.security.application.feature.support.InMemorySessionRepository;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryEmailVerificationRepository;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryRejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryUserRepository;
@@ -58,7 +58,7 @@ public class AuthenticationSteps {
     private final AdjustableClock clock = new AdjustableClock(Instant.parse("2026-06-15T10:00:00Z"), ZoneOffset.UTC);
     // declared after the clock on purpose: the session store now answers listActiveSessions against
     // it, the same way both production adapters do
-    private final InMemoryAuthorizationDataRepository sessions = new InMemoryAuthorizationDataRepository(clock);
+    private final InMemorySessionRepository sessions = new InMemorySessionRepository(clock);
     private final FakeHashAlgorithm hashAlgorithm = new FakeHashAlgorithm();
     private final BlockDurationPolicy blockDuration = () -> FIXED_BLOCK_MINUTES;
 

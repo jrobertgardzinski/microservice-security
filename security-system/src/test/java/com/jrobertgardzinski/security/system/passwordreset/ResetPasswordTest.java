@@ -6,7 +6,7 @@ import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.repository.PasswordResetRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.token.PasswordResetToken;
@@ -56,7 +56,7 @@ class ResetPasswordTest {
 
     private PasswordResetRepository passwordResetRepository;
     private UserRepository userRepository;
-    private AuthorizationDataRepository sessions;
+    private SessionRepository sessions;
     private ResetPassword resetPassword;
 
     @BeforeTry
@@ -67,7 +67,7 @@ class ResetPasswordTest {
         // clicked after the account it was issued for is gone
         Mockito.when(userRepository.findBy(EMAIL)).thenReturn(Optional.of(
                 new com.jrobertgardzinski.security.domain.entity.User(EMAIL, new HashedPassword("hash:old"))));
-        sessions = Mockito.mock(AuthorizationDataRepository.class);
+        sessions = Mockito.mock(SessionRepository.class);
         resetPassword = new ResetPassword(passwordResetRepository, userRepository,
                 FAKE_ALGORITHM, PasswordPolicy::withDefaults,
                 new com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository() {

@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.domain.port;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.AuthorizationTokenExpiration;
+import com.jrobertgardzinski.security.domain.vo.token.expiration.AccessTokenExpiration;
 
 /**
  * Outbound port that mints the access-token VALUE for a new session. The domain does not care what
@@ -13,7 +13,7 @@ import com.jrobertgardzinski.security.domain.vo.token.expiration.AuthorizationTo
 @FunctionalInterface
 public interface AccessTokenMint {
 
-    AccessToken mint(Email email, AuthorizationTokenExpiration expiration);
+    AccessToken mint(Email email, AccessTokenExpiration expiration);
 
     /** Opaque random values — the minimal mint, right for unit tests and fallbacks. */
     AccessTokenMint RANDOM = (email, expiration) -> AccessToken.random();

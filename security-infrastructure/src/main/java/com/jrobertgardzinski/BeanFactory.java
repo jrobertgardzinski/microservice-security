@@ -40,7 +40,7 @@ import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
 import com.jrobertgardzinski.security.domain.port.EmailVerificationNotifier;
 import com.jrobertgardzinski.security.domain.port.PasswordResetNotifier;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.repository.EmailChangeRepository;
 import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.repository.PasswordResetRepository;
@@ -503,7 +503,7 @@ public class BeanFactory {
             EmailVerificationRepository emailVerificationRepository,
             RejectedAuthenticationRepository rejectedAuthenticationRepository,
             AuthenticationBlockRepository authenticationBlockRepository,
-            AuthorizationDataRepository authorizationDataRepository,
+            SessionRepository sessionRepository,
             HashAlgorithmPort hashAlgorithm,
             BruteForceConfig bruteForceConfig,
             SessionTokensConfig sessionTokensConfig,
@@ -515,7 +515,7 @@ public class BeanFactory {
             com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore pendingAuthenticationStore) {
         return AuthenticationFactory.assemble(
                 userRepository, emailVerificationRepository, rejectedAuthenticationRepository,
-                authenticationBlockRepository, authorizationDataRepository, hashAlgorithm,
+                authenticationBlockRepository, sessionRepository, hashAlgorithm,
                 bruteForceConfig, sessionTokensConfig, clock, blockDurationPolicy, accessTokenMint,
                 enrolledFactorRepository, mfaChain, pendingAuthenticationStore);
     }
@@ -533,12 +533,12 @@ public class BeanFactory {
 
     @Singleton
     RefreshSession refreshSession(
-            AuthorizationDataRepository authorizationDataRepository,
+            SessionRepository sessionRepository,
             Clock clock,
             SessionTokensConfig sessionTokensConfig,
             AccessTokenMint accessTokenMint,
             com.jrobertgardzinski.security.config.session.vo.MaxSessionLifetimeHours maxLifetime) {
-        return new RefreshSession(authorizationDataRepository, clock, sessionTokensConfig, accessTokenMint,
+        return new RefreshSession(sessionRepository, clock, sessionTokensConfig, accessTokenMint,
                 java.time.Duration.ofHours(maxLifetime.value()));
     }
 
@@ -557,23 +557,23 @@ public class BeanFactory {
     }
 
     @Singleton
-    Authorize authorize(AuthorizationDataRepository authorizationDataRepository, Clock clock) {
-        return new Authorize(authorizationDataRepository, clock);
+    Authorize authorize(SessionRepository sessionRepository, Clock clock) {
+        return new Authorize(sessionRepository, clock);
     }
 
     @Singleton
-    Logout logout(AuthorizationDataRepository authorizationDataRepository) {
-        return new Logout(authorizationDataRepository);
+    Logout logout(SessionRepository sessionRepository) {
+        return new Logout(sessionRepository);
     }
 
     @Singleton
-    RevokeAllSessions revokeAllSessions(AuthorizationDataRepository authorizationDataRepository) {
-        return new RevokeAllSessions(authorizationDataRepository);
+    RevokeAllSessions revokeAllSessions(SessionRepository sessionRepository) {
+        return new RevokeAllSessions(sessionRepository);
     }
 
     @Singleton
-    ListActiveSessions listActiveSessions(AuthorizationDataRepository authorizationDataRepository) {
-        return new ListActiveSessions(authorizationDataRepository);
+    ListActiveSessions listActiveSessions(SessionRepository sessionRepository) {
+        return new ListActiveSessions(sessionRepository);
     }
 
     @Singleton
@@ -607,7 +607,7 @@ public class BeanFactory {
     ResetPassword resetPassword(PasswordResetRepository passwordResetRepository, UserRepository userRepository,
                                 HashAlgorithmPort hashAlgorithm,
                                 com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,
-                                AuthorizationDataRepository sessions,
+                                SessionRepository sessions,
                                 @io.micronaut.context.annotation.Value("${security.password-reset.ttl-minutes:60}")
                                 int resetTtlMinutes,
                                 Clock clock,
@@ -668,7 +668,7 @@ public class BeanFactory {
 
     @Singleton
     ChangePassword changePassword(UserRepository userRepository, HashAlgorithmPort hashAlgorithm,
-                                  AuthorizationDataRepository sessions,
+                                  SessionRepository sessions,
                                   PasswordPolicyInForce passwordPolicy) {
         return new ChangePassword(userRepository, hashAlgorithm, passwordPolicy, sessions);
     }
@@ -694,19 +694,19 @@ public class BeanFactory {
                                           com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository
                                                   passwordlessAccountRepository,
                                           PasswordResetRepository passwordResetRepository,
-                                          AuthorizationDataRepository authorizationDataRepository,
+                                          SessionRepository sessionRepository,
                                           @io.micronaut.context.annotation.Value(
                                                   "${security.email-change.ttl-minutes:1440}")
                                           int changeTtlMinutes,
                                           Clock clock) {
         return new ConfirmEmailChange(emailChangeRepository, userRepository, emailVerificationRepository,
                 federatedIdentityRepository, enrolledFactorRepository, recoveryCodeRepository,
-                passwordlessAccountRepository, passwordResetRepository, authorizationDataRepository,
+                passwordlessAccountRepository, passwordResetRepository, sessionRepository,
                 java.time.Duration.ofMinutes(changeTtlMinutes), clock);
     }
 
     @Singleton
-    DeleteAccount deleteAccount(UserRepository userRepository, AuthorizationDataRepository authorizationDataRepository,
+    DeleteAccount deleteAccount(UserRepository userRepository, SessionRepository sessionRepository,
                                 com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactorRepository,
                                 com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository recoveryCodeRepository,
                                 com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository federatedIdentityRepository,
@@ -714,7 +714,7 @@ public class BeanFactory {
                                 PasswordResetRepository passwordResetRepository,
                                 EmailChangeRepository emailChangeRepository,
                                 com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordlessAccountRepository) {
-        return new DeleteAccount(userRepository, authorizationDataRepository,
+        return new DeleteAccount(userRepository, sessionRepository,
                 enrolledFactorRepository, recoveryCodeRepository, federatedIdentityRepository,
                 emailVerificationRepository, passwordResetRepository, emailChangeRepository,
                 passwordlessAccountRepository);
@@ -725,7 +725,7 @@ public class BeanFactory {
             com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository federatedIdentities,
             UserRepository userRepository,
             EmailVerificationRepository emailVerificationRepository,
-            AuthorizationDataRepository authorizationDataRepository,
+            SessionRepository sessionRepository,
             HashAlgorithmPort hashAlgorithm,
             SessionTokensConfig sessionTokensConfig,
             Clock clock,
@@ -736,14 +736,14 @@ public class BeanFactory {
             com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore pendingStore) {
         return new com.jrobertgardzinski.security.system.federation.FederatedSignIn(
                 federatedIdentities, userRepository, emailVerificationRepository,
-                authorizationDataRepository, hashAlgorithm, sessionTokensConfig, clock, accessTokenMint,
+                sessionRepository, hashAlgorithm, sessionTokensConfig, clock, accessTokenMint,
                 passwordless, enrolledFactors, mfaChain, pendingStore);
     }
 
     @Singleton
     StartAccountDeletion startAccountDeletion(UserRepository userRepository,
-                                              AuthorizationDataRepository authorizationDataRepository,
+                                              SessionRepository sessionRepository,
                                               ContentPurge saga) {
-        return new StartAccountDeletion(userRepository, authorizationDataRepository, saga);
+        return new StartAccountDeletion(userRepository, sessionRepository, saga);
     }
 }

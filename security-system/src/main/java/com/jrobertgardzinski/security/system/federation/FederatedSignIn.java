@@ -7,7 +7,7 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
@@ -45,7 +45,7 @@ public class FederatedSignIn {
     private final FederatedIdentityRepository identities;
     private final UserRepository users;
     private final EmailVerificationRepository verifications;
-    private final AuthorizationDataRepository sessions;
+    private final SessionRepository sessions;
     private final HashAlgorithmPort hashAlgorithm;
     private final SessionTokensConfig config;
     private final Clock clock;
@@ -56,7 +56,7 @@ public class FederatedSignIn {
     private final com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore pendingStore;
 
     public FederatedSignIn(FederatedIdentityRepository identities, UserRepository users,
-                           EmailVerificationRepository verifications, AuthorizationDataRepository sessions,
+                           EmailVerificationRepository verifications, SessionRepository sessions,
                            HashAlgorithmPort hashAlgorithm, SessionTokensConfig config, Clock clock,
                            AccessTokenMint accessTokenMint,
                            com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,

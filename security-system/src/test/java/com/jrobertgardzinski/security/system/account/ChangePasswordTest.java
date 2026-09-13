@@ -7,7 +7,7 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -43,13 +43,13 @@ class ChangePasswordTest {
     };
 
     private UserRepository userRepository;
-    private AuthorizationDataRepository sessions;
+    private SessionRepository sessions;
     private ChangePassword changePassword;
 
     @BeforeTry
     void init() {
         userRepository = Mockito.mock(UserRepository.class);
-        sessions = Mockito.mock(AuthorizationDataRepository.class);
+        sessions = Mockito.mock(SessionRepository.class);
         Mockito.when(userRepository.findBy(EMAIL)).thenReturn(Optional.of(
                 new User(EMAIL, new HashedPassword("hash:OldPassword1!"))));
         changePassword = new ChangePassword(userRepository, FAKE_ALGORITHM,

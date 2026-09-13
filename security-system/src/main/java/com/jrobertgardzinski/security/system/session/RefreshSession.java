@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.system.session;
 
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
 import com.jrobertgardzinski.security.domain.vo.SessionStatus;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
@@ -11,16 +11,16 @@ import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 import java.time.Clock;
 
 public class RefreshSession {
-    private final AuthorizationDataRepository authorizationDataRepository;
+    private final SessionRepository sessionRepository;
     private final Clock clock;
     private final SessionTokensConfig config;
     private final AccessTokenMint accessTokenMint;
     private final java.time.Duration maxSessionLifetime;
 
-    public RefreshSession(AuthorizationDataRepository authorizationDataRepository, Clock clock,
+    public RefreshSession(SessionRepository sessionRepository, Clock clock,
                           SessionTokensConfig config, AccessTokenMint accessTokenMint,
                           java.time.Duration maxSessionLifetime) {
-        this.authorizationDataRepository = authorizationDataRepository;
+        this.sessionRepository = sessionRepository;
         this.clock = clock;
         this.config = config;
         this.accessTokenMint = accessTokenMint;
@@ -30,11 +30,11 @@ public class RefreshSession {
     public RefreshSessionResult execute(SessionRefreshRequest request) {
         RefreshToken refreshToken = request.refreshToken();
 
-        return authorizationDataRepository.findByRefreshToken(refreshToken)
+        return sessionRepository.findByRefreshToken(refreshToken)
                 .<RefreshSessionResult>map(session -> {
                     if (session.status() == SessionStatus.ROTATED) {
                         // this refresh token was already rotated away — a replay signals theft
-                        authorizationDataRepository.revokeFamily(session.family());
+                        sessionRepository.revokeFamily(session.family());
                         return new RefreshSessionResult.ReuseDetected();
                     }
                     if (session.refreshTokenExpiration().hasExpired(clock)) {
@@ -49,7 +49,7 @@ public class RefreshSession {
                         // the family goes with it: leaving the rotated rows behind would let the
                         // presented token be replayed into a theft report for a session that simply
                         // grew old
-                        authorizationDataRepository.revokeFamily(session.family());
+                        sessionRepository.revokeFamily(session.family());
                         return new RefreshSessionResult.Expired(session.email());
                     }
                     // Single-use: rotate the presented token out, issue a new one in the same family.
@@ -74,13 +74,13 @@ public class RefreshSession {
                     // below performs — could land between them, destroying the lineage and then
                     // having a successor written into it: a live session inside a family the
                     // service reports as revoked.
-                    return authorizationDataRepository.rotateAndCreate(
+                    return sessionRepository.rotateAndCreate(
                                     refreshToken,
                                     () -> SessionTokens.createFor(session.email(), config, clock, accessTokenMint),
                                     session.family())
                             .<RefreshSessionResult>map(RefreshSessionResult.Refreshed::new)
                             .orElseGet(() -> {
-                                authorizationDataRepository.revokeFamily(session.family());
+                                sessionRepository.revokeFamily(session.family());
                                 return new RefreshSessionResult.ReuseDetected();
                             });
                 })

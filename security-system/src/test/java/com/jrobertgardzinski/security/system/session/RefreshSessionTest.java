@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.system.session;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.SessionFamily;
@@ -50,12 +50,12 @@ class RefreshSessionTest {
     /** The ceiling on a whole sign-in, however often it is refreshed. */
     private static final java.time.Duration MAX_LIFETIME = java.time.Duration.ofDays(30);
 
-    private AuthorizationDataRepository authorizationDataRepository;
+    private SessionRepository sessionRepository;
     private RefreshSession refreshSession;
 
     @BeforeTry
     void init() {
-        authorizationDataRepository = Mockito.mock(AuthorizationDataRepository.class);
+        sessionRepository = Mockito.mock(SessionRepository.class);
         // rotateAndCreate is a default method on the port — the use case calls it because the
         // rotation and the successor's write must be ONE step (a concurrent revokeFamily between
         // them leaves a live session in a revoked lineage).
@@ -67,9 +67,9 @@ class RefreshSessionTest {
         // the port drifted apart. A test that cannot fail for the reason it names is the defect
         // this project spent two days removing. markRotated and create stay stubbable per example,
         // which is all these cases actually need to steer.
-        Mockito.when(authorizationDataRepository.rotateAndCreate(Mockito.any(), Mockito.any(), Mockito.any()))
+        Mockito.when(sessionRepository.rotateAndCreate(Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenCallRealMethod();
-        refreshSession = new RefreshSession(authorizationDataRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM, MAX_LIFETIME);
+        refreshSession = new RefreshSession(sessionRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM, MAX_LIFETIME);
     }
 
     @Example
@@ -84,16 +84,16 @@ class RefreshSessionTest {
         // conservative reading is the only safe one — a benign double refresh costs a sign-in, an
         // undetected stolen token costs the account.
         StoredSession session = storedSession(LocalDateTime.now(CLOCK).plusHours(1), SessionStatus.ACTIVE);
-        Mockito.when(authorizationDataRepository.findByRefreshToken(GIVEN.refreshToken))
+        Mockito.when(sessionRepository.findByRefreshToken(GIVEN.refreshToken))
                 .thenReturn(Optional.of(session));
-        Mockito.when(authorizationDataRepository.markRotated(GIVEN.refreshToken)).thenReturn(false);
+        Mockito.when(sessionRepository.markRotated(GIVEN.refreshToken)).thenReturn(false);
 
         RefreshSessionResult result = refreshSession.execute(GIVEN.request);
 
         assertInstanceOf(RefreshSessionResult.ReuseDetected.class, result);
         assertAll(
-                () -> Mockito.verify(authorizationDataRepository).revokeFamily(FAMILY),
-                () -> Mockito.verify(authorizationDataRepository, Mockito.never())
+                () -> Mockito.verify(sessionRepository).revokeFamily(FAMILY),
+                () -> Mockito.verify(sessionRepository, Mockito.never())
                         .create(Mockito.any(), Mockito.any())
         );
     }
@@ -103,21 +103,21 @@ class RefreshSessionTest {
     void refreshed_when_active_and_not_expired() {
         StoredSession session = storedSession(LocalDateTime.now(CLOCK).plusHours(1), SessionStatus.ACTIVE);
         SessionTokens createdTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
-        Mockito.when(authorizationDataRepository.findByRefreshToken(GIVEN.refreshToken))
+        Mockito.when(sessionRepository.findByRefreshToken(GIVEN.refreshToken))
                 .thenReturn(Optional.of(session));
-        Mockito.when(authorizationDataRepository.create(Mockito.any(), Mockito.eq(FAMILY)))
+        Mockito.when(sessionRepository.create(Mockito.any(), Mockito.eq(FAMILY)))
                 .thenReturn(createdTokens);
         // this caller wins the rotation — the conditional write changed a row
-        Mockito.when(authorizationDataRepository.markRotated(GIVEN.refreshToken)).thenReturn(true);
+        Mockito.when(sessionRepository.markRotated(GIVEN.refreshToken)).thenReturn(true);
 
         RefreshSessionResult result = refreshSession.execute(GIVEN.request);
 
         RefreshSessionResult.Refreshed refreshed = assertInstanceOf(RefreshSessionResult.Refreshed.class, result);
         assertAll(
                 () -> assertEquals(createdTokens, refreshed.sessionTokens()),
-                () -> Mockito.verify(authorizationDataRepository).markRotated(GIVEN.refreshToken),
-                () -> Mockito.verify(authorizationDataRepository).create(Mockito.any(), Mockito.eq(FAMILY)),
-                () -> Mockito.verify(authorizationDataRepository, Mockito.never()).revokeFamily(Mockito.any())
+                () -> Mockito.verify(sessionRepository).markRotated(GIVEN.refreshToken),
+                () -> Mockito.verify(sessionRepository).create(Mockito.any(), Mockito.eq(FAMILY)),
+                () -> Mockito.verify(sessionRepository, Mockito.never()).revokeFamily(Mockito.any())
         );
     }
 
@@ -125,7 +125,7 @@ class RefreshSessionTest {
     @Label("Expired: an active but expired token is rejected, nothing is rotated")
     void expired_when_active_but_expired() {
         StoredSession session = storedSession(LocalDateTime.now(CLOCK).minusHours(1), SessionStatus.ACTIVE);
-        Mockito.when(authorizationDataRepository.findByRefreshToken(GIVEN.refreshToken))
+        Mockito.when(sessionRepository.findByRefreshToken(GIVEN.refreshToken))
                 .thenReturn(Optional.of(session));
 
         RefreshSessionResult result = refreshSession.execute(GIVEN.request);
@@ -133,36 +133,36 @@ class RefreshSessionTest {
         RefreshSessionResult.Expired expired = assertInstanceOf(RefreshSessionResult.Expired.class, result);
         assertAll(
                 () -> assertEquals(GIVEN.email, expired.email()),
-                () -> Mockito.verify(authorizationDataRepository, Mockito.never()).markRotated(Mockito.any()),
-                () -> Mockito.verify(authorizationDataRepository, Mockito.never()).create(Mockito.any(), Mockito.any())
+                () -> Mockito.verify(sessionRepository, Mockito.never()).markRotated(Mockito.any()),
+                () -> Mockito.verify(sessionRepository, Mockito.never()).create(Mockito.any(), Mockito.any())
         );
     }
 
     @Example
     @Label("NotFound: no session matches the refresh token")
     void not_found_when_no_session() {
-        Mockito.when(authorizationDataRepository.findByRefreshToken(GIVEN.refreshToken))
+        Mockito.when(sessionRepository.findByRefreshToken(GIVEN.refreshToken))
                 .thenReturn(Optional.empty());
 
         RefreshSessionResult result = refreshSession.execute(GIVEN.request);
 
         assertInstanceOf(RefreshSessionResult.NotFound.class, result);
-        Mockito.verify(authorizationDataRepository, Mockito.never()).create(Mockito.any(), Mockito.any());
+        Mockito.verify(sessionRepository, Mockito.never()).create(Mockito.any(), Mockito.any());
     }
 
     @Example
     @Label("ReuseDetected: replaying a rotated token revokes the whole family")
     void reuse_detected_when_token_already_rotated() {
         StoredSession session = storedSession(LocalDateTime.now(CLOCK).plusHours(1), SessionStatus.ROTATED);
-        Mockito.when(authorizationDataRepository.findByRefreshToken(GIVEN.refreshToken))
+        Mockito.when(sessionRepository.findByRefreshToken(GIVEN.refreshToken))
                 .thenReturn(Optional.of(session));
 
         RefreshSessionResult result = refreshSession.execute(GIVEN.request);
 
         assertInstanceOf(RefreshSessionResult.ReuseDetected.class, result);
         assertAll(
-                () -> Mockito.verify(authorizationDataRepository).revokeFamily(FAMILY),
-                () -> Mockito.verify(authorizationDataRepository, Mockito.never()).create(Mockito.any(), Mockito.any())
+                () -> Mockito.verify(sessionRepository).revokeFamily(FAMILY),
+                () -> Mockito.verify(sessionRepository, Mockito.never()).create(Mockito.any(), Mockito.any())
         );
     }
 
@@ -174,17 +174,17 @@ class RefreshSessionTest {
         StoredSession old = new StoredSession(GIVEN.email,
                 new RefreshTokenExpiration(LocalDateTime.now(CLOCK).plusHours(24)), FAMILY,
                 SessionStatus.ACTIVE, LocalDateTime.now(CLOCK).minusDays(31));
-        Mockito.when(authorizationDataRepository.findByRefreshToken(GIVEN.refreshToken))
+        Mockito.when(sessionRepository.findByRefreshToken(GIVEN.refreshToken))
                 .thenReturn(Optional.of(old));
 
         RefreshSessionResult result = refreshSession.execute(GIVEN.request);
 
         assertInstanceOf(RefreshSessionResult.Expired.class, result);
         assertAll(
-                () -> Mockito.verify(authorizationDataRepository, Mockito.never()).create(Mockito.any(), Mockito.any()),
+                () -> Mockito.verify(sessionRepository, Mockito.never()).create(Mockito.any(), Mockito.any()),
                 // the rotated rows go too: left behind, presenting this token again would be
                 // reported as THEFT, for a session that simply grew old
-                () -> Mockito.verify(authorizationDataRepository).revokeFamily(FAMILY)
+                () -> Mockito.verify(sessionRepository).revokeFamily(FAMILY)
         );
     }
 
@@ -192,10 +192,10 @@ class RefreshSessionTest {
     @Label("A lineage inside its lifetime refreshes as usual")
     void a_young_session_is_untouched_by_the_ceiling() {
         StoredSession young = storedSession(LocalDateTime.now(CLOCK).plusHours(24), SessionStatus.ACTIVE);
-        Mockito.when(authorizationDataRepository.findByRefreshToken(GIVEN.refreshToken))
+        Mockito.when(sessionRepository.findByRefreshToken(GIVEN.refreshToken))
                 .thenReturn(Optional.of(young));
-        Mockito.when(authorizationDataRepository.markRotated(GIVEN.refreshToken)).thenReturn(true);
-        Mockito.when(authorizationDataRepository.create(Mockito.any(), Mockito.any()))
+        Mockito.when(sessionRepository.markRotated(GIVEN.refreshToken)).thenReturn(true);
+        Mockito.when(sessionRepository.create(Mockito.any(), Mockito.any()))
                 .thenAnswer(call -> call.getArgument(0));
 
         assertInstanceOf(RefreshSessionResult.Refreshed.class, refreshSession.execute(GIVEN.request));

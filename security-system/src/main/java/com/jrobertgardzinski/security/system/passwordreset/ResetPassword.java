@@ -6,7 +6,7 @@ import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.repository.PasswordResetRepository;
 import com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
@@ -48,14 +48,14 @@ public class ResetPassword {
     private final HashAlgorithmPort hashAlgorithm;
     private final PasswordPolicyInForce passwordPolicy;
     private final PasswordlessAccountRepository passwordlessAccounts;
-    private final AuthorizationDataRepository sessions;
+    private final SessionRepository sessions;
     private final Duration tokenTtl;
     private final Clock clock;
 
     public ResetPassword(PasswordResetRepository passwordResetRepository, UserRepository userRepository,
                          HashAlgorithmPort hashAlgorithm, PasswordPolicyInForce passwordPolicy,
                          PasswordlessAccountRepository passwordlessAccounts,
-                         AuthorizationDataRepository sessions, Duration tokenTtl, Clock clock) {
+                         SessionRepository sessions, Duration tokenTtl, Clock clock) {
         this.passwordResetRepository = passwordResetRepository;
         this.userRepository = userRepository;
         this.hashAlgorithm = hashAlgorithm;

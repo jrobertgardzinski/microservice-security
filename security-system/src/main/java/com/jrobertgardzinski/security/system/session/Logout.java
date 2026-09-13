@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.system.session;
 
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 
 /**
@@ -11,15 +11,15 @@ import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
  */
 public class Logout {
 
-    private final AuthorizationDataRepository authorizationDataRepository;
+    private final SessionRepository sessionRepository;
 
-    public Logout(AuthorizationDataRepository authorizationDataRepository) {
-        this.authorizationDataRepository = authorizationDataRepository;
+    public Logout(SessionRepository sessionRepository) {
+        this.sessionRepository = sessionRepository;
     }
 
     public void execute(RefreshToken refreshToken) {
         // end the whole lineage, not just this token, so no rotated remnant lingers
-        authorizationDataRepository.findByRefreshToken(refreshToken)
-                .ifPresent(session -> authorizationDataRepository.revokeFamily(session.family()));
+        sessionRepository.findByRefreshToken(refreshToken)
+                .ifPresent(session -> sessionRepository.revokeFamily(session.family()));
     }
 }

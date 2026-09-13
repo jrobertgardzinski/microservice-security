@@ -9,13 +9,13 @@ import java.time.LocalDateTime;
 /**
  * The point in time at which an {@link AccessToken} expires.
  */
-public final class AuthorizationTokenExpiration extends AbstractTokenExpiration {
+public final class AccessTokenExpiration extends AbstractTokenExpiration {
 
-    public AuthorizationTokenExpiration(LocalDateTime value) {
+    public AccessTokenExpiration(LocalDateTime value) {
         super(value);
     }
 
-    public static AuthorizationTokenExpiration validInHours(AccessTokenValidityInHours hours, Clock clock) {
-        return new AuthorizationTokenExpiration(plusHours(hours, clock));
+    public static AccessTokenExpiration validInHours(AccessTokenValidityInHours hours, Clock clock) {
+        return new AccessTokenExpiration(plusHours(hours, clock));
     }
 }

@@ -75,7 +75,7 @@ interface SessionJdbcRepository extends CrudRepository<SessionEntity, String> {
      * successor and takes it too. Verified the same way.
      *
      * <p>The in-memory adapter closes the same race with one monitor
-     * ({@code InMemoryAuthorizationDataRepository#rotateAndCreate}); this is the database's
+     * ({@code InMemorySessionRepository#rotateAndCreate}); this is the database's
      * version of that monitor. The returned rows are not used — the lock is the point.
      *
      * <p><b>{@code ORDER BY} is not cosmetic here.</b> These two locks cover overlapping sets of

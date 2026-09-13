@@ -7,7 +7,7 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 
 import java.util.Optional;
@@ -33,10 +33,10 @@ public class ChangePassword {
     private final UserRepository userRepository;
     private final HashAlgorithmPort hashAlgorithm;
     private final PasswordPolicyInForce passwordPolicy;
-    private final AuthorizationDataRepository sessions;
+    private final SessionRepository sessions;
 
     public ChangePassword(UserRepository userRepository, HashAlgorithmPort hashAlgorithm,
-                          PasswordPolicyInForce passwordPolicy, AuthorizationDataRepository sessions) {
+                          PasswordPolicyInForce passwordPolicy, SessionRepository sessions) {
         this.userRepository = userRepository;
         this.hashAlgorithm = hashAlgorithm;
         this.passwordPolicy = passwordPolicy;

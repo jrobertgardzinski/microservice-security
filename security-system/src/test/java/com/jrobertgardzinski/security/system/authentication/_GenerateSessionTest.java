@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
@@ -32,26 +32,26 @@ class _GenerateSessionTest {
             new AccessTokenValidityInHours(1));
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
 
-    private AuthorizationDataRepository authorizationDataRepository;
+    private SessionRepository sessionRepository;
     private _GenerateSession generateSession;
 
     @BeforeTry
     void init() {
-        authorizationDataRepository = Mockito.mock(AuthorizationDataRepository.class);
-        generateSession = new _GenerateSession(authorizationDataRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+        sessionRepository = Mockito.mock(SessionRepository.class);
+        generateSession = new _GenerateSession(sessionRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
     }
 
     @Example
     @Label("Creates session tokens for the email and returns the persisted result")
     void creates_session_tokens_for_email() {
         SessionTokens persisted = SessionTokens.createFor(EMAIL, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
-        Mockito.when(authorizationDataRepository.create(Mockito.any(), Mockito.any())).thenReturn(persisted);
+        Mockito.when(sessionRepository.create(Mockito.any(), Mockito.any())).thenReturn(persisted);
 
         SessionTokens result = generateSession.create(EMAIL);
 
         assertAll(
                 () -> assertEquals(persisted, result),
-                () -> Mockito.verify(authorizationDataRepository).create(Mockito.any(), Mockito.any())
+                () -> Mockito.verify(sessionRepository).create(Mockito.any(), Mockito.any())
         );
     }
 }

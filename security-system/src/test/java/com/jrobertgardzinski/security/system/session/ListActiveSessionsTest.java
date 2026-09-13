@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.session;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.vo.ActiveSession;
 import com.jrobertgardzinski.security.domain.vo.SessionFamily;
 import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
@@ -23,13 +23,13 @@ class ListActiveSessionsTest {
 
     private static final Email EMAIL = Email.of("user@example.com");
 
-    private AuthorizationDataRepository authorizationDataRepository;
+    private SessionRepository sessionRepository;
     private ListActiveSessions listActiveSessions;
 
     @BeforeTry
     void init() {
-        authorizationDataRepository = Mockito.mock(AuthorizationDataRepository.class);
-        listActiveSessions = new ListActiveSessions(authorizationDataRepository);
+        sessionRepository = Mockito.mock(SessionRepository.class);
+        listActiveSessions = new ListActiveSessions(sessionRepository);
     }
 
     @Example
@@ -38,7 +38,7 @@ class ListActiveSessionsTest {
         List<ActiveSession> sessions = List.of(
                 new ActiveSession(SessionFamily.start(), new RefreshTokenExpiration(LocalDateTime.now().plusHours(1))),
                 new ActiveSession(SessionFamily.start(), new RefreshTokenExpiration(LocalDateTime.now().plusHours(2))));
-        Mockito.when(authorizationDataRepository.listActiveSessions(EMAIL)).thenReturn(sessions);
+        Mockito.when(sessionRepository.listActiveSessions(EMAIL)).thenReturn(sessions);
 
         assertEquals(sessions, listActiveSessions.execute(EMAIL));
     }

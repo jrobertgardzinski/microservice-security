@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.account;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.repository.EmailChangeRepository;
 import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
@@ -28,7 +28,7 @@ import com.jrobertgardzinski.security.domain.repository.UserRepository;
 public class DeleteAccount {
 
     private final UserRepository userRepository;
-    private final AuthorizationDataRepository authorizationDataRepository;
+    private final SessionRepository sessionRepository;
     private final EnrolledFactorRepository enrolledFactorRepository;
     private final RecoveryCodeRepository recoveryCodeRepository;
     private final FederatedIdentityRepository federatedIdentityRepository;
@@ -37,7 +37,7 @@ public class DeleteAccount {
     private final EmailChangeRepository emailChangeRepository;
     private final PasswordlessAccountRepository passwordlessAccountRepository;
 
-    public DeleteAccount(UserRepository userRepository, AuthorizationDataRepository authorizationDataRepository,
+    public DeleteAccount(UserRepository userRepository, SessionRepository sessionRepository,
                          EnrolledFactorRepository enrolledFactorRepository,
                          RecoveryCodeRepository recoveryCodeRepository,
                          FederatedIdentityRepository federatedIdentityRepository,
@@ -46,7 +46,7 @@ public class DeleteAccount {
                          EmailChangeRepository emailChangeRepository,
                          PasswordlessAccountRepository passwordlessAccountRepository) {
         this.userRepository = userRepository;
-        this.authorizationDataRepository = authorizationDataRepository;
+        this.sessionRepository = sessionRepository;
         this.enrolledFactorRepository = enrolledFactorRepository;
         this.recoveryCodeRepository = recoveryCodeRepository;
         this.federatedIdentityRepository = federatedIdentityRepository;
@@ -57,7 +57,7 @@ public class DeleteAccount {
     }
 
     public void execute(Email email) {
-        authorizationDataRepository.revokeAllSessions(email);
+        sessionRepository.revokeAllSessions(email);
         enrolledFactorRepository.removeAll(email);
         recoveryCodeRepository.removeAll(email);
         federatedIdentityRepository.unlinkAll(email);

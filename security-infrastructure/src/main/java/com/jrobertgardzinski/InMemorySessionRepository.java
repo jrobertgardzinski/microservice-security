@@ -2,7 +2,7 @@ package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.vo.AccessGrant;
 import com.jrobertgardzinski.security.domain.vo.ActiveSession;
 import com.jrobertgardzinski.security.domain.vo.SessionFamily;
@@ -20,14 +20,14 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * In-memory {@link AuthorizationDataRepository} used when no database is configured (tests). Indexes
+ * In-memory {@link SessionRepository} used when no database is configured (tests). Indexes
  * sessions by a <strong>SHA-256 hash of the refresh token</strong>, never the raw value — the same
  * contract the JDBC adapter honours. Each row carries the access-token hash + expiry, the lineage
  * and a status; rotated rows are kept for theft detection. Raw tokens are not retained.
  */
 @Singleton
 @Requires(missingBeans = DataSource.class)
-public final class InMemoryAuthorizationDataRepository implements AuthorizationDataRepository {
+public final class InMemorySessionRepository implements SessionRepository {
 
     private record Row(StoredSession session, String accessTokenHash, AccessGrant accessGrant) {}
 
@@ -36,7 +36,7 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
     /** The same clock the sessions were issued under — see {@link #listActiveSessions}. */
     private final java.time.Clock clock;
 
-    public InMemoryAuthorizationDataRepository(java.time.Clock clock) {
+    public InMemorySessionRepository(java.time.Clock clock) {
         this.clock = clock;
     }
 
@@ -77,7 +77,7 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
                             new StoredSession(sessionTokens.email(), sessionTokens.refreshTokenExpiration(),
                                     family, SessionStatus.ACTIVE, familyStartedAt),
                             TokenHashing.hash(sessionTokens.accessToken()),
-                            new AccessGrant(sessionTokens.email(), sessionTokens.authorizationTokenExpiration())));
+                            new AccessGrant(sessionTokens.email(), sessionTokens.accessTokenExpiration())));
             return sessionTokens;
         }
     }
@@ -91,7 +91,7 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
                                                    java.util.function.Supplier<SessionTokens> successor,
                                                    SessionFamily family) {
         synchronized (sessionLineage) {
-            return AuthorizationDataRepository.super.rotateAndCreate(presented, successor, family);
+            return SessionRepository.super.rotateAndCreate(presented, successor, family);
         }
     }
 

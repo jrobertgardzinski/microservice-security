@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.system.account;
 
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException;
 import com.jrobertgardzinski.security.domain.repository.EmailChangeRepository;
 import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
@@ -65,7 +65,7 @@ public class ConfirmEmailChange {
     private final RecoveryCodeRepository recoveryCodeRepository;
     private final PasswordlessAccountRepository passwordlessAccountRepository;
     private final PasswordResetRepository passwordResetRepository;
-    private final AuthorizationDataRepository authorizationDataRepository;
+    private final SessionRepository sessionRepository;
     private final java.time.Duration tokenTtl;
     private final java.time.Clock clock;
 
@@ -76,7 +76,7 @@ public class ConfirmEmailChange {
                               RecoveryCodeRepository recoveryCodeRepository,
                               PasswordlessAccountRepository passwordlessAccountRepository,
                               PasswordResetRepository passwordResetRepository,
-                              AuthorizationDataRepository authorizationDataRepository,
+                              SessionRepository sessionRepository,
                               java.time.Duration tokenTtl, java.time.Clock clock) {
         this.emailChangeRepository = emailChangeRepository;
         this.userRepository = userRepository;
@@ -86,7 +86,7 @@ public class ConfirmEmailChange {
         this.recoveryCodeRepository = recoveryCodeRepository;
         this.passwordlessAccountRepository = passwordlessAccountRepository;
         this.passwordResetRepository = passwordResetRepository;
-        this.authorizationDataRepository = authorizationDataRepository;
+        this.sessionRepository = sessionRepository;
         this.tokenTtl = tokenTtl;
         this.clock = clock;
     }
@@ -115,7 +115,7 @@ public class ConfirmEmailChange {
                         // what settles it, and the same answer is owed either way
                         return new ConfirmEmailChangeResult.EmailTaken();
                     }
-                    authorizationDataRepository.revokeAllSessions(change.currentEmail());
+                    sessionRepository.revokeAllSessions(change.currentEmail());
                     emailVerificationRepository.markVerified(change.newEmail());
                     return new ConfirmEmailChangeResult.EmailChanged(change.newEmail());
                 })

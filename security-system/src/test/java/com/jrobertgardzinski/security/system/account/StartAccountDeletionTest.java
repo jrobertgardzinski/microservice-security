@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.system.account;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.port.ContentPurge;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.AccountClosure;
 import com.jrobertgardzinski.security.domain.vo.DeletionInitiator;
@@ -37,14 +37,14 @@ class StartAccountDeletionTest {
     private static final Email LEAVER = Email.of("leaver@example.com");
 
     private UserRepository users;
-    private AuthorizationDataRepository sessions;
+    private SessionRepository sessions;
     private ContentPurge purge;
     private StartAccountDeletion startAccountDeletion;
 
     @BeforeEach
     void init() {
         users = Mockito.mock(UserRepository.class);
-        sessions = Mockito.mock(AuthorizationDataRepository.class);
+        sessions = Mockito.mock(SessionRepository.class);
         purge = Mockito.mock(ContentPurge.class);
         startAccountDeletion = new StartAccountDeletion(users, sessions, purge);
     }

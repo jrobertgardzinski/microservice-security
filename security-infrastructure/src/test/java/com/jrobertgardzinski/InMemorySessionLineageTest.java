@@ -8,7 +8,7 @@ import com.jrobertgardzinski.security.domain.vo.SessionFamily;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.AuthorizationTokenExpiration;
+import com.jrobertgardzinski.security.domain.vo.token.expiration.AccessTokenExpiration;
 import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,8 +38,8 @@ class InMemorySessionLineageTest {
     private static final SessionTokensConfig CONFIG = new SessionTokensConfig(
             new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1));
 
-    private final InMemoryAuthorizationDataRepository repository =
-            new InMemoryAuthorizationDataRepository(CLOCK);
+    private final InMemorySessionRepository repository =
+            new InMemorySessionRepository(CLOCK);
 
     @Test
     @DisplayName("a revoke cannot land between the rotation and its successor")
@@ -137,6 +137,6 @@ class InMemorySessionLineageTest {
     private static SessionTokens sessionExpiringAt(LocalDateTime expiry) {
         return new SessionTokens(USER, RefreshToken.random(), new AccessToken("access-" + expiry),
                 new RefreshTokenExpiration(expiry),
-                new AuthorizationTokenExpiration(expiry));
+                new AccessTokenExpiration(expiry));
     }
 }

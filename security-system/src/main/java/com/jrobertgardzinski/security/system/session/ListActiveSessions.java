@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.session;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.vo.ActiveSession;
 
 import java.util.List;
@@ -12,13 +12,13 @@ import java.util.List;
  */
 public class ListActiveSessions {
 
-    private final AuthorizationDataRepository authorizationDataRepository;
+    private final SessionRepository sessionRepository;
 
-    public ListActiveSessions(AuthorizationDataRepository authorizationDataRepository) {
-        this.authorizationDataRepository = authorizationDataRepository;
+    public ListActiveSessions(SessionRepository sessionRepository) {
+        this.sessionRepository = sessionRepository;
     }
 
     public List<ActiveSession> execute(Email email) {
-        return authorizationDataRepository.listActiveSessions(email);
+        return sessionRepository.listActiveSessions(email);
     }
 }

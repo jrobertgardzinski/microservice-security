@@ -65,7 +65,7 @@ class StoresWithADeadlineEvictThemTest {
             "InMemoryAuthenticationBlockRepository", "ExpiredBlockReaper",
             "InMemoryRejectedAuthenticationRepository", "RejectedAuthenticationReaper",
             "InMemoryEmailChangeRepository", "AbandonedEmailChangeReaper",
-            "InMemoryAuthorizationDataRepository", "ExpiredSessionReaper",
+            "InMemorySessionRepository", "ExpiredSessionReaper",
             "InMemoryAccountDeletionSagaStore", "SettledDeletionSagaReaper");
 
     /** Entries die with the account. Sweeping these deletes what nobody asked to delete. */

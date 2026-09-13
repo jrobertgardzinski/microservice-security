@@ -5,7 +5,7 @@ import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
 import com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig;
 import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
@@ -38,7 +38,7 @@ public final class AuthenticationFactory {
             EmailVerificationRepository emailVerificationRepository,
             RejectedAuthenticationRepository rejectedAuthenticationRepository,
             AuthenticationBlockRepository authenticationBlockRepository,
-            AuthorizationDataRepository authorizationDataRepository,
+            SessionRepository sessionRepository,
             HashAlgorithmPort hashAlgorithmPort,
             BruteForceConfig bruteForceConfig,
             SessionTokensConfig sessionTokensConfig,
@@ -54,7 +54,7 @@ public final class AuthenticationFactory {
                 clock, bruteForceConfig, blockDurationPolicy);
         var verifyCredentials = new _VerifyCredentials(userRepository, hashAlgorithmPort);
         var requireVerifiedEmail = new _RequireVerifiedEmail(emailVerificationRepository);
-        var generateSession = new _GenerateSession(authorizationDataRepository, clock, sessionTokensConfig, accessTokenMint);
+        var generateSession = new _GenerateSession(sessionRepository, clock, sessionTokensConfig, accessTokenMint);
         // no block repository here any more: a success clears this pair's failures and never a
         // placed block, which would hand the amnesty straight back
         var cleanBruteForceRecords = new _CleanBruteForceRecords(rejectedAuthenticationRepository);

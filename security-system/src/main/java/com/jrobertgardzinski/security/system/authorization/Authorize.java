@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.system.authorization;
 
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
 
 import java.time.Clock;
@@ -12,16 +12,16 @@ import java.time.Clock;
  */
 public class Authorize {
 
-    private final AuthorizationDataRepository authorizationDataRepository;
+    private final SessionRepository sessionRepository;
     private final Clock clock;
 
-    public Authorize(AuthorizationDataRepository authorizationDataRepository, Clock clock) {
-        this.authorizationDataRepository = authorizationDataRepository;
+    public Authorize(SessionRepository sessionRepository, Clock clock) {
+        this.sessionRepository = sessionRepository;
         this.clock = clock;
     }
 
     public AuthorizationResult execute(AccessToken accessToken) {
-        return authorizationDataRepository.findByAccessToken(accessToken)
+        return sessionRepository.findByAccessToken(accessToken)
                 .filter(grant -> !grant.expiration().hasExpired(clock))
                 .<AuthorizationResult>map(grant -> new AuthorizationResult.Authorized(grant.email()))
                 .orElseGet(AuthorizationResult.Unauthorized::new);

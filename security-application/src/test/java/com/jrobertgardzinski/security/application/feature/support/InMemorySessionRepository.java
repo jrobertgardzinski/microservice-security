@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.application.feature.support;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.vo.AccessGrant;
 import com.jrobertgardzinski.security.domain.vo.SessionFamily;
 import com.jrobertgardzinski.security.domain.vo.SessionStatus;
@@ -18,7 +18,7 @@ import java.util.Optional;
  * In-memory sessions keyed by refresh token (raw, since this is test support). Tracks lineage and
  * status so the use case can rotate and detect refresh-token reuse.
  */
-public final class InMemoryAuthorizationDataRepository implements AuthorizationDataRepository {
+public final class InMemorySessionRepository implements SessionRepository {
 
     private record Row(SessionTokens tokens, SessionFamily family, SessionStatus status,
                        java.time.LocalDateTime familyStartedAt) {}
@@ -32,7 +32,7 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
      */
     private final java.time.Clock clock;
 
-    public InMemoryAuthorizationDataRepository(java.time.Clock clock) {
+    public InMemorySessionRepository(java.time.Clock clock) {
         this.clock = clock;
     }
 
@@ -66,7 +66,7 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
     public Optional<AccessGrant> findByAccessToken(AccessToken accessToken) {
         return byRefreshToken.values().stream()
                 .filter(row -> row.tokens().accessToken().equals(accessToken) && row.status() == SessionStatus.ACTIVE)
-                .map(row -> new AccessGrant(row.tokens().email(), row.tokens().authorizationTokenExpiration()))
+                .map(row -> new AccessGrant(row.tokens().email(), row.tokens().accessTokenExpiration()))
                 .findFirst();
     }
 

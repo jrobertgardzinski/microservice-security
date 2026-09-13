@@ -10,7 +10,7 @@ import com.jrobertgardzinski.security.domain.vo.FactorType;
 import com.jrobertgardzinski.security.domain.vo.SessionFamily;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.AuthorizationTokenExpiration;
+import com.jrobertgardzinski.security.domain.vo.token.expiration.AccessTokenExpiration;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
 import com.jrobertgardzinski.security.domain.vo.token.PasswordResetToken;
@@ -94,8 +94,8 @@ class AddressKeyedStoresTest {
     /** All the adapters and both use cases, freshly wired — one fixture per dynamic test. */
     private static final class Fixture {
         final InMemoryUserRepository users = new InMemoryUserRepository();
-        final InMemoryAuthorizationDataRepository sessions =
-                new InMemoryAuthorizationDataRepository(Clock.systemUTC());
+        final InMemorySessionRepository sessions =
+                new InMemorySessionRepository(Clock.systemUTC());
         final InMemoryEnrolledFactorRepository factors = new InMemoryEnrolledFactorRepository();
         final InMemoryRecoveryCodeRepository codes = new InMemoryRecoveryCodeRepository();
         final InMemoryFederatedIdentityRepository federated = new InMemoryFederatedIdentityRepository();
@@ -158,7 +158,7 @@ class AddressKeyedStoresTest {
     private static SessionTokens sessionFor(Email address) {
         LocalDateTime tomorrow = LocalDateTime.now(Clock.systemUTC()).plusDays(1);
         return new SessionTokens(address, RefreshToken.random(), new AccessToken("access-" + address.value()),
-                new RefreshTokenExpiration(tomorrow), new AuthorizationTokenExpiration(tomorrow));
+                new RefreshTokenExpiration(tomorrow), new AccessTokenExpiration(tomorrow));
     }
 
     private static List<Email> heldWhere(Predicate<Email> holdsSomething) {

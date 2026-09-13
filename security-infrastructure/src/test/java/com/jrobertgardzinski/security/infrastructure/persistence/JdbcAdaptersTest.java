@@ -10,7 +10,7 @@ import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException;
 import com.jrobertgardzinski.security.domain.repository.EmailChangeRepository;
 import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
@@ -182,7 +182,7 @@ class JdbcAdaptersTest {
 
     @Test
     void a_session_is_found_by_refresh_token_then_rotated_and_its_family_revoked() {
-        AuthorizationDataRepository sessions = context.getBean(AuthorizationDataRepository.class);
+        SessionRepository sessions = context.getBean(SessionRepository.class);
         SessionFamily family = SessionFamily.start();
         SessionTokens session = SessionTokens.createFor(
                 Email.of("jdbc-session@example.com"), SESSION_CONFIG, Clock.systemUTC(),
@@ -206,7 +206,7 @@ class JdbcAdaptersTest {
 
     @Test
     void an_access_token_authorizes_only_while_its_session_is_active() {
-        AuthorizationDataRepository sessions = context.getBean(AuthorizationDataRepository.class);
+        SessionRepository sessions = context.getBean(SessionRepository.class);
         SessionTokens session = SessionTokens.createFor(
                 Email.of("jdbc-access@example.com"), SESSION_CONFIG, Clock.systemUTC(),
                 com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
@@ -225,7 +225,7 @@ class JdbcAdaptersTest {
     @Test
     @DisplayName("a successor inherits the lineage's start, so the absolute lifetime is absolute")
     void rotation_does_not_restart_the_clock() {
-        AuthorizationDataRepository sessions = context.getBean(AuthorizationDataRepository.class);
+        SessionRepository sessions = context.getBean(SessionRepository.class);
         Email email = Email.of("jdbc-lineage@example.com");
         SessionFamily family = SessionFamily.start();
         SessionTokens first = SessionTokens.createFor(email, SESSION_CONFIG, Clock.systemUTC(), com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);

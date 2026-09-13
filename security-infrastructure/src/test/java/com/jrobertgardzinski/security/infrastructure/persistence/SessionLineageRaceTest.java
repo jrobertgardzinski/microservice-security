@@ -3,7 +3,7 @@ package com.jrobertgardzinski.security.infrastructure.persistence;
 import com.jrobertgardzinski.TransactionBoundary;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.SessionFamily;
@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>The fix is two statements instead of one: lock the lineage's rows, then delete them, so the
  * delete is a new statement with a new snapshot. Removing {@code lockFamily} from
- * {@code JdbcAuthorizationDataRepository#revokeFamily} turns this test red.
+ * {@code JdbcSessionRepository#revokeFamily} turns this test red.
  */
 @Testcontainers(disabledWithoutDocker = true)
 class SessionLineageRaceTest {
@@ -75,7 +75,7 @@ class SessionLineageRaceTest {
     @Test
     @DisplayName("a revoke lands on the successor a concurrent rotation is still writing")
     void revoking_a_family_takes_the_successor_being_written() throws Exception {
-        AuthorizationDataRepository sessions = context.getBean(AuthorizationDataRepository.class);
+        SessionRepository sessions = context.getBean(SessionRepository.class);
         TransactionBoundary transactions = context.getBean(TransactionBoundary.class);
         Clock clock = context.getBean(Clock.class);
 
@@ -133,7 +133,7 @@ class SessionLineageRaceTest {
     @Test
     @DisplayName("sign out everywhere takes the successor a concurrent rotation is still writing")
     void revoking_every_session_takes_the_successor_being_written() throws Exception {
-        AuthorizationDataRepository sessions = context.getBean(AuthorizationDataRepository.class);
+        SessionRepository sessions = context.getBean(SessionRepository.class);
         TransactionBoundary transactions = context.getBean(TransactionBoundary.class);
         Clock clock = context.getBean(Clock.class);
 

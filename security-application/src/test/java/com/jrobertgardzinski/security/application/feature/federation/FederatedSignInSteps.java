@@ -4,7 +4,7 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.application.feature.support.FakeHashAlgorithm;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryAuthorizationDataRepository;
+import com.jrobertgardzinski.security.application.feature.support.InMemorySessionRepository;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryEmailVerificationRepository;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryUserRepository;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
@@ -44,7 +44,7 @@ public class FederatedSignInSteps {
 
     private final InMemoryUserRepository users = new InMemoryUserRepository();
     private final InMemoryEmailVerificationRepository verifications = new InMemoryEmailVerificationRepository(java.time.Clock.systemUTC());
-    private final InMemoryAuthorizationDataRepository sessions = new InMemoryAuthorizationDataRepository(Clock.systemUTC());
+    private final InMemorySessionRepository sessions = new InMemorySessionRepository(Clock.systemUTC());
     private final FakeHashAlgorithm hashAlgorithm = new FakeHashAlgorithm();
     private final Map<String, String> links = new HashMap<>();
     private final FederatedIdentityRepository identities = new FederatedIdentityRepository() {

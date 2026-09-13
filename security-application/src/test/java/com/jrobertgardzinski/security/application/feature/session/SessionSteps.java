@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.application.feature.session;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryAuthorizationDataRepository;
+import com.jrobertgardzinski.security.application.feature.support.InMemorySessionRepository;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
@@ -9,7 +9,7 @@ import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.AuthorizationTokenExpiration;
+import com.jrobertgardzinski.security.domain.vo.token.expiration.AccessTokenExpiration;
 import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RefreshSessionResult;
@@ -31,7 +31,7 @@ public class SessionSteps {
             new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1));
 
     private final Clock clock = Clock.fixed(Instant.parse("2026-06-15T10:00:00Z"), ZoneOffset.UTC);
-    private final InMemoryAuthorizationDataRepository authorizationData = new InMemoryAuthorizationDataRepository(clock);
+    private final InMemorySessionRepository authorizationData = new InMemorySessionRepository(clock);
     private final RefreshSession refreshSession = new RefreshSession(authorizationData, clock, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM,
             java.time.Duration.ofDays(30));
 
@@ -84,6 +84,6 @@ public class SessionSteps {
                 TOKEN,
                 AccessToken.random(),
                 new RefreshTokenExpiration(refreshExpiry),
-                AuthorizationTokenExpiration.validInHours(new AccessTokenValidityInHours(1), clock));
+                AccessTokenExpiration.validInHours(new AccessTokenValidityInHours(1), clock));
     }
 }

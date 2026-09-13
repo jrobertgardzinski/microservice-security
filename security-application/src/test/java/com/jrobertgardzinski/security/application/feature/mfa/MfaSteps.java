@@ -6,7 +6,7 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.application.feature.support.CapturingCodeChannel;
 import com.jrobertgardzinski.security.application.feature.support.FakeHashAlgorithm;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryAuthenticationBlockRepository;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryAuthorizationDataRepository;
+import com.jrobertgardzinski.security.application.feature.support.InMemorySessionRepository;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryEmailVerificationRepository;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolledFactorRepository;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolmentChallengeStore;
@@ -61,7 +61,7 @@ public class MfaSteps {
     private final FakeHashAlgorithm hashAlgorithm = new FakeHashAlgorithm();
     private final InMemoryUserRepository users = new InMemoryUserRepository();
     private final InMemoryEmailVerificationRepository verifications = new InMemoryEmailVerificationRepository(java.time.Clock.systemUTC());
-    private final InMemoryAuthorizationDataRepository sessions = new InMemoryAuthorizationDataRepository(clock);
+    private final InMemorySessionRepository sessions = new InMemorySessionRepository(clock);
     private final InMemoryRejectedAuthenticationRepository rejections = new InMemoryRejectedAuthenticationRepository();
     private final InMemoryAuthenticationBlockRepository blocks = new InMemoryAuthenticationBlockRepository();
     private final InMemoryEnrolledFactorRepository enrolledFactors = new InMemoryEnrolledFactorRepository();

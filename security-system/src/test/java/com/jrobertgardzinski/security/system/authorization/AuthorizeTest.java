@@ -1,10 +1,10 @@
 package com.jrobertgardzinski.security.system.authorization;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.vo.AccessGrant;
 import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.AuthorizationTokenExpiration;
+import com.jrobertgardzinski.security.domain.vo.token.expiration.AccessTokenExpiration;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import net.jqwik.api.Example;
@@ -29,13 +29,13 @@ class AuthorizeTest {
     private static final Email EMAIL = Email.of("user@example.com");
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
 
-    private AuthorizationDataRepository authorizationDataRepository;
+    private SessionRepository sessionRepository;
     private Authorize authorize;
 
     @BeforeTry
     void init() {
-        authorizationDataRepository = Mockito.mock(AuthorizationDataRepository.class);
-        authorize = new Authorize(authorizationDataRepository, CLOCK);
+        sessionRepository = Mockito.mock(SessionRepository.class);
+        authorize = new Authorize(sessionRepository, CLOCK);
     }
 
     @Example
@@ -62,7 +62,7 @@ class AuthorizeTest {
     @Example
     @Label("Unauthorized when no session matches the access token")
     void unauthorized_when_token_unknown() {
-        Mockito.when(authorizationDataRepository.findByAccessToken(TOKEN)).thenReturn(Optional.empty());
+        Mockito.when(sessionRepository.findByAccessToken(TOKEN)).thenReturn(Optional.empty());
 
         AuthorizationResult result = authorize.execute(TOKEN);
 
@@ -70,7 +70,7 @@ class AuthorizeTest {
     }
 
     private void grantExpiringAt(LocalDateTime expiry) {
-        Mockito.when(authorizationDataRepository.findByAccessToken(TOKEN))
-                .thenReturn(Optional.of(new AccessGrant(EMAIL, new AuthorizationTokenExpiration(expiry))));
+        Mockito.when(sessionRepository.findByAccessToken(TOKEN))
+                .thenReturn(Optional.of(new AccessGrant(EMAIL, new AccessTokenExpiration(expiry))));
     }
 }

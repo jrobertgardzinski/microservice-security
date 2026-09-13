@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.session;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.AuthorizationDataRepository;
+import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import net.jqwik.api.Example;
@@ -15,13 +15,13 @@ class RevokeAllSessionsTest {
 
     private static final Email EMAIL = Email.of("user@example.com");
 
-    private AuthorizationDataRepository authorizationDataRepository;
+    private SessionRepository sessionRepository;
     private RevokeAllSessions revokeAllSessions;
 
     @BeforeTry
     void init() {
-        authorizationDataRepository = Mockito.mock(AuthorizationDataRepository.class);
-        revokeAllSessions = new RevokeAllSessions(authorizationDataRepository);
+        sessionRepository = Mockito.mock(SessionRepository.class);
+        revokeAllSessions = new RevokeAllSessions(sessionRepository);
     }
 
     @Example
@@ -29,6 +29,6 @@ class RevokeAllSessionsTest {
     void revokes_every_session_of_the_user() {
         revokeAllSessions.execute(EMAIL);
 
-        Mockito.verify(authorizationDataRepository).revokeAllSessions(EMAIL);
+        Mockito.verify(sessionRepository).revokeAllSessions(EMAIL);
     }
 }
