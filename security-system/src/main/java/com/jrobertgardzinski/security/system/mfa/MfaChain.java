@@ -43,13 +43,14 @@ public class MfaChain {
 
     /** Begin the tail: issue the first factor's challenge and build the pending authentication. */
     public PendingAuthentication begin(Email email, List<EnrolledFactor> factors) {
-        return new PendingAuthentication(email, List.copyOf(factors), issue(factors.get(0)),
-                config.maxAttempts().value(), LocalDateTime.now(clock).plusMinutes(ticketTtlMinutes));
+        return new PendingAuthentication(email, java.util.Optional.empty(), List.copyOf(factors),
+                issue(factors.get(0)), config.maxAttempts().value(),
+                LocalDateTime.now(clock).plusMinutes(ticketTtlMinutes));
     }
 
     /** Advance to the next factor, keeping the ticket's overall expiry, resetting the attempt count. */
     public PendingAuthentication advanceTo(PendingAuthentication pending, List<EnrolledFactor> tail) {
-        return new PendingAuthentication(pending.email(), tail, issue(tail.get(0)),
+        return new PendingAuthentication(pending.email(), pending.source(), tail, issue(tail.get(0)),
                 config.maxAttempts().value(), pending.expiresAt());
     }
 

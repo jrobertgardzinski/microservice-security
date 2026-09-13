@@ -65,7 +65,8 @@ class PendingStoreAtomicityTest {
     private static PendingAuthentication pending() {
         EnrolledFactor factor = new EnrolledFactor(Email.of("user@example.com"), FactorType.EMAIL_CODE,
                 "e-mail code", 2, "user@example.com");
-        return new PendingAuthentication(Email.of("user@example.com"), List.of(factor), null,
+        return new PendingAuthentication(Email.of("user@example.com"), java.util.Optional.empty(),
+                List.of(factor), null,
                 ATTEMPTS_ALLOWED, LocalDateTime.now().plusMinutes(5));
     }
 }

@@ -74,7 +74,9 @@ public class Authentication {
                     if (factors.isEmpty()) {
                         yield new AuthenticationResult.Authenticated(generateSession.create(valid.email()));
                     }
-                    PendingAuthentication pending = mfaChain.begin(valid.email(), factors);
+                    // the chain remembers where it began, so a wrong proof is charged to the same
+                    // pair a wrong password is — see PendingAuthentication
+                    PendingAuthentication pending = mfaChain.begin(valid.email(), factors).startedFrom(source);
                     String ticket = pendingStore.open(pending);
                     yield new AuthenticationResult.MfaRequired(ticket, factors.get(0).type(), pending.challengeData());
                 }

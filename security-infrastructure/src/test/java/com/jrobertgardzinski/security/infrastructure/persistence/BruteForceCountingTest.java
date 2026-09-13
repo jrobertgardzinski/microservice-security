@@ -10,8 +10,11 @@ import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRe
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
 import com.jrobertgardzinski.security.domain.vo.Source;
 import com.jrobertgardzinski.security.system.authentication.Authentication;
+import com.jrobertgardzinski.security.system.authentication.ContinueAuthentication;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
 import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.AfterAll;
@@ -142,6 +145,34 @@ class BruteForceCountingTest {
                         + " the source AT its ceiling: the block expires, the next failure trips it"
                         + " again, and a block of minutes behaves like one of hours")
                 .isZero();
+    }
+
+    @Test
+    @DisplayName("a wrong factor proof counts against the account, like a wrong password")
+    void the_second_factor_is_not_a_free_guessing_ground() {
+        Source source = new Source(new IpAddress("198.51.100.24"), "codes/1.0");
+        Email victim = account("code-guessed@example.com");
+        context.getBean(com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository.class)
+                .enrol(new com.jrobertgardzinski.security.domain.entity.EnrolledFactor(
+                        victim, com.jrobertgardzinski.security.domain.vo.FactorType.EMAIL_CODE,
+                        "e-mail code", 0, victim.value()));
+
+        // link #1 passes — the guesser HAS the password; what they are after is the code
+        AuthenticationResult first = attempt(source, victim, THEIR_PASSWORD);
+        assertThat(first).isInstanceOf(AuthenticationResult.MfaRequired.class);
+        String ticket = ((AuthenticationResult.MfaRequired) first).ticket();
+
+        ContinueAuthentication chain = context.getBean(ContinueAuthentication.class);
+        TransactionBoundary transactions = context.getBean(TransactionBoundary.class);
+        transactions.execute(() -> chain.execute(ticket, "000000"));
+
+        assertThat(context.getBean(RejectedAuthenticationRepository.class)
+                .countFailuresOnAccount(new LockoutSubject(source, AttemptedAccount.of(victim)),
+                        LocalDateTime.now().minusDays(1)).count())
+                .as("five attempts per TICKET is a limit on one ticket, not on the person minting"
+                        + " them: link #1 is a password they already hold, so a fresh ticket costs"
+                        + " one request and the codes could be walked at that rate")
+                .isEqualTo(1);
     }
 
     private static AuthenticationResult attempt(Source source, Email email, String password) {

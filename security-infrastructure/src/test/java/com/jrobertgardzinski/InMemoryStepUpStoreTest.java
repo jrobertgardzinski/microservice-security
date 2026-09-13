@@ -26,7 +26,8 @@ class InMemoryStepUpStoreTest {
 
     private StepUpStore.StepUpPending pending(LocalDateTime expiresAt) {
         return new StepUpStore.StepUpPending(Email.of("user@example.com"), "access-token", StepUpAction.DELETE_ACCOUNT,
-                new PendingAuthentication(Email.of("user@example.com"), List.of(), null, 3, expiresAt));
+                new PendingAuthentication(Email.of("user@example.com"), java.util.Optional.empty(),
+                        List.of(), null, 3, expiresAt));
     }
 
     @Test
