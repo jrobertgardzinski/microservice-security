@@ -508,14 +508,28 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   sufit byłby dekoracją, bo każde odświeżenie kupowałoby nowy). Przekroczenie = `Expired` + rewokacja
   rodziny (zostawienie zrotowanych wierszy zamieniłoby zwykłą starość w raport KRADZIEŻY).
   Dowód na Postgresie: `JdbcAdaptersTest` — następca dziedziczy datę startu linii.
+- **DECYZJA WŁAŚCICIELA, runda 5 (MFA-10) — ZROBIONE 2026-09-13.** Javadoc `EnrolledFactor`, V11 i
+  `docs/mfa-design.md` OBIECYWAŁY „encrypted at rest", a kolumna trzymała ziarno TOTP jawnie. To nie
+  jest zwykły wyciek poświadczenia: ziarno nie jest czymś, co się raz przedstawia — ono MINTUJE kody,
+  na zawsze i bezgłośnie, więc kopia tabeli była kopią każdej aplikacji-autentykatora w niej i żaden
+  telefon by tego nie pokazał. `TotpSecretCipher` (AES-GCM, `security.mfa.secret-key`, base64
+  16/24/32 B) szyfruje przy zapisie i deszyfruje przy odczycie W ADAPTERZE JDBC.
+  Materiał pozostałych czynników CELOWO zostaje jawny: adres/telefon to miejsce, DOKĄD idzie kod
+  (i po nim `reassign` rozpoznaje wiersz przy przenosinach konta), a klucz publiczny passkeya jest
+  publiczny z definicji. W dublerze in-memory nie ma szyfrowania, bo „at rest" to zdanie o dysku,
+  a ten go nie ma.
+  BEZ MIGRACJI DANYCH: wartość bez znacznika `gcm:v1:` czytana jest jak dawniej i staje się
+  szyfrogramem przy najbliższym zapisie wiersza — nikomu nie przestaje działać autentykator w dniu
+  wdrożenia klucza. Pod zadeklarowanym profilem `prod` brak klucza ODMAWIA startu (jak pieprz do
+  kodów odzyskiwania). UTRATA klucza kosztuje wszystkie czynniki TOTP — ci użytkownicy enrolują się
+  od nowa; klucz należy trzymać tam, gdzie hasło do bazy.
 - **Otwarte z raportu — stan na 2026-09-12 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
   wszystkie MEDIUM (w tym DOM-2 i DB-8 po decyzji właściciela) oraz paczki LOW 1–10 (opisane
   wyżej). Zostaje:
   - **do DECYZJI właściciela (nie ruszam sam):** AUTH-13 — brak
     bezwzględnego czasu życia sesji (każde odświeżenie daje pełne nowe okno; NIGDZIE nie było
     obiecane inaczej, więc to decyzja produktowa); MFA-9 — konto federacyjne bez czynników i bez
-    hasła nie ma czym potwierdzić step-upu; MFA-10 — ziarna TOTP jawne wbrew javadoc/V11/docs,
-    naprawa potrzebuje klucza (`security.mfa.secret-key`) i planu migracji; OPS-19 — `/prometheus`
+    hasła nie ma czym potwierdzić step-upu; OPS-19 — `/prometheus`
     i `/health` bez uwierzytelnienia na PUBLICZNYM porcie API (`/health` oddaje samo `{"status":"UP"}`,
     ale metryki są otwarte); Micronaut nie ma osobnego portu zarządzania, więc wyjścia to albo
     `sensitive: true` + poświadczenia (trzeba wtedy ruszyć `observability/prometheus.yml` w

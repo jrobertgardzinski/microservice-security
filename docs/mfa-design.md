@@ -222,7 +222,9 @@ The asymmetry is intentional — the "free" provider link is never one of your f
 
 - `V11 enrolled_factors(user_email, type, label, factor_order, secret_material, enrolled_at)` —
   `secret_material` is factor-specific and protected per factor: TOTP secret **encrypted at rest**
-  (new `security.mfa.secret-key`), recovery codes **hashed**, phone/e-mail stored as the address.
+  (`security.mfa.secret-key`, AES-GCM — built 2026-09-13, and until then this line was a promise the
+  column did not keep), recovery codes **hashed** (HMAC under a pepper), phone/e-mail stored as the
+  address (it is where a code is SENT, not a secret), a passkey's public key stored as it is.
   In-memory adapter for the no-datasource test profile, as everywhere.
 - `V12 mfa_recovery_codes` only if recovery codes want their own table rather than rows in
   `enrolled_factors`.

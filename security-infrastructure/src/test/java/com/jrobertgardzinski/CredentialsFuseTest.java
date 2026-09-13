@@ -45,6 +45,28 @@ class CredentialsFuseTest {
     }
 
     @Test
+    void a_missing_totp_key_refuses_a_prod_start() {
+        Throwable refusal = catchThrowable(() -> ApplicationContext.builder()
+                .deduceEnvironment(false)
+                .environments("prod")
+                .properties(Map.of(
+                        "kafka.enabled", false,
+                        "datasources.default.url", "jdbc:postgresql://localhost:1/none",
+                        "datasources.default.username", "nobody",
+                        "datasources.default.password", A_PASSWORD,
+                        "security.jwt.private-key", "not-checked-here",
+                        "security.jwt.public-key", "not-checked-here",
+                        "security.mfa.recovery.pepper", "a-real-pepper",
+                        "flyway.datasources.default.enabled", false))
+                .start());
+
+        assertThat(refusal)
+                .as("a TOTP seed MINTS codes for ever and silently; without a key of its own a"
+                        + " stolen table is a copy of every authenticator app in it")
+                .hasStackTraceContaining("the TOTP seeds need their own key");
+    }
+
+    @Test
     void a_missing_jwt_signing_pair_refuses_a_prod_start() {
         Throwable refusal = catchThrowable(() -> ApplicationContext.builder()
                 .deduceEnvironment(false)
