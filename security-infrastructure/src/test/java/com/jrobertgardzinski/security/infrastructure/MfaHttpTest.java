@@ -21,6 +21,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * The whole multi-factor sign-in over the wire: enrol the e-mail factor, then a correct password no
@@ -81,6 +82,36 @@ class MfaHttpTest {
         HttpResponse<Map> me = exchange(HttpRequest.GET("/me").header("Authorization", "Bearer " + accessToken));
         assertEquals(HttpStatus.OK, me.getStatus());
         assertEquals(email, me.getBody(Map.class).orElseThrow().get("email"));
+    }
+
+    @Test
+    @DisplayName("a deletion asked for mid-chain is not answered with a fresh session")
+    void an_account_that_stopped_signing_in_mid_chain_gets_no_session() {
+        String email = "mfa-leaver@example.com";
+        String token = registerVerifyAuthenticate(email);
+        enrolEmailFactor(email, token);
+
+        // link #1: the password is right, and the chain opens
+        HttpResponse<Map> first = exchange(HttpRequest.POST("/authenticate",
+                Map.of("email", email, "password", PASSWORD)));
+        assertEquals(HttpStatus.ACCEPTED, first.getStatus());
+        String ticket = (String) first.getBody(Map.class).orElseThrow().get("mfaTicket");
+        String code = codeChannel().lastCodeFor(email);
+
+        // ...and while the person is fetching the code from their mailbox, the account asks to be
+        // deleted. Link #1 answered "this account signs in"; that answer is now out of date.
+        server.getApplicationContext()
+                .getBean(com.jrobertgardzinski.security.domain.repository.UserRepository.class)
+                .markPendingDeletion(com.jrobertgardzinski.email.domain.Email.of(email));
+
+        HttpResponse<Map> done = exchange(HttpRequest.POST("/authenticate/factor",
+                Map.of("mfaTicket", ticket, "proof", code)));
+
+        assertEquals(HttpStatus.UNAUTHORIZED, done.getStatus(),
+                "the proof was right and the person is who they say — but the account they are"
+                        + " signing into is on its way out, and a session minted now outlives the"
+                        + " deletion saga that is about to run");
+        assertNull(done.getBody(Map.class).orElseThrow().get("accessToken"));
     }
 
     @Test

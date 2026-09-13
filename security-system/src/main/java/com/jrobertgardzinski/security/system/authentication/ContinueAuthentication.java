@@ -20,13 +20,15 @@ public class ContinueAuthentication {
     private final PendingAuthenticationStore store;
     private final com.jrobertgardzinski.security.system.mfa.MfaChain chain;
     private final _GenerateSession generateSession;
+    private final _AccountStillSignsIn accountStillSignsIn;
     private final Clock clock;
 
     ContinueAuthentication(PendingAuthenticationStore store, com.jrobertgardzinski.security.system.mfa.MfaChain chain,
-                           _GenerateSession generateSession, Clock clock) {
+                           _GenerateSession generateSession, _AccountStillSignsIn accountStillSignsIn, Clock clock) {
         this.store = store;
         this.chain = chain;
         this.generateSession = generateSession;
+        this.accountStillSignsIn = accountStillSignsIn;
         this.clock = clock;
     }
 
@@ -53,6 +55,12 @@ public class ContinueAuthentication {
         List<EnrolledFactor> tail = pending.tail();
         if (tail.isEmpty()) {
             store.close(ticket);
+            // the chain proved the PERSON; whether the ACCOUNT still signs in is a separate question,
+            // and link #1's answer to it is as old as the chain took to walk. A deletion requested
+            // after the password step used to be answered with a brand-new session.
+            if (!accountStillSignsIn.isTrueOf(pending.email())) {
+                return new ContinueAuthenticationResult.InvalidTicket();
+            }
             return new ContinueAuthenticationResult.Completed(generateSession.create(pending.email()));
         }
         PendingAuthentication advanced = chain.advanceTo(pending, tail);

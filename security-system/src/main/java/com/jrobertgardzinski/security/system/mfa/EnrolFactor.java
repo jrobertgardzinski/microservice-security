@@ -64,7 +64,15 @@ public class EnrolFactor {
     }
 
     private EnrolledFactor candidate(Email user, FactorType type, String secretMaterial) {
-        // new factors go to the end of the chain, in enrolment order
-        return new EnrolledFactor(user, type, FactorLabels.of(type), factors.findByUser(user).size(), secretMaterial);
+        // New factors go to the end of the chain, in enrolment order — PAST the last position
+        // taken, not at the count of what is there. Those are the same number only while nothing
+        // has ever been removed: enrol three (0, 1, 2), drop the middle one, and the count is 2
+        // again, so the next factor arrived at the position the third already held. Two factors
+        // sharing a position leaves the chain's order down to whatever the store returns first.
+        int lastPosition = factors.findByUser(user).stream()
+                .mapToInt(EnrolledFactor::order)
+                .max()
+                .orElse(-1);
+        return new EnrolledFactor(user, type, FactorLabels.of(type), lastPosition + 1, secretMaterial);
     }
 }

@@ -559,8 +559,10 @@ public class BeanFactory {
 
     @Singleton
     RequestPasswordReset requestPasswordReset(
-            PasswordResetRepository passwordResetRepository, PasswordResetNotifier notifier) {
-        return new RequestPasswordReset(passwordResetRepository, notifier);
+            PasswordResetRepository passwordResetRepository,
+            com.jrobertgardzinski.security.domain.repository.UserRepository users,
+            PasswordResetNotifier notifier) {
+        return new RequestPasswordReset(passwordResetRepository, users, notifier);
     }
 
     @Singleton

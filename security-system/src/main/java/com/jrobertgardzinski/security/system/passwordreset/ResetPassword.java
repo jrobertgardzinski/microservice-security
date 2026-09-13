@@ -81,6 +81,12 @@ public class ResetPassword {
             return new ResetPasswordResult.InvalidToken();   // too old; consumed, so it is spent for good
         }
         Email email = reset.email();
+        if (userRepository.findBy(email).isEmpty()) {
+            // the account went away between the mail and the click (deleted, or moved to another
+            // address). updatePassword would have matched no row and this used to answer "your
+            // password has been reset" all the same.
+            return new ResetPasswordResult.InvalidToken();
+        }
         userRepository.updatePassword(email, hashed.get());
         passwordlessAccounts.setPasswordless(email, false);   // the account now has a password
         sessions.revokeAllSessions(email);   // the old password's sessions do not survive it

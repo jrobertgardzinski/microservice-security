@@ -65,7 +65,8 @@ public final class AuthenticationFactory {
                 cleanBruteForceRecords, updateBruteForceRecords,
                 enrolledFactorRepository, mfaChain, pendingAuthenticationStore);
         var continueAuthentication = new ContinueAuthentication(
-                pendingAuthenticationStore, mfaChain, generateSession, clock);
+                pendingAuthenticationStore, mfaChain, generateSession,
+                new _AccountStillSignsIn(userRepository, requireVerifiedEmail), clock);
 
         return new AuthenticationUseCases(authentication, continueAuthentication);
     }

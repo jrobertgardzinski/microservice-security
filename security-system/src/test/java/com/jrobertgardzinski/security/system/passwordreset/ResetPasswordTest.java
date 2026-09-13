@@ -63,6 +63,10 @@ class ResetPasswordTest {
     void init() {
         passwordResetRepository = Mockito.mock(PasswordResetRepository.class);
         userRepository = Mockito.mock(UserRepository.class);
+        // the account these examples are about EXISTS; the use case asks, because a link can be
+        // clicked after the account it was issued for is gone
+        Mockito.when(userRepository.findBy(EMAIL)).thenReturn(Optional.of(
+                new com.jrobertgardzinski.security.domain.entity.User(EMAIL, new HashedPassword("hash:old"))));
         sessions = Mockito.mock(AuthorizationDataRepository.class);
         resetPassword = new ResetPassword(passwordResetRepository, userRepository,
                 FAKE_ALGORITHM, PasswordPolicy::withDefaults,
@@ -99,6 +103,21 @@ class ResetPasswordTest {
         assertInstanceOf(ResetPasswordResult.PasswordReset.class, resetPassword.execute(TOKEN, STRONG));
 
         Mockito.verify(sessions).revokeAllSessions(EMAIL);
+    }
+
+    @Example
+    @Label("A link redeemed after the account is gone changes nothing and says so")
+    void a_link_for_an_account_that_no_longer_exists_is_refused() {
+        // The account was deleted (or moved to another address) between the mail and the click.
+        // updatePassword matches no row, and this used to answer "your password has been reset".
+        Mockito.when(userRepository.findBy(EMAIL)).thenReturn(Optional.empty());
+        Mockito.when(passwordResetRepository.consumeReset(TOKEN)).thenReturn(
+                Optional.of(new PasswordResetRepository.PendingReset(EMAIL, NOW.minusMinutes(5))));
+
+        assertInstanceOf(ResetPasswordResult.InvalidToken.class, resetPassword.execute(TOKEN, STRONG));
+
+        Mockito.verify(userRepository, Mockito.never()).updatePassword(Mockito.any(), Mockito.any());
+        Mockito.verify(sessions, Mockito.never()).revokeAllSessions(Mockito.any());
     }
 
     @Example

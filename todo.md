@@ -340,20 +340,40 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   (powiadamiacz i tak pisze do outboxu, więc nie ma tu żadnego wolnego wywołania do trzymania poza
   transakcją). Dowód: `RegistrationAtomicityTest` — wysyłka pada, po żądaniu NIE MA konta;
   rozdzielenie transakcji z powrotem zapala go na czerwono.
+- **LOW, paczka 11 — konto, które przestało być kontem (MFA-7, ACC-15, MFA-14, DOM-4)
+  — ZROBIONE 2026-09-13.** MFA-7: łańcuch dowodzi OSOBY, a czy KONTO nadal się loguje to osobne
+  pytanie — i odpowiedź linku #1 jest stara o tyle, ile trwało chodzenie po czynnikach. Kasowanie
+  zgłoszone PO kroku z hasłem dostawało świeżą sesję. Nowy krok `_AccountStillSignsIn` zadaje te
+  same trzy pytania (konto istnieje, nie czeka na usunięcie, adres zweryfikowany) tam, gdzie sesja
+  naprawdę powstaje; odmowa = `InvalidTicket`, czyli to samo, co nieznany bilet (zero enumeracji).
+  ACC-15: publiczny „forgot password" mintował token i WYSYŁAŁ mail na KAŻDY adres, który ktoś
+  wpisał — mail do kogoś, kto nigdy z tej usługi nie korzystał, plus rejestr adresów, którymi ktoś
+  się interesował. Teraz adres bez konta jest cicho pomijany (odpowiedź 202 BEZ ZMIAN — anty-
+  enumeracja mieszka na granicy HTTP), a `ResetPassword` odmawia, gdy konto zniknęło między mailem
+  a kliknięciem (dotąd mówił „hasło zmienione", choć `updatePassword` nie trafiał w żaden wiersz).
+  MFA-14: nowy czynnik dostawał LICZBĘ istniejących zamiast pozycji ZA ostatnią — to to samo tylko
+  dopóki nic nie usunięto; po usunięciu pierwszego dwa czynniki lądowały na jednej pozycji i
+  kolejność łańcucha zależała od tego, co magazyn zwróci pierwsze.
+  DOM-4: reguły domeny miały JEDEN test — doszły dwa (`AddressAndTokenRulesTest`,
+  `UserAndBlockRulesTest`): oktety i kompresja IPv6, strefa i prefiks (celowo przepuszczane —
+  skracanie robi `ClientIpResolver`), pusty token, podłoga ważności, „każdy jest USER-em",
+  niemodyfikowalność zbioru ról, krawędź bloku i próg licznika porażek.
+  ODŁOŻONE: ACC-8 (ostatni ADMIN może zdjąć sobie rolę) — uczciwa naprawa wymaga NOWEGO pytania do
+  portu `UserRepository` („ilu jest adminów?"), czyli zmiany kształtu Twojej domeny → czeka na Twoją
+  decyzję.
 - **Otwarte z raportu — stan na 2026-09-12 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
   wszystkie MEDIUM (w tym DOM-2 i DB-8 po decyzji właściciela) oraz paczki LOW 1–10 (opisane
   wyżej). Zostaje:
-  - **do DECYZJI właściciela (nie ruszam sam):** DB-14 cz. 2 — po ilu dniach kasujemy konto,
+  - **do DECYZJI właściciela (nie ruszam sam):** ACC-8 — żeby odmówić zdjęcia roli OSTATNIEMU
+    adminowi, `UserRepository` musi umieć policzyć adminów (nowa metoda portu); DB-14 cz. 2 — po ilu dniach kasujemy konto,
     którego NIKT nigdy nie zweryfikował (to decyzja produktowa, nie sprzątanie); DOM-9 —
     `UserRegistration` jest martwy, ale to Twój pakiet domeny; DOM-12 — nazwy (`AccessToken` vs
     `AuthorizationTokenExpiration`/`AuthorizationDataRepository`); DOM-8 — `SessionTokens.createFor`
     domyśla `AccessTokenMint.RANDOM`, używają tego tylko testy; DOM-13 — ważność tokenu w pełnych
     godzinach, MIN = 1, bez MAX; DOM-14 — `User` przyjmuje niespójny `normalizedEmail` (dziś każde
     miejsce konstrukcji jest spójne); AUTH-2 — `Source` w `PendingAuthentication`.
-  - **czysta robota, nikogo nie pytam (następna kolejka):** DOM-4 — reguły domeny mają JEDEN test
-    (`IpAddressValidator`, pusty token, MIN ważności, normalizacja roli USER, arytmetyka bloku);
-    MFA-4/7/9/10/14; AUTH-10/11/13/15; ACC-8/15; ATK-8; UI-9/10/11/13/14; TEST-2/5/6/7/11/12/13;
-    WIRE-7.
+  - **czysta robota, nikogo nie pytam (następna kolejka):** MFA-4/9/10; AUTH-10/11/13/15; ATK-8;
+    UI-9/10/11/13/14; TEST-2/5/6/7/11/12/13; WIRE-7.
 
 ## ~~Otwarte — pilne (2026-08-08)~~ — ZAMKNIĘTE, sekcja była NIEAKTUALNA (sprostowane 2026-09-12)
 
