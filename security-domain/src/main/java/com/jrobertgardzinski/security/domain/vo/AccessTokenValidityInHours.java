@@ -11,9 +11,16 @@ public final class AccessTokenValidityInHours extends AbstractTokenValidityInHou
     public static final String KEY = "security.session.access.token.validity.hours";
     public static final AccessTokenValidityInHours DEFAULT = new AccessTokenValidityInHours(1);
 
+    /**
+     * A day. An access token is the one this service cannot take back before it expires — offline
+     * verifiers hold it against the JWK set and never ask again — so its whole design rests on
+     * being short-lived and refreshed. Past a day it is not a session token any more, it is a
+     * password with an expiry date.
+     */
+    public static final int MAX = 24;
 
     public AccessTokenValidityInHours(int value) {
-        super(value);
+        super(value, MAX);
     }
 
     @Override

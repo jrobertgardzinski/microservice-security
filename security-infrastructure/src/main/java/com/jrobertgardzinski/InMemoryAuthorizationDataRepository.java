@@ -62,11 +62,20 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
     @Override
     public SessionTokens create(SessionTokens sessionTokens, SessionFamily family) {
         synchronized (sessionLineage) {
+            // a successor inherits the lineage's start; a new family starts its clock now — the
+            // same rule the table follows, because a double that resets it would prove an absolute
+            // session lifetime that production does not have
+            java.time.LocalDateTime familyStartedAt = byRefreshTokenHash.values().stream()
+                    .map(Row::session)
+                    .filter(session -> session.family().equals(family))
+                    .map(StoredSession::familyStartedAt)
+                    .min(java.time.LocalDateTime::compareTo)
+                    .orElseGet(() -> java.time.LocalDateTime.now(clock));
             byRefreshTokenHash.put(
                     TokenHashing.hash(sessionTokens.refreshToken()),
                     new Row(
                             new StoredSession(sessionTokens.email(), sessionTokens.refreshTokenExpiration(),
-                                    family, SessionStatus.ACTIVE),
+                                    family, SessionStatus.ACTIVE, familyStartedAt),
                             TokenHashing.hash(sessionTokens.accessToken()),
                             new AccessGrant(sessionTokens.email(), sessionTokens.authorizationTokenExpiration())));
             return sessionTokens;
@@ -113,7 +122,7 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
                 }
                 rotated[0] = true;
                 return new Row(new StoredSession(s.email(), s.refreshTokenExpiration(), s.family(),
-                        SessionStatus.ROTATED), row.accessTokenHash(), row.accessGrant());
+                        SessionStatus.ROTATED, s.familyStartedAt()), row.accessTokenHash(), row.accessGrant());
             });
             return rotated[0];
         }

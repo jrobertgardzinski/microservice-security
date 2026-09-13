@@ -40,6 +40,11 @@ final class JdbcAuthorizationDataRepository implements AuthorizationDataReposito
 
     @Override
     public SessionTokens create(SessionTokens sessionTokens, SessionFamily family) {
+        // A successor inherits the lineage's start; a brand-new family starts its clock now. This
+        // is what makes the absolute lifetime absolute — reset it here and every refresh would buy
+        // another full one, which is the behaviour the ceiling exists to end.
+        java.time.LocalDateTime familyStartedAt = repository.familyStartedAt(family.value())
+                .orElseGet(() -> java.time.LocalDateTime.now(clock));
         repository.save(new SessionEntity(
                 TokenHashing.hash(sessionTokens.refreshToken()),
                 sessionTokens.email().value(),
@@ -47,7 +52,8 @@ final class JdbcAuthorizationDataRepository implements AuthorizationDataReposito
                 TokenHashing.hash(sessionTokens.accessToken()),
                 sessionTokens.authorizationTokenExpiration().value(),
                 family.value(),
-                SessionStatus.ACTIVE.name()));
+                SessionStatus.ACTIVE.name(),
+                familyStartedAt));
         return sessionTokens;
     }
 
@@ -58,7 +64,8 @@ final class JdbcAuthorizationDataRepository implements AuthorizationDataReposito
                         Email.of(entity.email()),
                         new RefreshTokenExpiration(entity.refreshTokenExpiration()),
                         new SessionFamily(entity.familyId()),
-                        SessionStatus.valueOf(entity.status())));
+                        SessionStatus.valueOf(entity.status()),
+                        entity.familyStartedAt()));
     }
 
     @Override

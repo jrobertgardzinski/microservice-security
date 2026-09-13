@@ -128,5 +128,28 @@ class AddressAndTokenRulesTest {
                     .as("the code default must itself satisfy the rule it ships with")
                     .isGreaterThanOrEqualTo(1);
         }
+
+        @Test
+        @DisplayName("each kind of token has its own ceiling, and they are not the same number")
+        void validity_has_a_ceiling_per_kind() {
+            assertThatCode(() -> new AccessTokenValidityInHours(AccessTokenValidityInHours.MAX))
+                    .doesNotThrowAnyException();
+            assertThatThrownBy(() -> new AccessTokenValidityInHours(AccessTokenValidityInHours.MAX + 1))
+                    .as("an access token cannot be withdrawn before it expires — offline verifiers"
+                            + " hold it against the JWK set and never ask again — so past a day it"
+                            + " is a password with an expiry date, not a session token")
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            assertThatCode(() -> new RefreshTokenValidityInHours(24 * 30))
+                    .as("a month of 'stay signed in on my phone' is ordinary for the revocable one")
+                    .doesNotThrowAnyException();
+            assertThatThrownBy(() -> new RefreshTokenValidityInHours(RefreshTokenValidityInHours.MAX + 1))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            assertThat(RefreshTokenValidityInHours.MAX)
+                    .as("there used to be no ceiling at all: 87600 hours — a decade — came from one"
+                            + " typo in a property and nothing noticed")
+                    .isGreaterThan(AccessTokenValidityInHours.MAX);
+        }
     }
 }

@@ -15,13 +15,16 @@ public class RefreshSession {
     private final Clock clock;
     private final SessionTokensConfig config;
     private final AccessTokenMint accessTokenMint;
+    private final java.time.Duration maxSessionLifetime;
 
     public RefreshSession(AuthorizationDataRepository authorizationDataRepository, Clock clock,
-                          SessionTokensConfig config, AccessTokenMint accessTokenMint) {
+                          SessionTokensConfig config, AccessTokenMint accessTokenMint,
+                          java.time.Duration maxSessionLifetime) {
         this.authorizationDataRepository = authorizationDataRepository;
         this.clock = clock;
         this.config = config;
         this.accessTokenMint = accessTokenMint;
+        this.maxSessionLifetime = maxSessionLifetime;
     }
 
     public RefreshSessionResult execute(SessionRefreshRequest request) {
@@ -35,6 +38,18 @@ public class RefreshSession {
                         return new RefreshSessionResult.ReuseDetected();
                     }
                     if (session.refreshTokenExpiration().hasExpired(clock)) {
+                        return new RefreshSessionResult.Expired(session.email());
+                    }
+                    // The absolute ceiling. The expiry above says how long this session may sit
+                    // IDLE, and rotation hands out a fresh one every time — so without this, a
+                    // session touched once a day lived for ever and "signed in since last March"
+                    // was a state nothing reconsidered. Measured from when the LINEAGE started,
+                    // which is the one date a refresh cannot move.
+                    if (isPastItsWholeLife(session)) {
+                        // the family goes with it: leaving the rotated rows behind would let the
+                        // presented token be replayed into a theft report for a session that simply
+                        // grew old
+                        authorizationDataRepository.revokeFamily(session.family());
                         return new RefreshSessionResult.Expired(session.email());
                     }
                     // Single-use: rotate the presented token out, issue a new one in the same family.
@@ -70,5 +85,10 @@ public class RefreshSession {
                             });
                 })
                 .orElseGet(RefreshSessionResult.NotFound::new);
+    }
+
+    private boolean isPastItsWholeLife(com.jrobertgardzinski.security.domain.vo.StoredSession session) {
+        return session.familyStartedAt().plus(maxSessionLifetime)
+                .isBefore(java.time.LocalDateTime.now(clock));
     }
 }

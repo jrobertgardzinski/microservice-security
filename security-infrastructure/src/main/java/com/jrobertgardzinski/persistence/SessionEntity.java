@@ -20,5 +20,7 @@ record SessionEntity(
         String accessTokenHash,
         LocalDateTime accessTokenExpiration,
         UUID familyId,
-        String status) {
+        String status,
+        /** When the LINEAGE began — inherited by every successor, so the absolute age is absolute. */
+        LocalDateTime familyStartedAt) {
 }

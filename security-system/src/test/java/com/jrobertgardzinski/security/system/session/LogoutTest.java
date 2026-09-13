@@ -39,7 +39,8 @@ class LogoutTest {
     void revokes_the_family() {
         Mockito.when(authorizationDataRepository.findByRefreshToken(TOKEN)).thenReturn(Optional.of(
                 new StoredSession(Email.of("user@example.com"),
-                        new RefreshTokenExpiration(LocalDateTime.now().plusHours(1)), FAMILY, SessionStatus.ACTIVE)));
+                        new RefreshTokenExpiration(LocalDateTime.now().plusHours(1)), FAMILY, SessionStatus.ACTIVE,
+                        LocalDateTime.now())));
 
         logout.execute(TOKEN);
 

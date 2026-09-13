@@ -47,6 +47,8 @@ class RefreshSessionTest {
             new RefreshTokenValidityInHours(24),
             new AccessTokenValidityInHours(1));
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
+    /** The ceiling on a whole sign-in, however often it is refreshed. */
+    private static final java.time.Duration MAX_LIFETIME = java.time.Duration.ofDays(30);
 
     private AuthorizationDataRepository authorizationDataRepository;
     private RefreshSession refreshSession;
@@ -67,7 +69,7 @@ class RefreshSessionTest {
         // which is all these cases actually need to steer.
         Mockito.when(authorizationDataRepository.rotateAndCreate(Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenCallRealMethod();
-        refreshSession = new RefreshSession(authorizationDataRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+        refreshSession = new RefreshSession(authorizationDataRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM, MAX_LIFETIME);
     }
 
     @Example
@@ -164,7 +166,44 @@ class RefreshSessionTest {
         );
     }
 
+    @Example
+    @Label("A lineage past its absolute lifetime is over, however fresh this token is")
+    void a_session_cannot_be_refreshed_for_ever() {
+        // the token itself is perfectly good — it was minted minutes ago by the previous refresh —
+        // but the sign-in it belongs to began 31 days back
+        StoredSession old = new StoredSession(GIVEN.email,
+                new RefreshTokenExpiration(LocalDateTime.now(CLOCK).plusHours(24)), FAMILY,
+                SessionStatus.ACTIVE, LocalDateTime.now(CLOCK).minusDays(31));
+        Mockito.when(authorizationDataRepository.findByRefreshToken(GIVEN.refreshToken))
+                .thenReturn(Optional.of(old));
+
+        RefreshSessionResult result = refreshSession.execute(GIVEN.request);
+
+        assertInstanceOf(RefreshSessionResult.Expired.class, result);
+        assertAll(
+                () -> Mockito.verify(authorizationDataRepository, Mockito.never()).create(Mockito.any(), Mockito.any()),
+                // the rotated rows go too: left behind, presenting this token again would be
+                // reported as THEFT, for a session that simply grew old
+                () -> Mockito.verify(authorizationDataRepository).revokeFamily(FAMILY)
+        );
+    }
+
+    @Example
+    @Label("A lineage inside its lifetime refreshes as usual")
+    void a_young_session_is_untouched_by_the_ceiling() {
+        StoredSession young = storedSession(LocalDateTime.now(CLOCK).plusHours(24), SessionStatus.ACTIVE);
+        Mockito.when(authorizationDataRepository.findByRefreshToken(GIVEN.refreshToken))
+                .thenReturn(Optional.of(young));
+        Mockito.when(authorizationDataRepository.markRotated(GIVEN.refreshToken)).thenReturn(true);
+        Mockito.when(authorizationDataRepository.create(Mockito.any(), Mockito.any()))
+                .thenAnswer(call -> call.getArgument(0));
+
+        assertInstanceOf(RefreshSessionResult.Refreshed.class, refreshSession.execute(GIVEN.request));
+    }
+
     private static StoredSession storedSession(LocalDateTime refreshExpiry, SessionStatus status) {
-        return new StoredSession(GIVEN.email, new RefreshTokenExpiration(refreshExpiry), FAMILY, status);
+        // started an hour ago: well inside any ceiling, so these examples are about the other rules
+        return new StoredSession(GIVEN.email, new RefreshTokenExpiration(refreshExpiry), FAMILY, status,
+                LocalDateTime.now(CLOCK).minusHours(1));
     }
 }

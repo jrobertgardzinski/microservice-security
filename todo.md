@@ -490,6 +490,24 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   DELETE: konto to nie jeden wiersz. Sagi nie otwiera — niezweryfikowane konto nigdy się nie
   zalogowało, więc w portalu nie ma czego kasować. Wiersze `pending_deletion` pomija (nie wyścigamy
   się z sagą, która już je kasuje).
+- **DECYZJE WŁAŚCICIELA, runda 4 (DOM-9, DOM-13, AUTH-13) — ZROBIONE 2026-09-13.**
+  DOM-9: `UserRegistration` skasowany — martwy rekord, nic go nigdy nie używało.
+  DOM-13: ważność tokenu miała PODŁOGĘ (1 h) i żadnego SUFITU, więc 87600 godzin (dekada) wchodziło
+  z jednej literówki w properties i nic tego nie zauważało. Sufit jest teraz PER RODZAJ, bo to dwie
+  różne prace: access 24 h (tego tokenu nie da się cofnąć przed wygaśnięciem — weryfikatory offline
+  trzymają go przy JWK i nigdy nie pytają, więc dłużej to już nie token sesji, tylko hasło z datą
+  ważności), refresh 8760 h (ten jest odwoływalny i „zostań zalogowany na telefonie" liczy się w
+  tygodniach).
+  AUTH-13: każde odświeżenie dawało PEŁNE nowe okno, więc sesja dotykana raz dziennie żyła
+  w nieskończoność — „zalogowany od marca" był stanem, którego nic nie kwestionowało. Ważność
+  refresh tokenu odpowiada na INNE pytanie (jak długo sesja może stać bezczynnie), a żadna liczba
+  okien bezczynności nie sumuje się w obietnicę, że po drugiej stronie wciąż jest ta sama osoba.
+  `MaxSessionLifetimeHours` (drabinka, `security.session.max.lifetime.hours`, default 720 h = 30 dni,
+  dwa szczeble — żywy szczebel = przycisk „wyloguj wszystkich" dla kogokolwiek, kto akurat ma sesję
+  admina). V31 dokłada `sessions.family_started_at`, DZIEDZICZONE przez każdego następcę (inaczej
+  sufit byłby dekoracją, bo każde odświeżenie kupowałoby nowy). Przekroczenie = `Expired` + rewokacja
+  rodziny (zostawienie zrotowanych wierszy zamieniłoby zwykłą starość w raport KRADZIEŻY).
+  Dowód na Postgresie: `JdbcAdaptersTest` — następca dziedziczy datę startu linii.
 - **Otwarte z raportu — stan na 2026-09-12 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
   wszystkie MEDIUM (w tym DOM-2 i DB-8 po decyzji właściciela) oraz paczki LOW 1–10 (opisane
   wyżej). Zostaje:
@@ -506,11 +524,9 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
     COPY, więc zostawiam); MFA-13 — licznik podpisów ignorowany i flaga UV niewymagana (raport sam
     zauważa, że synchronizowane passkeye i tak raportują 0, a wymaganie UV zderza się z
     `userVerification: 'preferred'`); ACC-8 — żeby odmówić zdjęcia roli OSTATNIEMU
-    adminowi, `UserRepository` musi umieć policzyć adminów (nowa metoda portu); DOM-9 —
-    `UserRegistration` jest martwy, ale to Twój pakiet domeny; DOM-12 — nazwy (`AccessToken` vs
+    adminowi, `UserRepository` musi umieć policzyć adminów (nowa metoda portu); DOM-12 — nazwy (`AccessToken` vs
     `AuthorizationTokenExpiration`/`AuthorizationDataRepository`); DOM-8 — `SessionTokens.createFor`
-    domyśla `AccessTokenMint.RANDOM`, używają tego tylko testy; DOM-13 — ważność tokenu w pełnych
-    godzinach, MIN = 1, bez MAX; DOM-14 — `User` przyjmuje niespójny `normalizedEmail` (dziś każde
+    domyśla `AccessTokenMint.RANDOM`, używają tego tylko testy; DOM-14 — `User` przyjmuje niespójny `normalizedEmail` (dziś każde
     miejsce konstrukcji jest spójne); AUTH-2 — `Source` w `PendingAuthentication`.
   - **czysta robota, nikogo nie pytam (następna kolejka):** MFA-9 (passwordless z zerem czynników
     jest „elevated" dla FULL_CHAIN), MFA-10 (ziarna TOTP jawne, choć javadoc/V11/docs obiecują

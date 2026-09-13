@@ -534,8 +534,24 @@ public class BeanFactory {
             AuthorizationDataRepository authorizationDataRepository,
             Clock clock,
             SessionTokensConfig sessionTokensConfig,
-            AccessTokenMint accessTokenMint) {
-        return new RefreshSession(authorizationDataRepository, clock, sessionTokensConfig, accessTokenMint);
+            AccessTokenMint accessTokenMint,
+            com.jrobertgardzinski.security.config.session.vo.MaxSessionLifetimeHours maxLifetime) {
+        return new RefreshSession(authorizationDataRepository, clock, sessionTokensConfig, accessTokenMint,
+                java.time.Duration.ofHours(maxLifetime.value()));
+    }
+
+    /**
+     * The ceiling on a whole sign-in, from the deployment's property over the code default.
+     *
+     * <p>Two levels, like the token validities beside it: how long a session may live is a
+     * deployment's policy, and a live one would let whoever holds an admin session at the time sign
+     * everybody else out.
+     */
+    @Context
+    com.jrobertgardzinski.security.config.session.vo.MaxSessionLifetimeHours maxSessionLifetimeHours(
+            Configuration configuration) {
+        return configuration.boundOver(
+                com.jrobertgardzinski.security.config.session.vo.MaxSessionLifetimeHours.DEFAULT);
     }
 
     @Singleton

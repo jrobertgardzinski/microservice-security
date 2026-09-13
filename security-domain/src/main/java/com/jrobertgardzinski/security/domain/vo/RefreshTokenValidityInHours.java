@@ -11,9 +11,15 @@ public final class RefreshTokenValidityInHours extends AbstractTokenValidityInHo
     public static final String KEY = "security.session.refresh.token.validity.hours";
     public static final RefreshTokenValidityInHours DEFAULT = new RefreshTokenValidityInHours(24);
 
+    /**
+     * A year. This one is legitimately long — "stay signed in on my phone" is a refresh token
+     * measured in weeks — and it is revocable, which is what makes that safe. A ceiling is still a
+     * ceiling: past a year, a session nobody has touched is not a session anybody wants back.
+     */
+    public static final int MAX = 8760;
 
     public RefreshTokenValidityInHours(int value) {
-        super(value);
+        super(value, MAX);
     }
 
     @Override

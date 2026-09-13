@@ -17,6 +17,16 @@ interface SessionJdbcRepository extends CrudRepository<SessionEntity, String> {
     Optional<SessionEntity> findByAccessTokenHashAndStatus(String accessTokenHash, String status);
 
     /**
+     * When this lineage began — the earliest {@code family_started_at} any of its rows carries.
+     *
+     * <p>Read when a successor is written, so the new row inherits the family's start instead of
+     * resetting it. Empty means this is the first row of a new family (a sign-in), and the clock
+     * starts now.
+     */
+    @Query("SELECT MIN(family_started_at) FROM sessions WHERE family_id = :familyId")
+    Optional<java.time.LocalDateTime> familyStartedAt(java.util.UUID familyId);
+
+    /**
      * The sessions to SHOW a user: active by status and still valid by the clock.
      *
      * <p>Both halves are needed and only the first used to be applied. {@code ExpiredSessionReaper}

@@ -20,7 +20,8 @@ import java.util.Optional;
  */
 public final class InMemoryAuthorizationDataRepository implements AuthorizationDataRepository {
 
-    private record Row(SessionTokens tokens, SessionFamily family, SessionStatus status) {}
+    private record Row(SessionTokens tokens, SessionFamily family, SessionStatus status,
+                       java.time.LocalDateTime familyStartedAt) {}
 
     private final Map<String, Row> byRefreshToken = new HashMap<>();
 
@@ -42,7 +43,14 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
 
     @Override
     public SessionTokens create(SessionTokens sessionTokens, SessionFamily family) {
-        byRefreshToken.put(sessionTokens.refreshToken().value(), new Row(sessionTokens, family, SessionStatus.ACTIVE));
+        // a successor inherits the lineage's start, exactly as the table does
+        java.time.LocalDateTime familyStartedAt = byRefreshToken.values().stream()
+                .filter(row -> row.family().equals(family))
+                .map(Row::familyStartedAt)
+                .min(java.time.LocalDateTime::compareTo)
+                .orElseGet(() -> java.time.LocalDateTime.now(clock));
+        byRefreshToken.put(sessionTokens.refreshToken().value(),
+                new Row(sessionTokens, family, SessionStatus.ACTIVE, familyStartedAt));
         return sessionTokens;
     }
 
@@ -50,7 +58,8 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
     public Optional<StoredSession> findByRefreshToken(RefreshToken refreshToken) {
         return Optional.ofNullable(byRefreshToken.get(refreshToken.value()))
                 .map(row -> new StoredSession(
-                        row.tokens().email(), row.tokens().refreshTokenExpiration(), row.family(), row.status()));
+                        row.tokens().email(), row.tokens().refreshTokenExpiration(), row.family(), row.status(),
+                        row.familyStartedAt()));
     }
 
     @Override
@@ -71,7 +80,7 @@ public final class InMemoryAuthorizationDataRepository implements AuthorizationD
                 return row;
             }
             rotated[0] = true;
-            return new Row(row.tokens(), row.family(), SessionStatus.ROTATED);
+            return new Row(row.tokens(), row.family(), SessionStatus.ROTATED, row.familyStartedAt());
         });
         return rotated[0];
     }

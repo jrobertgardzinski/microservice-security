@@ -44,6 +44,7 @@ import org.junit.jupiter.api.BeforeAll;
 import com.jrobertgardzinski.persistence.SecuritySettingsTable;
 import com.jrobertgardzinski.password.config.MinLength;
 import com.jrobertgardzinski.security.system.settings.SettingsRepository;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -217,6 +218,26 @@ class JdbcAdaptersTest {
 
         sessions.markRotated(session.refreshToken());
         assertThat(sessions.findByAccessToken(session.accessToken())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("a successor inherits the lineage's start, so the absolute lifetime is absolute")
+    void rotation_does_not_restart_the_clock() {
+        AuthorizationDataRepository sessions = context.getBean(AuthorizationDataRepository.class);
+        Email email = Email.of("jdbc-lineage@example.com");
+        SessionFamily family = SessionFamily.start();
+        SessionTokens first = SessionTokens.createFor(email, SESSION_CONFIG, Clock.systemUTC());
+
+        sessions.create(first, family);
+        LocalDateTime started = sessions.findByRefreshToken(first.refreshToken()).orElseThrow().familyStartedAt();
+
+        SessionTokens second = sessions.rotateAndCreate(first.refreshToken(),
+                () -> SessionTokens.createFor(email, SESSION_CONFIG, Clock.systemUTC()), family).orElseThrow();
+
+        assertThat(sessions.findByRefreshToken(second.refreshToken()).orElseThrow().familyStartedAt())
+                .as("if each refresh started the clock again, an absolute session lifetime would be"
+                        + " a ceiling nobody ever reaches — which is the state this fixed")
+                .isEqualTo(started);
     }
 
     /**

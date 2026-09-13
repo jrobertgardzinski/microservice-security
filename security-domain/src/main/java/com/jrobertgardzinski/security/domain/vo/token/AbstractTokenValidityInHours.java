@@ -8,8 +8,17 @@ public abstract class AbstractTokenValidityInHours {
 
     private final int value;
 
-    protected AbstractTokenValidityInHours(int value) {
+    /**
+     * @param max the ceiling THIS kind of token accepts. There was none, so a deployment could ask
+     *            for 87600 hours and get it: a session valid for a decade, from one typo in a
+     *            property, with nothing to notice it. The floor is shared because a token valid for
+     *            zero hours is nonsense whatever it is for; the ceiling is not, because an access
+     *            token and a refresh token have different jobs and the number that is absurd for
+     *            one is ordinary for the other.
+     */
+    protected AbstractTokenValidityInHours(int value, int max) {
         if (value < MIN) throw new IllegalArgumentException("TokenValidityInHours must be >= " + MIN);
+        if (value > max) throw new IllegalArgumentException("TokenValidityInHours must be <= " + max);
         this.value = value;
     }
 
