@@ -25,6 +25,21 @@ public interface UserRepository {
     /** Replace a user's whole role set (USER is always kept); a no-op if the user is absent. */
     void setRoles(Email email, Set<Role> roles);
 
+    /**
+     * How many accounts hold ADMIN right now.
+     *
+     * <p>Asked before a role change takes ADMIN away: the one question the caller cannot answer for
+     * themselves. Granting and revoking roles is itself an admin action, so an administrator who
+     * drops their own grant while being the last one leaves a system in which nobody can grant it
+     * back — the only way out being the deployment's {@code security.bootstrap-admins}, if it names
+     * anybody at all.
+     *
+     * <p>Bootstrap admins are deliberately NOT counted here: they are admins by CONFIGURATION, not
+     * by a row, and whether the deployment declares any is the use case's business to combine with
+     * this number.
+     */
+    int countAdmins();
+
     /** Replace an existing user's password hash (e.g. after a password reset); a no-op if absent. */
     void updatePassword(Email email, HashedPassword passwordHash);
 

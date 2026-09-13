@@ -455,11 +455,22 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   jako fotografię przebiegu z 2026-07-02), OPS-9 (`docs/mfa-design.md` ma blok „As built"),
   OPS-10 (playbook mówi, że `security-application` nie ma `src/main`, a S5 jest zamknięte),
   MFA-8 (udokumentowane jako celowe w javadoc `MfaChain`).
+- **DECYZJE WŁAŚCICIELA, runda 1 (ACC-8, AUTH-11) — ZROBIONE 2026-09-13, za Twoją zgodą na dwie
+  nowe metody portów.** ACC-8: `UserRepository.countAdmins()` + reguła w `SetUserRoles` — zmiana,
+  która zostawia system BEZ ŻADNEGO admina, jest odrzucana (409 `WOULD_LEAVE_NO_ADMIN`). Warunkowo:
+  gdy deployment deklaruje `security.bootstrap-admins`, admin nadal istnieje (konfiguracją, nie
+  wierszem) i zmiana przechodzi. Nadawanie ról jest samo w sobie czynnością admina, więc ostatni
+  admin zdejmujący sobie rolę zamykał drzwi od środka.
+  AUTH-11: `removeAllFor(Source)` + `_BruteForceGuard` kasuje licznik CAŁEGO źródła, gdy blok
+  postawił PUŁAP (blok z pary nadal kasuje tylko parę — to jest dokładnie to rozróżnienie, którego
+  brakowało). Dotąd adres zostawał NA pułapie: blok mijał, pierwsza porażka znowu go wyzwalała, i
+  blok liczony w minutach zachowywał się jak liczony w godzinach. Pytanie o pułap zadawane jest
+  dalej tylko wtedy, gdy limit pary nie został osiągnięty — ten sam short-circuit co `||`, więc
+  żadna próba nie płaci za zapytanie, którego nie potrzebuje.
 - **Otwarte z raportu — stan na 2026-09-12 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
   wszystkie MEDIUM (w tym DOM-2 i DB-8 po decyzji właściciela) oraz paczki LOW 1–10 (opisane
   wyżej). Zostaje:
-  - **do DECYZJI właściciela (nie ruszam sam):** AUTH-11 — kasowanie licznika CAŁEGO źródła po
-    bloku z pułapu wymaga `removeAllFor(Source)` w porcie rejestru odrzuceń; AUTH-13 — brak
+  - **do DECYZJI właściciela (nie ruszam sam):** AUTH-13 — brak
     bezwzględnego czasu życia sesji (każde odświeżenie daje pełne nowe okno; NIGDZIE nie było
     obiecane inaczej, więc to decyzja produktowa); MFA-9 — konto federacyjne bez czynników i bez
     hasła nie ma czym potwierdzić step-upu; MFA-10 — ziarna TOTP jawne wbrew javadoc/V11/docs,

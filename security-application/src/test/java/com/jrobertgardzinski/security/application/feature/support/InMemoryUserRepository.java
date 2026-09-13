@@ -95,4 +95,9 @@ public final class InMemoryUserRepository implements UserRepository {
             byNormalizedEmail.put(updated.normalizedEmail().value(), updated);
         }
     }
+
+    @Override
+    public int countAdmins() {
+        return (int) byEmail.values().stream().filter(user -> user.hasRole(Role.ADMIN)).count();
+    }
 }

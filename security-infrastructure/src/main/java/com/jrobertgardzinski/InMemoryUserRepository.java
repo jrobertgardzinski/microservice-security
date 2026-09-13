@@ -69,6 +69,11 @@ public final class InMemoryUserRepository implements UserRepository {
     }
 
     @Override
+    public int countAdmins() {
+        return (int) byEmail.values().stream().filter(user -> user.hasRole(Role.ADMIN)).count();
+    }
+
+    @Override
     public void updatePassword(com.jrobertgardzinski.email.domain.Email email,
                                com.jrobertgardzinski.password.domain.HashedPassword passwordHash) {
         User existing = byEmail.get(email.value());

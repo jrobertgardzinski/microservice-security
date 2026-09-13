@@ -303,8 +303,10 @@ public class BeanFactory {
     }
 
     @Singleton
-    com.jrobertgardzinski.security.system.roles.SetUserRoles setUserRoles(UserRepository userRepository) {
-        return new com.jrobertgardzinski.security.system.roles.SetUserRoles(userRepository);
+    com.jrobertgardzinski.security.system.roles.SetUserRoles setUserRoles(
+            UserRepository userRepository,
+            com.jrobertgardzinski.security.system.roles.BootstrapAdmins bootstrapAdmins) {
+        return new com.jrobertgardzinski.security.system.roles.SetUserRoles(userRepository, bootstrapAdmins);
     }
 
     /**

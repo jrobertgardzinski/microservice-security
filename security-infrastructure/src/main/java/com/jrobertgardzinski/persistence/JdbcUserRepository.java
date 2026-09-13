@@ -107,6 +107,11 @@ final class JdbcUserRepository implements UserRepository {
         repository.setRoles(email.value(), encodeRoles(withUser));
     }
 
+    @Override
+    public int countAdmins() {
+        return repository.countAdmins();
+    }
+
     private static String encodeRoles(Set<Role> roles) {
         return roles.stream().map(Enum::name).sorted().collect(Collectors.joining(","));
     }

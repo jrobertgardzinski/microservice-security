@@ -78,6 +78,14 @@ final class AdminRolesController {
         if (result.status() == SetUserRoles.Status.NO_SUCH_USER) {
             return HttpResponse.notFound(Map.of("status", "NO_SUCH_USER"));
         }
+        if (result.status() == SetUserRoles.Status.WOULD_LEAVE_NO_ADMIN) {
+            // 409, not 403: the caller IS allowed to do this, and the state of the system is what
+            // refuses. Telling them which is the difference between "try again with proof" and
+            // "grant somebody else first".
+            return HttpResponse.<Map<String, Object>>status(io.micronaut.http.HttpStatus.CONFLICT)
+                    .body(Map.of("status", "WOULD_LEAVE_NO_ADMIN",
+                            "roles", result.roles().stream().map(Role::name).sorted().toList()));
+        }
         return HttpResponse.ok(Map.of("email", email,
                 "roles", result.roles().stream().map(Role::name).sorted().toList()));
     }

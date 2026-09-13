@@ -45,4 +45,18 @@ public interface RejectedAuthenticationRepository {
      * own.
      */
     void removeAllFor(LockoutSubject subject);
+
+    /**
+     * Forget EVERY failure recorded against this source.
+     *
+     * <p>For one caller only: the guard placing a block that the per-source CEILING triggered. That
+     * block now stands for the whole address, so the rows it was counted from have been answered
+     * and must go with it. Clearing only the pair — which is what used to happen — left the source
+     * sitting at its ceiling, so the moment the block expired the very next failure tripped it
+     * again, and the address stayed blocked until the window slid past every one of those rows.
+     *
+     * <p>A SUCCESSFUL sign-in must never reach this: an amnesty for an entire address is exactly
+     * what {@link #removeAllFor(LockoutSubject)} was narrowed to prevent.
+     */
+    void removeAllFor(Source source);
 }

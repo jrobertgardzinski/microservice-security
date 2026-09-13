@@ -41,6 +41,13 @@ interface RejectedAuthenticationJdbcRepository extends CrudRepository<RejectedAu
     void deleteByIpAddressAndAccountFingerprint(String ipAddress, String accountFingerprint);
 
     /**
+     * Every failure from this address. Called ONLY when a block placed for the per-source ceiling
+     * answers for them — never on a successful sign-in, which is the amnesty this repository was
+     * narrowed to stop handing out.
+     */
+    void deleteByIpAddress(String ipAddress);
+
+    /**
      * Retention: a failure older than the cutoff is deleted.
      *
      * <p>The only deletion before this was {@code deleteByIpAddress}, run when a source SUCCEEDS or

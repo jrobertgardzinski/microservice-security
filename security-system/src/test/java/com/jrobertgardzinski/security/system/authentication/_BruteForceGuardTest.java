@@ -157,7 +157,11 @@ class _BruteForceGuardTest {
         assertInstanceOf(BruteForceProtectionEvent.Allowed.class, event);
         assertAll(
                 () -> Mockito.verify(authenticationBlockRepository, Mockito.never()).create(Mockito.any()),
-                () -> Mockito.verify(rejectedAuthenticationRepository, Mockito.never()).removeAllFor(Mockito.any())
+                // both overloads: nothing about this attempt is forgiven, at either scale
+                () -> Mockito.verify(rejectedAuthenticationRepository, Mockito.never())
+                        .removeAllFor(Mockito.any(LockoutSubject.class)),
+                () -> Mockito.verify(rejectedAuthenticationRepository, Mockito.never())
+                        .removeAllFor(Mockito.any(com.jrobertgardzinski.security.domain.vo.Source.class))
         );
     }
 }

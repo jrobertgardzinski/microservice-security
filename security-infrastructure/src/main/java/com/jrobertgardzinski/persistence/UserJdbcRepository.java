@@ -36,4 +36,12 @@ interface UserJdbcRepository extends CrudRepository<UserEntity, UUID> {
     void updateEmail(String currentEmail, String newEmail, String normalizedEmail);
 
     void deleteByEmail(String email);
+
+    /**
+     * Accounts holding ADMIN. Roles are stored as a sorted comma-separated list in one column, so
+     * the match is on the list's ELEMENT: {@code LIKE '%ADMIN%'} would also count a role named
+     * SUPERADMIN the day somebody adds one.
+     */
+    @Query("SELECT COUNT(*) FROM users WHERE 'ADMIN' = ANY (string_to_array(roles, ','))")
+    int countAdmins();
 }

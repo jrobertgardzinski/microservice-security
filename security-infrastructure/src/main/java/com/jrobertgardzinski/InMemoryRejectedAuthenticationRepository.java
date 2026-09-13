@@ -94,4 +94,9 @@ public final class InMemoryRejectedAuthenticationRepository implements RejectedA
     public void removeAllFor(LockoutSubject subject) {
         records.removeIf(record -> record.details().subject().equals(subject));
     }
+
+    @Override
+    public void removeAllFor(Source source) {
+        records.removeIf(record -> record.details().subject().source().equals(source));
+    }
 }

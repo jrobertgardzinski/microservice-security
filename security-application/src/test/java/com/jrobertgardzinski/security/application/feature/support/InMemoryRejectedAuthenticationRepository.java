@@ -58,4 +58,9 @@ public final class InMemoryRejectedAuthenticationRepository implements RejectedA
         // made one known-good credential a reset button for every account behind it
         records.removeIf(record -> record.details().subject().equals(subject));
     }
+
+    @Override
+    public void removeAllFor(Source source) {
+        records.removeIf(record -> record.details().subject().source().equals(source));
+    }
 }

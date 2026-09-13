@@ -83,4 +83,9 @@ final class JdbcRejectedAuthenticationRepository implements RejectedAuthenticati
         repository.deleteByIpAddressAndAccountFingerprint(
                 subject.source().ipAddress().value(), fingerprint.of(subject.account()));
     }
+
+    @Override
+    public void removeAllFor(Source source) {
+        repository.deleteByIpAddress(source.ipAddress().value());
+    }
 }

@@ -6,6 +6,7 @@ import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
@@ -21,6 +22,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -120,6 +122,26 @@ class BruteForceCountingTest {
                 .as("five misses from one address, and the ceiling is what sees them: the pair"
                         + " counter is still at one for every account involved")
                 .isInstanceOf(AuthenticationResult.Blocked.class);
+    }
+
+    @Test
+    @DisplayName("a block placed by the ceiling answers for the whole source's failures")
+    void a_ceiling_block_clears_what_it_stands_for() {
+        Source source = new Source(new IpAddress("198.51.100.23"), "ceiling/1.0");
+        RejectedAuthenticationRepository rejections =
+                context.getBean(RejectedAuthenticationRepository.class);
+
+        for (int i = 0; i < MAX_FAILURES_PER_SOURCE; i++) {
+            attempt(source, account("ceiling-" + i + "@example.com"), WRONG_PASSWORD);
+        }
+        assertThat(attempt(source, account("ceiling-last@example.com"), WRONG_PASSWORD))
+                .isInstanceOf(AuthenticationResult.Blocked.class);
+
+        assertThat(rejections.countFailuresFromSource(source, LocalDateTime.now().minusDays(1)).count())
+                .as("the block stands for every one of those failures. Leaving them behind leaves"
+                        + " the source AT its ceiling: the block expires, the next failure trips it"
+                        + " again, and a block of minutes behaves like one of hours")
+                .isZero();
     }
 
     private static AuthenticationResult attempt(Source source, Email email, String password) {
