@@ -361,10 +361,32 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   ODŁOŻONE: ACC-8 (ostatni ADMIN może zdjąć sobie rolę) — uczciwa naprawa wymaga NOWEGO pytania do
   portu `UserRepository` („ilu jest adminów?"), czyli zmiany kształtu Twojej domeny → czeka na Twoją
   decyzję.
+- **LOW, paczka 12 — bezpiecznik, limit i licznik (WIRE-7, AUTH-10, MFA-4) — ZROBIONE 2026-09-13.**
+  WIRE-7: bez `security.jwt.private-key`/`public-key` serwis CICHO generował parę na starcie. W dev
+  to jest w porządku, w deployu to złamana obietnica: cały sens samodzielnego tokenu polega na tym,
+  że INNE serwisy weryfikują go offline po `/.well-known/jwks.json`, a efemeryczna para zmienia się
+  przy każdym restarcie i RÓŻNI SIĘ MIĘDZY REPLIKAMI — konsumenci dostają ważne tokeny, których nie
+  umieją zweryfikować, z niczym w logach. `JwtKeyFuse` (jak `CredentialsFuse`: `@Context` +
+  zadeklarowany profil `prod`) odmawia startu, a poza prodem generowanie jest teraz GŁOŚNE (WARN).
+  Bezpiecznik jest wstrzykiwany do `settingsSnapshot`, żeby odezwał się ZANIM cokolwiek otworzy
+  połączenie — dokładnie tym samym chwytem, co `CredentialsFuse`.
+  AUTH-10: limit step-upu był kluczowany ADRESEM na endpointcie, który WIE, kto woła — czyli jedno
+  biuro dzieliło jeden budżet i niecierpliwy kolega wylogowywał wszystkich zza NAT-a z ich własnych
+  kont. Teraz klucz to dzwoniący (`SourceThrottle.check(String)`), a udana elewacja KASUJE okno
+  (`forgive`) — ta sama reguła, którą poprawne hasło stosuje w strażniku brute-force.
+  MFA-4: potwierdzenie enrolmentu nie miało ŻADNEGO limitu prób — sześciocyfrowy kod dało się
+  przechodzić z prędkością sieci tak długo, jak żył wpis. `PendingEnrolment` niesie `attemptsLeft`
+  (5, jak przy logowaniu), a wyczerpanie kończy próbę.
+  ODŁOŻONE: AUTH-11 (blok z pułapu SOURCE czyści tylko bieżącą parę, więc adres siedzi na pułapie do
+  przesunięcia okna) — uczciwa naprawa potrzebuje `removeAllFor(Source)` w porcie
+  `RejectedAuthenticationRepository`, czyli znowu zmiany kształtu Twojej domeny.
 - **Otwarte z raportu — stan na 2026-09-12 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
   wszystkie MEDIUM (w tym DOM-2 i DB-8 po decyzji właściciela) oraz paczki LOW 1–10 (opisane
   wyżej). Zostaje:
-  - **do DECYZJI właściciela (nie ruszam sam):** ACC-8 — żeby odmówić zdjęcia roli OSTATNIEMU
+  - **do DECYZJI właściciela (nie ruszam sam):** AUTH-11 — kasowanie licznika CAŁEGO źródła po
+    bloku z pułapu wymaga `removeAllFor(Source)` w porcie rejestru odrzuceń; AUTH-13 — brak
+    bezwzględnego czasu życia sesji (każde odświeżenie daje pełne nowe okno; NIGDZIE nie było
+    obiecane inaczej, więc to decyzja produktowa); ACC-8 — żeby odmówić zdjęcia roli OSTATNIEMU
     adminowi, `UserRepository` musi umieć policzyć adminów (nowa metoda portu); DB-14 cz. 2 — po ilu dniach kasujemy konto,
     którego NIKT nigdy nie zweryfikował (to decyzja produktowa, nie sprzątanie); DOM-9 —
     `UserRegistration` jest martwy, ale to Twój pakiet domeny; DOM-12 — nazwy (`AccessToken` vs
@@ -372,8 +394,11 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
     domyśla `AccessTokenMint.RANDOM`, używają tego tylko testy; DOM-13 — ważność tokenu w pełnych
     godzinach, MIN = 1, bez MAX; DOM-14 — `User` przyjmuje niespójny `normalizedEmail` (dziś każde
     miejsce konstrukcji jest spójne); AUTH-2 — `Source` w `PendingAuthentication`.
-  - **czysta robota, nikogo nie pytam (następna kolejka):** MFA-4/9/10; AUTH-10/11/13/15; ATK-8;
-    UI-9/10/11/13/14; TEST-2/5/6/7/11/12/13; WIRE-7.
+  - **czysta robota, nikogo nie pytam (następna kolejka):** MFA-9 (passwordless z zerem czynników
+    jest „elevated" dla FULL_CHAIN), MFA-10 (ziarna TOTP jawne, choć javadoc/V11/docs obiecują
+    szyfrowanie — potrzebny klucz, więc pół-decyzja), AUTH-15 i TEST-2/5/6/7/11/12/13 (testy
+    pinowane wyłącznie mockami), UI-9/10/11/13/14. ATK-8 (limity po dokładnym adresie, IPv6 rotuje
+    w /64) raport SAM nazywa udokumentowaną osią — nic do roboty poza decyzją o podsieci.
 
 ## ~~Otwarte — pilne (2026-08-08)~~ — ZAMKNIĘTE, sekcja była NIEAKTUALNA (sprostowane 2026-09-12)
 

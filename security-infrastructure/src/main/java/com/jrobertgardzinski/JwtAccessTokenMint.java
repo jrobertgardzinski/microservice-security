@@ -53,6 +53,9 @@ import java.util.UUID;
 @Singleton
 class JwtAccessTokenMint implements AccessTokenMint {
 
+    private static final org.slf4j.Logger LOG =
+            org.slf4j.LoggerFactory.getLogger(JwtAccessTokenMint.class);
+
     static final String ISSUER = "microservice-security";
 
     private final KeyPair keyPair;
@@ -148,6 +151,14 @@ class JwtAccessTokenMint implements AccessTokenMint {
     private static KeyPair load(String privateKeyBase64, String publicKeyBase64) {
         try {
             if (privateKeyBase64.isBlank() || publicKeyBase64.isBlank()) {
+                // Loud, because it used to be silent and it is not a small thing: this pair dies
+                // with the process, so every restart invalidates the offline verification of every
+                // other service, and two replicas sign with two different keys at the same time.
+                // JwtKeyFuse refuses this outright under a declared prod profile; everywhere else
+                // it is a convenience, and the log is what keeps it from being a surprise.
+                LOG.warn("no security.jwt.private-key/public-key configured - generating an EPHEMERAL"
+                        + " signing pair. Offline verification against /.well-known/jwks.json will"
+                        + " break on every restart and across replicas; introspection is unaffected.");
                 return KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
             }
             KeyFactory keyFactory = KeyFactory.getInstance("Ed25519");

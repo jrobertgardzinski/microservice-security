@@ -12,9 +12,29 @@ import java.util.Optional;
  */
 public interface EnrolmentChallengeStore {
 
-    /** What a half-finished enrolment must remember: the factor's secret material and (for a
-     *  challenge factor) the issued challenge to check the proof against. */
-    record PendingEnrolment(String secretMaterial, Challenge challenge) {}
+    /**
+     * What a half-finished enrolment must remember: the factor's secret material, (for a challenge
+     * factor) the issued challenge to check the proof against, and how many wrong proofs it will
+     * still take.
+     *
+     * <p>The count is the same idea as the sign-in chain's: without it, confirming had no cap at
+     * all, so a six-digit code could be walked through at the speed of the network for as long as
+     * the entry lived. Enrolment is guarded by an elevated session and the entry's own TTL, which
+     * is why this was small — not why it was right.
+     */
+    record PendingEnrolment(String secretMaterial, Challenge challenge, int attemptsLeft) {
+
+        /** How many wrong proofs one enrolment attempt is worth — as at sign-in. */
+        public static final int ATTEMPTS = 5;
+
+        public static PendingEnrolment beginning(String secretMaterial, Challenge challenge) {
+            return new PendingEnrolment(secretMaterial, challenge, ATTEMPTS);
+        }
+
+        public PendingEnrolment afterWrongProof() {
+            return new PendingEnrolment(secretMaterial, challenge, attemptsLeft - 1);
+        }
+    }
 
     void put(Email user, FactorType type, PendingEnrolment enrolment);
 

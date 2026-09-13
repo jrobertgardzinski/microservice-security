@@ -41,7 +41,8 @@ public class EnrolFactor {
             return new Result.UnsupportedFactor();
         }
         EnrolmentSetup setup = factor.get().beginEnrolment(target);
-        pending.put(user, type, new EnrolmentChallengeStore.PendingEnrolment(setup.secretMaterial(), setup.challenge()));
+        pending.put(user, type, EnrolmentChallengeStore.PendingEnrolment
+                .beginning(setup.secretMaterial(), setup.challenge()));
         return new Result.Started(setup.display());
     }
 
@@ -53,6 +54,14 @@ public class EnrolFactor {
         }
         EnrolledFactor candidate = candidate(user, type, enrolment.get().secretMaterial());
         if (!factor.get().verify(candidate, Optional.ofNullable(enrolment.get().challenge()), proof)) {
+            // a wrong proof costs an attempt, and running out ends the enrolment — otherwise the
+            // code can be guessed at the speed of the network for as long as the entry lives
+            EnrolmentChallengeStore.PendingEnrolment afterWrong = enrolment.get().afterWrongProof();
+            if (afterWrong.attemptsLeft() <= 0) {
+                pending.remove(user, type);
+            } else {
+                pending.put(user, type, afterWrong);
+            }
             return new Result.WrongProof();
         }
         // most factors store what enrolment produced; a factor whose real secret only arrives with

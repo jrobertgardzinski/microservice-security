@@ -108,13 +108,16 @@ public class BeanFactory {
      * the only way in, so there is nothing to poll for: a row written behind the API's back is not
      * in force until the next start or the next admin's write.
      *
-     * <p>The first read touches the datasource, so it waits for the {@link CredentialsFuse} where
-     * one exists (a declared {@code prod} profile): a missing or dev-default password must be
-     * refused by the fuse's own words, not by the placeholder error of a datasource that this
-     * snapshot would otherwise be the first to open.
+     * <p>The first read touches the datasource, so it waits for the deployment fuses where they
+     * exist (a declared {@code prod} profile): a missing or dev-default password, or a missing JWT
+     * signing pair, must be refused in the fuse's own words, not by the placeholder error of a
+     * datasource that this snapshot would otherwise be the first to open. The JWT fuse has nothing
+     * to do with the snapshot and is named here for exactly that reason — it is the cheapest way to
+     * say "before anything opens a connection".
      */
     @Context
-    SnapshotLiveConfigPort settingsSnapshot(SecuritySettingsTable table, @Nullable CredentialsFuse fuse) {
+    SnapshotLiveConfigPort settingsSnapshot(SecuritySettingsTable table, @Nullable CredentialsFuse fuse,
+                                            @Nullable JwtKeyFuse jwtKeyFuse) {
         return new SnapshotLiveConfigPort(table::rows);
     }
 

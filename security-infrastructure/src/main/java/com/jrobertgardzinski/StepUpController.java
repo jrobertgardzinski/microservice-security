@@ -60,7 +60,7 @@ final class StepUpController {
         // its rule, where an absent one has always answered "wrong password" — one situation, one
         // answer, and the use case already knows what to do with nothing
         String password = JsonBody.missing(body, "password") ? null : body.get("password");
-        return respond(stepUp.start(email, action.get(), token, password));
+        return respond(stepUp.start(email, action.get(), token, password), request);
     }
 
     @Post(value = "/factor", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
@@ -72,13 +72,12 @@ final class StepUpController {
         if (JsonBody.missing(body, "stepUpTicket") || JsonBody.missing(body, "proof")) {
             return HttpResponse.badRequest(Map.of("status", "BAD_REQUEST"));
         }
-        return respond(stepUp.submitFactor(body.get("stepUpTicket"), body.get("proof")));
+        return respond(stepUp.submitFactor(body.get("stepUpTicket"), body.get("proof")), request);
     }
 
-    /** A 429 (with Retry-After) when the source has spent its window, otherwise null (proceed). */
+    /** A 429 (with Retry-After) when the CALLER has spent their window, otherwise null (proceed). */
     private HttpResponse<Map<String, Object>> throttled(HttpRequest<?> request) {
-        IpAddress source = clientIpResolver.resolve(request);
-        SourceThrottle.Decision decision = throttle.check(source);
+        SourceThrottle.Decision decision = throttle.check(subjectOf(request));
         if (decision.allowed()) {
             return null;
         }
@@ -87,7 +86,27 @@ final class StepUpController {
                 .body(Map.of("status", "TOO_MANY_STEP_UP_ATTEMPTS"));
     }
 
-    private static HttpResponse<Map<String, Object>> respond(StepUp.Result result) {
+    /**
+     * Who this window belongs to. Both endpoints are authenticated, so the caller's own identity
+     * is known and is the honest key: on the address, one NAT shares one budget and a colleague's
+     * impatience locks everyone else out. The address is kept as the fallback for the case that
+     * should not happen — no published caller — because a limit that silently stops limiting is
+     * worse than one keyed coarsely.
+     */
+    private String subjectOf(HttpRequest<?> request) {
+        try {
+            return "caller:" + Caller.of(request).value();
+        } catch (RuntimeException noPublishedCaller) {
+            return "source:" + clientIpResolver.resolve(request).value();
+        }
+    }
+
+    private HttpResponse<Map<String, Object>> respond(StepUp.Result result, HttpRequest<?> request) {
+        // a caller who has just re-proved themselves is not the volume this throttle defends
+        // against — same rule the brute-force guard follows on a correct password
+        if (result instanceof StepUp.Result.Elevated) {
+            throttle.forgive(subjectOf(request));
+        }
         return switch (result) {
             case StepUp.Result.Elevated elevated ->
                     HttpResponse.ok(Map.of("status", "ELEVATED"));

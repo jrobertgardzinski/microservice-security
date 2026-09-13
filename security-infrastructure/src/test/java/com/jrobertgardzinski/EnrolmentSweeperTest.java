@@ -54,9 +54,9 @@ class EnrolmentSweeperTest {
         InMemoryEnrolmentChallengeStore store = new InMemoryEnrolmentChallengeStore(clock, 15);
 
         // TOTP: a secret and NO challenge — the entry the sweeper used to trip over
-        store.put(ALICE, FactorType.TOTP, new PendingEnrolment("JBSWY3DPEHPK3PXP", null));
+        store.put(ALICE, FactorType.TOTP, PendingEnrolment.beginning("JBSWY3DPEHPK3PXP", null));
         // a code factor beside it, so "the sweep reached the rest" is observable
-        store.put(BOB, FactorType.EMAIL_CODE, new PendingEnrolment("bob@example.com",
+        store.put(BOB, FactorType.EMAIL_CODE, PendingEnrolment.beginning("bob@example.com",
                 Challenge.secret("hash", LocalDateTime.now(clock).plusMinutes(5))));
 
         store.evictAbandoned();   // nothing is due yet — and nothing throws
@@ -77,7 +77,7 @@ class EnrolmentSweeperTest {
     void a_live_enrolment_is_not_swept() {
         MovableClock clock = new MovableClock();
         InMemoryEnrolmentChallengeStore store = new InMemoryEnrolmentChallengeStore(clock, 15);
-        store.put(ALICE, FactorType.TOTP, new PendingEnrolment("JBSWY3DPEHPK3PXP", null));
+        store.put(ALICE, FactorType.TOTP, PendingEnrolment.beginning("JBSWY3DPEHPK3PXP", null));
 
         clock.advance(Duration.ofMinutes(14));
         store.evictAbandoned();

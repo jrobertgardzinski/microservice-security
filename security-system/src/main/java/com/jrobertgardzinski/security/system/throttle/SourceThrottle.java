@@ -58,6 +58,18 @@ public class SourceThrottle {
 
     /** Record one attempt from this source and decide whether it may proceed. */
     public Decision check(IpAddress source) {
+        return check(source.value());
+    }
+
+    /**
+     * The same limit against a subject that is not an address.
+     *
+     * <p>An AUTHENTICATED endpoint knows who is calling, and keying its limit on the address
+     * instead makes one office share one budget: ten step-ups per window for everybody behind the
+     * NAT, and one impatient colleague locks the rest out of their own accounts. The address is the
+     * right key only where there is nothing better — which is what the anonymous endpoints are.
+     */
+    public Decision check(String subject) {
         if (maxPerWindow <= 0) {
             return new Decision(true, 0);   // disabled
         }
@@ -71,7 +83,7 @@ public class SourceThrottle {
             evictOldestAbove(HARD_CAP);
             sweptAt.set(Math.max(SWEEP_THRESHOLD, windows.size() * 2));
         }
-        Window updated = windows.compute(source.value(), (ip, current) ->
+        Window updated = windows.compute(subject, (key, current) ->
                 current == null || Duration.between(current.start(), now).compareTo(window) >= 0
                         ? new Window(now, 1)
                         : new Window(current.start(), current.count() + 1));
@@ -81,6 +93,18 @@ public class SourceThrottle {
         long retryAfter = Math.max(1,
                 window.minus(Duration.between(updated.start(), now)).toSeconds());
         return new Decision(false, retryAfter);
+    }
+
+    /**
+     * Forget this subject's window — for a caller who has just proved themselves.
+     *
+     * <p>The same rule the brute-force guard follows on a correct password: somebody who got it
+     * right is not the volume this defends against, and their earlier misses stop counting. Without
+     * it a window spent on SUCCESSFUL elevations is the tightest limit in the service, and it lands
+     * on the person doing exactly what they are supposed to.
+     */
+    public void forgive(String subject) {
+        windows.remove(subject);
     }
 
     /** Oldest windows first, because they are the ones closest to rolling over by themselves. */
