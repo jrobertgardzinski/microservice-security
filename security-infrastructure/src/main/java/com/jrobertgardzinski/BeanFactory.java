@@ -111,13 +111,15 @@ public class BeanFactory {
      * <p>The first read touches the datasource, so it waits for everything a deployment must BRING
      * with it: a missing or dev-default password, a missing JWT signing pair, a missing key for the
      * TOTP seeds. Each must be refused in its own words, not by the placeholder error of a
-     * datasource that this snapshot would otherwise be the first to open. None of the three has
+     * datasource that this snapshot would otherwise be the first to open. None of them has
      * anything to do with the snapshot, and they are named here for exactly that reason — it is the
-     * cheapest way to say "before anything opens a connection".
+     * cheapest way to say "before anything opens a connection". The list grows with every secret a
+     * deployment is expected to bring, and that is the point: each one refuses in its own words.
      */
     @Context
     SnapshotLiveConfigPort settingsSnapshot(SecuritySettingsTable table, @Nullable CredentialsFuse fuse,
-                                            @Nullable JwtKeyFuse jwtKeyFuse, TotpSecretCipher totpSecrets) {
+                                            @Nullable JwtKeyFuse jwtKeyFuse, TotpSecretCipher totpSecrets,
+                                            @Nullable MetricsTokenFuse metricsTokenFuse) {
         return new SnapshotLiveConfigPort(table::rows);
     }
 

@@ -142,6 +142,16 @@ security:
   #   become ciphertext the next time their row is written — no migration. LOSING the key costs
   #   every enrolled TOTP factor: those users re-enrol.
   #
+  # metrics.token: <a long random string>   # what a scraper must present on /prometheus. There is
+  #   no separate management port — Micronaut serves the metrics on the API's own connector — so
+  #   without this the endpoint answers whoever can reach the service: per-route timings, pool
+  #   saturation, JVM vitals, and a live view of whether an attack is working. REQUIRED under a
+  #   declared prod profile; unset elsewhere, which is what lets the compose stack's Prometheus
+  #   scrape over its private network with nothing configured. Give the same value to the scraper
+  #   (Prometheus: `authorization: {type: Bearer, credentials: ...}`). /health is NEVER guarded: it
+  #   answers {"status":"UP"} and a probe that needs credentials fails during the incidents it
+  #   exists for.
+  #
   # trusted-proxies: 10.42.0.7,10.42.0.8   # EXACT addresses (no CIDR): X-Forwarded-For is honoured
   #                                          only when the peer is one of these, and the source is
   #                                          then the rightmost element that is not one of them

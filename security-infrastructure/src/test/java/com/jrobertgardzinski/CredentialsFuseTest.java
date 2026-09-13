@@ -57,6 +57,7 @@ class CredentialsFuseTest {
                         "security.jwt.private-key", "not-checked-here",
                         "security.jwt.public-key", "not-checked-here",
                         "security.mfa.recovery.pepper", "a-real-pepper",
+                        "security.metrics.token", "a-scraper-token",
                         "flyway.datasources.default.enabled", false))
                 .start());
 
@@ -64,6 +65,29 @@ class CredentialsFuseTest {
                 .as("a TOTP seed MINTS codes for ever and silently; without a key of its own a"
                         + " stolen table is a copy of every authenticator app in it")
                 .hasStackTraceContaining("the TOTP seeds need their own key");
+    }
+
+    @Test
+    void an_open_metrics_endpoint_refuses_a_prod_start() {
+        Throwable refusal = catchThrowable(() -> ApplicationContext.builder()
+                .deduceEnvironment(false)
+                .environments("prod")
+                .properties(Map.of(
+                        "kafka.enabled", false,
+                        "datasources.default.url", "jdbc:postgresql://localhost:1/none",
+                        "datasources.default.username", "nobody",
+                        "datasources.default.password", A_PASSWORD,
+                        "security.jwt.private-key", "not-checked-here",
+                        "security.jwt.public-key", "not-checked-here",
+                        "security.mfa.recovery.pepper", "a-real-pepper",
+                        "security.mfa.secret-key", "ZGV2LWtleS1ub3QtYS1zZWNyZXQtMzJieXRlcyEhISE=",
+                        "flyway.datasources.default.enabled", false))
+                .start());
+
+        assertThat(refusal)
+                .as("there is no separate management port, so /prometheus is served on the API's own"
+                        + " connector: without a token it answers whoever can reach the service")
+                .hasStackTraceContaining("the metrics endpoint needs a token");
     }
 
     @Test

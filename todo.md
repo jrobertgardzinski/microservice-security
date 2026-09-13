@@ -523,17 +523,23 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   wdrożenia klucza. Pod zadeklarowanym profilem `prod` brak klucza ODMAWIA startu (jak pieprz do
   kodów odzyskiwania). UTRATA klucza kosztuje wszystkie czynniki TOTP — ci użytkownicy enrolują się
   od nowa; klucz należy trzymać tam, gdzie hasło do bazy.
+- **DECYZJA WŁAŚCICIELA, runda 6 (OPS-19) — ZROBIONE 2026-09-13.** Micronaut NIE MA osobnego portu
+  zarządzania — `/prometheus` jedzie tym samym konektorem, co API — więc endpoint odpowiadał
+  każdemu, kto dosięgnie usługi: czasy per trasa (profil opóźnień logowania to podpowiedź, co jest
+  próbowane), nasycenie puli, życiorys JVM i podgląd NA ŻYWO, czy atak działa. `MetricsAccessFilter`
+  wymaga tokenu (`security.metrics.token`, porównanie w stałym czasie), a `MetricsTokenFuse` odmawia
+  startu bez niego pod zadeklarowanym profilem `prod`. Filtr ISTNIEJE tylko wtedy, gdy token jest
+  ustawiony, więc stos compose (Prometheus po prywatnej sieci) działa bez konfigurowania czegokolwiek
+  — w `observability/prometheus.yml` dopisany komentarz, jak podać token, gdy deployment go ustawi.
+  `/health` NIE jest strzeżony i to jest osobna decyzja: oddaje `{"status":"UP"}` i nic więcej, a
+  sonda, która potrzebuje poświadczeń, zawodzi dokładnie w tych awariach, dla których istnieje.
 - **Otwarte z raportu — stan na 2026-09-12 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
   wszystkie MEDIUM (w tym DOM-2 i DB-8 po decyzji właściciela) oraz paczki LOW 1–10 (opisane
   wyżej). Zostaje:
   - **do DECYZJI właściciela (nie ruszam sam):** AUTH-13 — brak
     bezwzględnego czasu życia sesji (każde odświeżenie daje pełne nowe okno; NIGDZIE nie było
     obiecane inaczej, więc to decyzja produktowa); MFA-9 — konto federacyjne bez czynników i bez
-    hasła nie ma czym potwierdzić step-upu; OPS-19 — `/prometheus`
-    i `/health` bez uwierzytelnienia na PUBLICZNYM porcie API (`/health` oddaje samo `{"status":"UP"}`,
-    ale metryki są otwarte); Micronaut nie ma osobnego portu zarządzania, więc wyjścia to albo
-    `sensitive: true` + poświadczenia (trzeba wtedy ruszyć `observability/prometheus.yml` w
-    workspace), albo reverse proxy — decyzja wdrożeniowa, nie kod; OPS-21 cz. 2 — nazwa jara
+    hasła nie ma czym potwierdzić step-upu; OPS-21 cz. 2 — nazwa jara
     zapisana na sztywno w `Dockerfile`/`ci.yml`/`run-e2e.sh` (zmiana wersji wywala się GŁOŚNO na
     COPY, więc zostawiam); MFA-13 — licznik podpisów ignorowany i flaga UV niewymagana (raport sam
     zauważa, że synchronizowane passkeye i tak raportują 0, a wymaganie UV zderza się z
