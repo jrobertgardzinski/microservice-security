@@ -33,7 +33,7 @@ Given('the USER has ENROLLED a PASSKEY', async function () {
   await expect(this.page.getByTestId('signed-in-email')).toHaveText(credentials.email);
 
   await this.page.getByTestId('add-WEBAUTHN').click();
-  await proveForEnrol(this);
+  await proveForEnrol(this, this.page.getByTestId('factor-list').getByText('passkey'));
   // the UI creates the credential and confirms in one gesture — wait for the passkey to appear
   await expect(this.page.getByTestId('factor-list').getByText('passkey')).toBeVisible();
   await this.page.getByTestId('sign-out').click();

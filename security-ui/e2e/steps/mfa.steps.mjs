@@ -16,19 +16,31 @@ import { credentials, uniqueAccount } from '../support/account.mjs';
  * so the glue does what the person does — types the password, and the mailed code if a factor is
  * already enrolled. Silent when no proof is asked for, so the same call fits every enrolment.
  */
-async function proveForEnrol(world) {
+async function proveForEnrol(world, proceeded) {
   const prompt = world.page.getByTestId('enrol-stepup');
-  // isVisible() answers about THIS INSTANT, and the 403 that summons this prompt is a round trip
-  // away — so the instantaneous check read "no prompt", this helper returned having done nothing,
-  // and the caller then waited for a screen that was never going to come. Wait for the prompt
-  // instead, and treat the timeout as the honest answer: no proof was asked for.
-  try {
-    await expect(prompt).toBeVisible({ timeout: 5_000 });
-  } catch {
-    return;
+  // Which of the two things happened — the server asked for proof, or it did the thing — is
+  // decided by WAITING FOR EITHER, never by a timeout. isVisible() answers about this instant and
+  // the 403 that summons this prompt is a round trip away, so an instantaneous check read "no
+  // prompt" and the caller then waited for a screen that was never coming. The first repair waited
+  // five seconds for the prompt and read the timeout as "no proof was asked for" — which is a guess
+  // wearing a stopwatch: it says the same thing about a service that is merely slow, it costs five
+  // seconds on every enrolment that needs no proof, and on a loaded CI box it turns a real prompt
+  // into a silent skip. The caller knows what appears when no proof is demanded; it passes that in.
+  await expect(prompt.or(proceeded)).toBeVisible();
+  if (!(await prompt.isVisible())) {
+    return;   // the action went through — nothing was asked for, and we KNOW that
   }
-  await world.page.getByTestId('enrol-stepup-password').fill(credentials.password);
-  await world.page.getByTestId('enrol-stepup-submit').click();
+  // The panel asks the server what it wants before asking the person (UI-14), so an account that
+  // already carries a factor opens on the FACTOR half and there is no password to type: the
+  // server would not have checked one. Wait for whichever half is on screen.
+  const passwordInput = world.page.getByTestId('enrol-stepup-password');
+  const codeHalf = world.page.getByTestId('enrol-stepup-code');
+  const passkeyHalf = world.page.getByTestId('enrol-stepup-passkey');
+  await expect(passwordInput.or(codeHalf).or(passkeyHalf)).toBeVisible();
+  if (await passwordInput.isVisible()) {
+    await passwordInput.fill(credentials.password);
+    await world.page.getByTestId('enrol-stepup-submit').click();
+  }
   // the same trap one level down, and this copy of it was still live: an account that already
   // carries a factor is asked for a code, and that answer is another round trip away — but
   // isVisible() takes no timeout, it answers about THIS INSTANT and the option is silently
@@ -36,11 +48,11 @@ async function proveForEnrol(world) {
   // helper skipped the factor half and then waited for a panel that could not close.
   // Nothing caught it for months, because every OTHER scenario's account elevates on the
   // password alone — /account/step-up/factor was not called once in the whole suite.
-  const codeInput = world.page.getByTestId('enrol-stepup-code');
-  const askedForACode = await expect(codeInput).toBeVisible({ timeout: 5_000 })
-      .then(() => true).catch(() => false);
-  if (askedForACode) {
-    await codeInput.fill(await mailedSignInCode(world));
+  // the same either/or: the password alone elevated (the prompt closes and the action goes
+  // through), or a factor is owed and its input is on screen
+  await expect(codeHalf.or(passkeyHalf).or(proceeded)).toBeVisible();
+  if (await codeHalf.isVisible()) {
+    await codeHalf.fill(await mailedSignInCode(world));
     await world.page.getByTestId('enrol-stepup-code-submit').click();
   }
   await expect(prompt).toBeHidden();
@@ -111,7 +123,7 @@ Given('the USER has enrolled the e-mail FACTOR', async function () {
   await expect(addButton.or(enrolledEntry)).toBeVisible();
   if (await addButton.isVisible()) {
     await addButton.click();
-    await proveForEnrol(this);
+    await proveForEnrol(this, this.page.getByTestId('enroll-code'));
     // the code input appears only once the server answered 202 — i.e. the code is really out;
     // reading the mailbox any earlier races the enrolment start and finds a stale code
     const codeInput = this.page.getByTestId('enroll-code');
@@ -148,7 +160,7 @@ Given('the USER has GENERATED RECOVERY CODES', async function () {
   // minting codes that bypass the whole factor chain is behind the same step-up door as adding a
   // factor. The UI asks for that proof now; before it did, this click answered 403 in silence and
   // the codes never appeared — which is what had this suite red every night since 2026-07-30
-  await proveForEnrol(this);
+  await proveForEnrol(this, this.page.getByTestId('recovery-codes'));
   // the page is the only place the plain codes ever exist — harvest them like a user would
   await expect(this.page.getByTestId('recovery-codes')).toBeVisible();
   recoveryCodes = await this.page.getByTestId('recovery-codes').locator('li').allTextContents();

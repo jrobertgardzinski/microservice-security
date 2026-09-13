@@ -228,11 +228,36 @@ describe('what a tab keeps between sessions', () => {
 
     await typeInto(byTestId('new-email'), 'moved@example.com');
     await submitFormOf(byTestId('change-email-submit'));
-    await until('the step-up panel', () => present('enrol-stepup'));
-    await typeInto(byTestId('enrol-stepup-password'), 'correct horse');
-    await click(byTestId('enrol-stepup-submit'));
     await until('the passkey half of the step-up', () => present('enrol-stepup-passkey'));
 
     expect(present('enrol-stepup-code')).toBe(false);
+  });
+
+  it('does not ask for a password the server will not check (UI-14)', async () => {
+    // SECOND_FACTORS on an account that already carries a factor: the server begins the chain and
+    // never looks at a password. The panel used to collect one anyway and throw it away.
+    stepUpAnswer = () => json({ status: 'FACTOR_REQUIRED', stepUpTicket: 't-1', nextFactor: 'EMAIL_CODE',
+      challengeData: '' }, 202);
+    await signIn('alice@example.com', 'correct horse');
+
+    await typeInto(byTestId('new-email'), 'moved@example.com');
+    await submitFormOf(byTestId('change-email-submit'));
+    await until('the factor half of the step-up', () => present('enrol-stepup-code'));
+
+    expect(present('enrol-stepup-password'))
+      .toBe(false);
+  });
+
+  it('still asks for the password when that is what is wanted (UI-14)', async () => {
+    // FULL_CHAIN, or an account with no factors: the empty attempt is refused, and the password
+    // field is the honest thing to show
+    stepUpAnswer = () => json({ status: 'WRONG_PASSWORD' }, 401);
+    await signIn('alice@example.com', 'correct horse');
+
+    await typeInto(byTestId('new-email'), 'moved@example.com');
+    await submitFormOf(byTestId('change-email-submit'));
+    await until('the step-up panel', () => present('enrol-stepup'));
+
+    expect(present('enrol-stepup-password')).toBe(true);
   });
 });

@@ -396,7 +396,18 @@ export function App() {
     return body.status === 'STEP_UP_REQUIRED' || body.error === 'STEP_UP_REQUIRED';
   };
 
-  /** Open the step-up panel for one door, with nothing left over from the last time it was open. */
+  /**
+   * Open the step-up panel for one door, with nothing left over from the last time it was open —
+   * and ASK THE SERVER what it wants before asking the person for anything.
+   *
+   * <p>The panel used to demand a password every time. For an action whose policy is
+   * SECOND_FACTORS on an account that already carries a factor, the server does not check that
+   * password at all: it answers FACTOR_REQUIRED straight away and the chain begins. So the screen
+   * asked for a credential, the person typed it, and it was thrown away — which is both a lie
+   * about what is being verified and a habit worth nobody's while to teach. An empty attempt is
+   * the honest question: the answer is either the factor chain (ask for the code, never the
+   * password) or WRONG_PASSWORD, which means the password really is what is wanted.
+   */
   const askForStepUp = (type: string) => {
     setEnrolStepUpType(type);
     setEnrolStepUpPassword('');
@@ -404,6 +415,25 @@ export function App() {
     setEnrolStepUpCode('');
     setEnrolStepUpFactor('');
     setEnrolStepUpChallenge('');
+    void askWhatTheServerWants(type);
+  };
+
+  /** The empty attempt: it collects nothing from the user and commits the panel to one half. */
+  const askWhatTheServerWants = async (type: string) => {
+    const r = await request(`${SECURITY}/account/step-up`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: stepUpActionOf(type) }),
+    });
+    if (r.status !== 202) {
+      return;   // a password is wanted (401), or something else is wrong — the panel asks as before
+    }
+    const body = await bodyOf<{ status?: string; stepUpTicket?: string; nextFactor?: string; challengeData?: string }>(r);
+    if (body.status === 'FACTOR_REQUIRED') {
+      setEnrolStepUpTicket(body.stepUpTicket ?? '');
+      setEnrolStepUpFactor(body.nextFactor ?? '');
+      setEnrolStepUpChallenge(body.challengeData ?? '');
+    }
   };
 
   const startEnrol = async (type: string) => {

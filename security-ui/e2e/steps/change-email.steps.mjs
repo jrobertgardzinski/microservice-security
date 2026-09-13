@@ -30,7 +30,7 @@ When('the USER requests to CHANGE the EMAIL to {string}', async function (newEma
   // moving the address MOVES THE ACCOUNT — the confirmation lands in the new mailbox — so security
   // asks for a fresh elevation first, exactly as it does for enrolment and for recovery codes.
   // The helper is a no-op when no proof is demanded, so this reads the same either way.
-  await proveForEnrol(this);
+  await proveForEnrol(this, this.page.getByTestId('notice'));
   await expect(this.page.getByTestId('notice')).toBeVisible();
 });
 

@@ -420,13 +420,32 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   HTTP) — obie warstwy mają osobny krok „whose EMAIL is not verified yet" od 2026-07-05, a konta w
   e2e są scenariuszowo-unikalne (`support/account.mjs`), więc Rule 1 verify-email NIE startuje na
   zweryfikowanym koncie. Zostawiam bez zmian.
+- **LOW, paczka 15 — panel, który pyta serwer zamiast człowieka (UI-14, UI-13) — ZROBIONE
+  2026-09-13.** UI-14: panel step-upu ZAWSZE żądał hasła, a dla akcji z polityką SECOND_FACTORS na
+  koncie, które ma już czynnik, serwer tego hasła NIE SPRAWDZA — odpowiada od razu
+  `FACTOR_REQUIRED`. Ekran prosił więc o poświadczenie, człowiek je wpisywał, i szło do kosza:
+  kłamstwo o tym, co jest weryfikowane, i nawyk, którego nie warto uczyć. Teraz panel po otwarciu
+  zadaje PUSTĄ próbę: odpowiedź to albo łańcuch czynników (pytamy o kod, nigdy o hasło), albo
+  `WRONG_PASSWORD` — czyli hasło naprawdę jest tym, czego chce serwer.
+  UI-13: glue e2e rozstrzygała „nie zażądano step-upu" PIĘCIOSEKUNDOWYM TIMEOUTEM — zgadywanie ze
+  stoperem: to samo mówi o usłudze, która jest po prostu wolna, kosztuje 5 s przy każdym enrolmencie
+  bez dowodu, a na obciążonym CI zamienia prawdziwy monit w ciche pominięcie. Teraz czekamy na
+  JEDNO Z DWOJGA (`prompt.or(proceeded)`), tak jak robi to już `signInCompletingMfa`.
+  ZMIERZONE: cała suita przeglądarkowa 1m22s → 39s (39 scenariuszy, 256 kroków, zielone w obu
+  przebiegach).
+  ODŁOŻONE: MFA-9 (konto passwordless z ZEREM czynników elewuje się dla FULL_CHAIN na samej żywej
+  sesji) — uczciwe wyjścia to albo re-autentykacja u dostawcy (`docs/mfa-design.md` to obiecuje, kod
+  nigdy nie pyta — to FUNKCJA, nie poprawka), albo reguła „konto federacyjne musi mieć czynnik przed
+  akcją destrukcyjną", czyli zmiana produktowa. Twoja decyzja.
 - **Otwarte z raportu — stan na 2026-09-12 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
   wszystkie MEDIUM (w tym DOM-2 i DB-8 po decyzji właściciela) oraz paczki LOW 1–10 (opisane
   wyżej). Zostaje:
   - **do DECYZJI właściciela (nie ruszam sam):** AUTH-11 — kasowanie licznika CAŁEGO źródła po
     bloku z pułapu wymaga `removeAllFor(Source)` w porcie rejestru odrzuceń; AUTH-13 — brak
     bezwzględnego czasu życia sesji (każde odświeżenie daje pełne nowe okno; NIGDZIE nie było
-    obiecane inaczej, więc to decyzja produktowa); ACC-8 — żeby odmówić zdjęcia roli OSTATNIEMU
+    obiecane inaczej, więc to decyzja produktowa); MFA-9 — konto federacyjne bez czynników i bez
+    hasła nie ma czym potwierdzić step-upu; MFA-10 — ziarna TOTP jawne wbrew javadoc/V11/docs,
+    naprawa potrzebuje klucza (`security.mfa.secret-key`) i planu migracji; ACC-8 — żeby odmówić zdjęcia roli OSTATNIEMU
     adminowi, `UserRepository` musi umieć policzyć adminów (nowa metoda portu); DB-14 cz. 2 — po ilu dniach kasujemy konto,
     którego NIKT nigdy nie zweryfikował (to decyzja produktowa, nie sprzątanie); DOM-9 —
     `UserRegistration` jest martwy, ale to Twój pakiet domeny; DOM-12 — nazwy (`AccessToken` vs
@@ -437,7 +456,8 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   - **czysta robota, nikogo nie pytam (następna kolejka):** MFA-9 (passwordless z zerem czynników
     jest „elevated" dla FULL_CHAIN), MFA-10 (ziarna TOTP jawne, choć javadoc/V11/docs obiecują
     szyfrowanie — potrzebny klucz, więc pół-decyzja), AUTH-15 i TEST-2/5/6/7/11/12/13 (testy
-    pinowane wyłącznie mockami: TEST-11 i reszta), UI-9/13/14. ATK-8 (limity po dokładnym adresie, IPv6 rotuje
+    pinowane wyłącznie mockami: TEST-11 i reszta), UI-9 (wylogowanie cross-origin — właściciel
+    udokumentował to w trzech miejscach, zostawiam). ATK-8 (limity po dokładnym adresie, IPv6 rotuje
     w /64) raport SAM nazywa udokumentowaną osią — nic do roboty poza decyzją o podsieci.
 
 ## ~~Otwarte — pilne (2026-08-08)~~ — ZAMKNIĘTE, sekcja była NIEAKTUALNA (sprostowane 2026-09-12)
