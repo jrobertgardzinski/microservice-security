@@ -11,10 +11,10 @@
 ## What it does — three specs, in plain English
 
 These are the project's **executable** specifications (Gherkin): the test suite (Cucumber) runs them
-when you build the project, so the behaviour they describe is verified, not aspirational. By design the
-*same* scenarios are meant to be driven from every entry-point layer — **application**,
-**infrastructure** and **UI** (same behaviour, a different way in); today they run from the application
-layer. Each one reads like a short story:
+when you build the project, so the behaviour they describe is verified, not aspirational. The *same*
+scenarios are driven from more than one entry point — **application** (the use-case objects),
+**infrastructure** (real HTTP) and **UI** (a real browser, through Playwright): same behaviour, a
+different way in. Each one reads like a short story:
 
 - **[Registration](./specs/register.feature)**
   — a new user signs up with an email and a password; sign-up is refused when either is invalid,
@@ -41,10 +41,10 @@ documentation is the specs above and the value objects they exercise.
 > filter, JDBC adapters over Flyway migrations (with in-memory ones that take over when no
 > datasource is configured), and mail notifiers that reach a separate email microservice through a
 > transactional outbox and Kafka. The **UI** is built too — a small React app that is also the
-> specs' third entry point, driven by the same feature files through Playwright. Every spec runs at
-> the HTTP layer, most also at the application layer, and eleven of them in a real browser. The
-> diagram below is the full target shape; the executable specs are what's actually proven —
-> nothing here is hand-waved.
+> specs' third entry point, driven by the same feature files through Playwright. Of the 19 specs,
+> 16 run at the HTTP layer, 11 in a real browser and 5 at the application layer — the counts are
+> held honest by tests that fail when a spec quietly stops being driven. The diagram below is the
+> full target shape; the executable specs are what's actually proven — nothing here is hand-waved.
 
 ---
 

@@ -1,8 +1,13 @@
 # dev environment (compose passes MICRONAUT_ENVIRONMENTS=dev): connect to the bundled Postgres and
 # let Flyway create the schema on startup. Hosts/credentials are overridable via env vars.
+#
+# DB_NAME defaults to `security`, the database every runner and the compose stack name. It used to
+# default to `postgres` — the cluster's MAINTENANCE database — so a bare `java -jar` with no
+# variables set did not fail: it migrated this service's schema into the wrong database and looked
+# healthy doing it.
 datasources:
   default:
-    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:postgres}
+    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:security}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:secret}
     driver-class-name: org.postgresql.Driver

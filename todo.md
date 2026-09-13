@@ -437,6 +437,24 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   sesji) — uczciwe wyjścia to albo re-autentykacja u dostawcy (`docs/mfa-design.md` to obiecuje, kod
   nigdy nie pyta — to FUNKCJA, nie poprawka), albo reguła „konto federacyjne musi mieć czynnik przed
   akcją destrukcyjną", czyli zmiana produktowa. Twoja decyzja.
+- **LOW, paczka 16 — zdania, które się zestarzały, i kontener na roocie
+  (OPS-6, OPS-18, OPS-21, WIRE-10) — ZROBIONE 2026-09-13.**
+  OPS-6: `Readme.md` (landing page spod kodu QR!) twierdził, że specyfikacje „dziś chodzą z warstwy
+  application" i że „KAŻDA spec chodzi po HTTP". Prawda: 19 plików, 16 po HTTP, 11 w prawdziwej
+  przeglądarce, 5 w warstwie application. Poprawione — i PRZYPIĘTE: `ReadmeCountsTest` liczy jedno
+  i drugie i pada, gdy zdanie przestanie być prawdą (bo zdanie o pokryciu jest warte dokładnie tyle,
+  ile rzecz, która zauważa, że przestało być prawdziwe).
+  OPS-18: `application-dev.yml` domyślał `DB_NAME` na `postgres` — bazę MAINTENANCE klastra. Gołe
+  `java -jar` bez zmiennych nie padało: migrowało schemat tej usługi do NIE TEJ bazy i wyglądało
+  zdrowo. Teraz `security`, czyli to, co nazywa każdy runner i compose.
+  OPS-21: obraz chodził jako root. Nic tego nie potrzebuje (port 8080, zero zapisów, zero instalacji),
+  więc `USER security` (uid 10001) — sprawdzone: `id` w kontenerze i start serwisu z obrazu.
+  WIRE-10: javadoc `TokenHashing` nazywał OBA tokeny 122-bitowymi UUID-ami; to przestało być prawdą,
+  gdy access token stał się JWT — teraz mówi, co jest czym i dlaczego jedno i drugie jest hashowane.
+  SPRAWDZONE I JUŻ NIEAKTUALNE (nic do roboty): OPS-7 (Readme opisuje `Documentation.md` uczciwie
+  jako fotografię przebiegu z 2026-07-02), OPS-9 (`docs/mfa-design.md` ma blok „As built"),
+  OPS-10 (playbook mówi, że `security-application` nie ma `src/main`, a S5 jest zamknięte),
+  MFA-8 (udokumentowane jako celowe w javadoc `MfaChain`).
 - **Otwarte z raportu — stan na 2026-09-12 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
   wszystkie MEDIUM (w tym DOM-2 i DB-8 po decyzji właściciela) oraz paczki LOW 1–10 (opisane
   wyżej). Zostaje:
@@ -445,7 +463,15 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
     bezwzględnego czasu życia sesji (każde odświeżenie daje pełne nowe okno; NIGDZIE nie było
     obiecane inaczej, więc to decyzja produktowa); MFA-9 — konto federacyjne bez czynników i bez
     hasła nie ma czym potwierdzić step-upu; MFA-10 — ziarna TOTP jawne wbrew javadoc/V11/docs,
-    naprawa potrzebuje klucza (`security.mfa.secret-key`) i planu migracji; ACC-8 — żeby odmówić zdjęcia roli OSTATNIEMU
+    naprawa potrzebuje klucza (`security.mfa.secret-key`) i planu migracji; OPS-19 — `/prometheus`
+    i `/health` bez uwierzytelnienia na PUBLICZNYM porcie API (`/health` oddaje samo `{"status":"UP"}`,
+    ale metryki są otwarte); Micronaut nie ma osobnego portu zarządzania, więc wyjścia to albo
+    `sensitive: true` + poświadczenia (trzeba wtedy ruszyć `observability/prometheus.yml` w
+    workspace), albo reverse proxy — decyzja wdrożeniowa, nie kod; OPS-21 cz. 2 — nazwa jara
+    zapisana na sztywno w `Dockerfile`/`ci.yml`/`run-e2e.sh` (zmiana wersji wywala się GŁOŚNO na
+    COPY, więc zostawiam); MFA-13 — licznik podpisów ignorowany i flaga UV niewymagana (raport sam
+    zauważa, że synchronizowane passkeye i tak raportują 0, a wymaganie UV zderza się z
+    `userVerification: 'preferred'`); ACC-8 — żeby odmówić zdjęcia roli OSTATNIEMU
     adminowi, `UserRepository` musi umieć policzyć adminów (nowa metoda portu); DB-14 cz. 2 — po ilu dniach kasujemy konto,
     którego NIKT nigdy nie zweryfikował (to decyzja produktowa, nie sprzątanie); DOM-9 —
     `UserRegistration` jest martwy, ale to Twój pakiet domeny; DOM-12 — nazwy (`AccessToken` vs
