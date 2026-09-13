@@ -162,6 +162,37 @@ class OauthFlowHttpTest {
     }
 
     @Test
+    @DisplayName("a federated account with no factors cannot step up for a destructive action")
+    void a_provider_login_alone_does_not_open_the_full_chain() {
+        Map<String, String> authorize = startFlow();
+        nextIdToken.set(idToken(Map.of(
+                "iss", issuer(), "aud", "test-client", "sub", "prov-sub-nothing",
+                "email", "nothing-to-prove@example.com", "email_verified", true,
+                "exp", Instant.now().getEpochSecond() + 300, "nonce", authorize.get("nonce"))));
+        HttpResponse<?> back = callback("/oauth/callback?state=" + authorize.get("state") + "&code=c-nothing");
+        String location = back.getHeaders().get("Location");
+        String accessToken = location.substring((RETURN_URL + "#accessToken=").length());
+
+        // This account has no password (the provider is link #1) and no enrolled factor, so there
+        // is nothing a step-up could ask for. It used to be elevated on the bare session, which
+        // made "re-prove yourself before deleting the account" mean "hold a live token".
+        HttpResponse<Map> refused = exchange(HttpRequest.POST("/account/step-up",
+                        Map.of("action", "delete-account"))
+                .header("Authorization", "Bearer " + accessToken), Map.class);
+
+        assertEquals(HttpStatus.CONFLICT, refused.getStatus());
+        assertEquals("ENROL_A_FACTOR_FIRST", refused.getBody(Map.class).orElseThrow().get("status"));
+
+        // ...and the way out is open: enrolling a factor is a SECOND_FACTORS action, so the same
+        // account may still step up FOR THAT — otherwise this rule would be a locked room.
+        HttpResponse<Map> toEnrol = exchange(HttpRequest.POST("/account/step-up",
+                        Map.of("action", "enrol-factor"))
+                .header("Authorization", "Bearer " + accessToken), Map.class);
+        assertEquals(HttpStatus.OK, toEnrol.getStatus(),
+                "refusing this one too would box a federated user out of the very act that frees them");
+    }
+
+    @Test
     @DisplayName("a Keycloak-shaped id_token signs in: aud as an array, azp naming the client")
     void an_array_audience_with_azp_signs_in() {
         Map<String, String> authorize = startFlow();

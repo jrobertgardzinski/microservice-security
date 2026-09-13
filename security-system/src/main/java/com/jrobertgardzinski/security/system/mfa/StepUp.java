@@ -24,6 +24,15 @@ import java.util.Optional;
  * {@link SessionElevation} on the caller's access token — the sensitive endpoint consumes it.
  * A caller with no factors and no password step is elevated directly (there is nothing extra to
  * prove beyond the live session).
+ *
+ * <p><b>Except for FULL_CHAIN.</b> A federated account with no password and no enrolled factor has
+ * nothing at all to re-prove with, so "step up" meant "hold a live token" — and FULL_CHAIN is the
+ * requirement on exactly the actions that must survive a stolen session: deleting the account,
+ * moving it to another address, an admin's levers. Those are refused with
+ * {@link Result.NothingToProveWith} until the account carries a factor. SECOND_FACTORS actions are
+ * deliberately NOT refused: enrolling a factor is one of them, and refusing it would box the caller
+ * out of the very act that frees them — the same reasoning {@code AuthorizationFilter} follows for
+ * the MFA floor.
  */
 public class StepUp {
 
@@ -34,6 +43,12 @@ public class StepUp {
         record WrongProof(int attemptsLeft) implements Result {}
         record TooManyAttempts() implements Result {}
         record InvalidTicket() implements Result {}
+        /**
+         * The caller has nothing this action can be proved with: a federated account with no
+         * password and no enrolled factor. Not a refusal of the person — a statement that the door
+         * cannot be opened until they have a key.
+         */
+        record NothingToProveWith() implements Result {}
     }
 
     private final StepUpPolicy policy;
@@ -67,6 +82,10 @@ public class StepUp {
             return new Result.Elevated();
         }
         List<EnrolledFactor> enrolled = factors.findByUser(email);
+        if (requirement == StepUpRequirement.FULL_CHAIN
+                && enrolled.isEmpty() && passwordless.isPasswordless(email)) {
+            return new Result.NothingToProveWith();
+        }
         // The password is proven for FULL_CHAIN, and ALSO when there are no enrolled factors to
         // walk: a requirement other than NONE with an empty factor list used to elevate silently on
         // the live session alone, which turned any non-NONE action into "a stolen token is enough".

@@ -197,6 +197,18 @@ The provider callback is simply **link #1 instead of the password** — the same
 We deliberately do **not** infer additional assurance from `amr`/`acr` claims — Google reports them
 poorly.
 
+**Decision 4 (settled 2026-09-13): a FULL_CHAIN step-up is REFUSED when there is nothing to prove
+with.** A federated account has no password (the provider is link #1); with no enrolled factor it
+also has no second one, so "re-prove yourself" had nothing to ask for and elevated on the live
+session alone — which made the guard on deleting an account, moving it to another address, or
+pulling an admin's levers mean "hold a live token". Those actions now answer 409
+`ENROL_A_FACTOR_FIRST` until the account carries a factor. SECOND_FACTORS actions are deliberately
+NOT refused: enrolling a factor is one of them, and refusing it would box the caller out of the very
+act that frees them — the same reasoning `AuthorizationFilter` follows for the MFA floor. The
+alternative considered and not taken was re-authenticating at the provider (`prompt=login`): a real
+feature, a second OAuth round inside the step-up, and one this document should stop implying happens
+today.
+
 **Decision 3 (settled): a federated privileged account is held to the FULL floor, and OAuth does
 NOT count toward it.** A provider login proves link #1 to *start* a session, but it does not buy a
 factor slot — a compromised Google account must not, by itself, satisfy part of an admin's MFA. So

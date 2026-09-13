@@ -425,6 +425,14 @@ export function App() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ action: stepUpActionOf(type) }),
     });
+    if (r.status === 409) {
+      // a federated account with no password and no factor: nothing typed here could ever help,
+      // so close the panel and say what WOULD (enrolling a factor is reachable — it is a
+      // SECOND_FACTORS action)
+      setEnrolStepUpType('');
+      setNotice('Add a sign-in factor first — this account has nothing to confirm with.');
+      return;
+    }
     if (r.status !== 202) {
       return;   // a password is wanted (401), or something else is wrong — the panel asks as before
     }

@@ -467,6 +467,15 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   blok liczony w minutach zachowywał się jak liczony w godzinach. Pytanie o pułap zadawane jest
   dalej tylko wtedy, gdy limit pary nie został osiągnięty — ten sam short-circuit co `||`, więc
   żadna próba nie płaci za zapytanie, którego nie potrzebuje.
+- **DECYZJA WŁAŚCICIELA, runda 2 (MFA-9) — ZROBIONE 2026-09-13: „wymagać czynnika".**
+  Konto federacyjne nie ma hasła (dostawca JEST linkiem #1), a bez czynnika nie ma też drugiego —
+  więc „potwierdź, że to ty" nie miało o co zapytać i elewowało się na samej żywej sesji. Akcje
+  FULL_CHAIN (kasowanie konta, przeniesienie na inny adres, dźwignie admina) odpowiadają teraz 409
+  `ENROL_A_FACTOR_FIRST`. Akcje SECOND_FACTORS CELOWO nie są odmawiane — enrolment czynnika jest
+  jedną z nich i odmowa zamknęłaby użytkownika w pokoju bez klamki (to samo rozumowanie, co
+  `AuthorizationFilter` stosuje przy podłodze MFA). UI zamyka panel i mówi, co ZROBI robotę.
+  Decyzja dopisana do `docs/mfa-design.md` jako „Decision 4" razem z odrzuconą alternatywą
+  (re-auth u dostawcy — to funkcja, a dokument do dziś sugerował, że już działa).
 - **Otwarte z raportu — stan na 2026-09-12 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
   wszystkie MEDIUM (w tym DOM-2 i DB-8 po decyzji właściciela) oraz paczki LOW 1–10 (opisane
   wyżej). Zostaje:

@@ -125,6 +125,12 @@ final class StepUpController {
             case StepUp.Result.InvalidTicket invalid ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.UNAUTHORIZED)
                             .body(Map.of("status", "INVALID_TICKET"));
+            // 409, not 401: nothing the caller can type would help. They are who they say they
+            // are; the account simply carries nothing to re-prove with, and the way out is to
+            // enrol a factor — which is a SECOND_FACTORS action and therefore still reachable.
+            case StepUp.Result.NothingToProveWith nothing ->
+                    HttpResponse.<Map<String, Object>>status(HttpStatus.CONFLICT)
+                            .body(Map.of("status", "ENROL_A_FACTOR_FIRST"));
         };
     }
 }
