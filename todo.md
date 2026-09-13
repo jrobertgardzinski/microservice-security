@@ -533,27 +533,24 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   — w `observability/prometheus.yml` dopisany komentarz, jak podać token, gdy deployment go ustawi.
   `/health` NIE jest strzeżony i to jest osobna decyzja: oddaje `{"status":"UP"}` i nic więcej, a
   sonda, która potrzebuje poświadczeń, zawodzi dokładnie w tych awariach, dla których istnieje.
-- **Otwarte z raportu — stan na 2026-09-12 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
-  wszystkie MEDIUM (w tym DOM-2 i DB-8 po decyzji właściciela) oraz paczki LOW 1–10 (opisane
-  wyżej). Zostaje:
-  - **do DECYZJI właściciela (nie ruszam sam):** AUTH-13 — brak
-    bezwzględnego czasu życia sesji (każde odświeżenie daje pełne nowe okno; NIGDZIE nie było
-    obiecane inaczej, więc to decyzja produktowa); MFA-9 — konto federacyjne bez czynników i bez
-    hasła nie ma czym potwierdzić step-upu; OPS-21 cz. 2 — nazwa jara
-    zapisana na sztywno w `Dockerfile`/`ci.yml`/`run-e2e.sh` (zmiana wersji wywala się GŁOŚNO na
-    COPY, więc zostawiam); MFA-13 — licznik podpisów ignorowany i flaga UV niewymagana (raport sam
-    zauważa, że synchronizowane passkeye i tak raportują 0, a wymaganie UV zderza się z
-    `userVerification: 'preferred'`); ACC-8 — żeby odmówić zdjęcia roli OSTATNIEMU
-    adminowi, `UserRepository` musi umieć policzyć adminów (nowa metoda portu); DOM-12 — nazwy (`AccessToken` vs
-    `AuthorizationTokenExpiration`/`AuthorizationDataRepository`); DOM-8 — `SessionTokens.createFor`
-    domyśla `AccessTokenMint.RANDOM`, używają tego tylko testy; DOM-14 — `User` przyjmuje niespójny `normalizedEmail` (dziś każde
-    miejsce konstrukcji jest spójne); AUTH-2 — `Source` w `PendingAuthentication`.
-  - **czysta robota, nikogo nie pytam (następna kolejka):** MFA-9 (passwordless z zerem czynników
-    jest „elevated" dla FULL_CHAIN), MFA-10 (ziarna TOTP jawne, choć javadoc/V11/docs obiecują
-    szyfrowanie — potrzebny klucz, więc pół-decyzja), AUTH-15 i TEST-2/5/6/7/11/12/13 (testy
-    pinowane wyłącznie mockami: TEST-11 i reszta), UI-9 (wylogowanie cross-origin — właściciel
-    udokumentował to w trzech miejscach, zostawiam). ATK-8 (limity po dokładnym adresie, IPv6 rotuje
-    w /64) raport SAM nazywa udokumentowaną osią — nic do roboty poza decyzją o podsieci.
+- **Otwarte z raportu — stan na 2026-09-13 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
+  wszystkie MEDIUM i wszystkie LOW-y, które dało się zamknąć bez pytania — plus SZEŚĆ rund decyzji
+  właściciela (ACC-8, AUTH-11, MFA-9, DB-14 cz. 2, DOM-9, DOM-13, AUTH-13, MFA-10, OPS-19).
+  Wszystkie 98 identyfikatorów z raportu są przetriage'owane. Zostaje:
+  - **świadome „nie" (sprawdzone, zapisane, nic do roboty):** ATK-8 — limity po DOKŁADNYM adresie,
+    a IPv6 rotuje w /64; raport sam nazywa to udokumentowaną osią, a przejście na podsieć to
+    decyzja o tym, kogo jeszcze blokujemy razem z atakującym. MFA-13 — licznik podpisów ignorowany
+    i flaga UV niewymagana; synchronizowane passkeye i tak raportują licznik 0, a wymaganie UV
+    zderza się z `userVerification: 'preferred'`, którego używa UI. UI-9/TEST-11 — wylogowanie
+    cross-origin nie kończy sesji serwera; właściciel udokumentował to w TRZECH miejscach.
+    OPS-21 cz. 2 — nazwa jara na sztywno w `Dockerfile`/`ci.yml`/`run-e2e.sh`; zmiana wersji wywala
+    się GŁOŚNO na `COPY`, więc to nie jest cicha pułapka.
+  - **kształt domeny, tylko po Twoim słowie:** DOM-8 (`SessionTokens.createFor` domyśla
+    `AccessTokenMint.RANDOM`, używają tego tylko testy), DOM-12 (nazwy: `AccessToken` vs
+    `AuthorizationTokenExpiration`/`AuthorizationDataRepository`), DOM-14 (`User` przyjmuje
+    niespójny `normalizedEmail` — dziś każde miejsce konstrukcji jest spójne), AUTH-2 (`Source`
+    w `PendingAuthentication`). Wszystkie cztery to przemianowania i zaostrzenia w TWOICH
+    rekordach — żadne nie naprawia dziś działającego błędu.
 
 ## ~~Otwarte — pilne (2026-08-08)~~ — ZAMKNIĘTE, sekcja była NIEAKTUALNA (sprostowane 2026-09-12)
 
