@@ -533,24 +533,36 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   — w `observability/prometheus.yml` dopisany komentarz, jak podać token, gdy deployment go ustawi.
   `/health` NIE jest strzeżony i to jest osobna decyzja: oddaje `{"status":"UP"}` i nic więcej, a
   sonda, która potrzebuje poświadczeń, zawodzi dokładnie w tych awariach, dla których istnieje.
-- **Otwarte z raportu — stan na 2026-09-13 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
-  wszystkie MEDIUM i wszystkie LOW-y, które dało się zamknąć bez pytania — plus SZEŚĆ rund decyzji
-  właściciela (ACC-8, AUTH-11, MFA-9, DB-14 cz. 2, DOM-9, DOM-13, AUTH-13, MFA-10, OPS-19).
-  Wszystkie 98 identyfikatorów z raportu są przetriage'owane. Zostaje:
-  - **świadome „nie" (sprawdzone, zapisane, nic do roboty):** ATK-8 — limity po DOKŁADNYM adresie,
-    a IPv6 rotuje w /64; raport sam nazywa to udokumentowaną osią, a przejście na podsieć to
-    decyzja o tym, kogo jeszcze blokujemy razem z atakującym. MFA-13 — licznik podpisów ignorowany
-    i flaga UV niewymagana; synchronizowane passkeye i tak raportują licznik 0, a wymaganie UV
-    zderza się z `userVerification: 'preferred'`, którego używa UI. UI-9/TEST-11 — wylogowanie
-    cross-origin nie kończy sesji serwera; właściciel udokumentował to w TRZECH miejscach.
-    OPS-21 cz. 2 — nazwa jara na sztywno w `Dockerfile`/`ci.yml`/`run-e2e.sh`; zmiana wersji wywala
-    się GŁOŚNO na `COPY`, więc to nie jest cicha pułapka.
-  - **kształt domeny, tylko po Twoim słowie:** DOM-8 (`SessionTokens.createFor` domyśla
-    `AccessTokenMint.RANDOM`, używają tego tylko testy), DOM-12 (nazwy: `AccessToken` vs
-    `AuthorizationTokenExpiration`/`AuthorizationDataRepository`), DOM-14 (`User` przyjmuje
-    niespójny `normalizedEmail` — dziś każde miejsce konstrukcji jest spójne), AUTH-2 (`Source`
-    w `PendingAuthentication`). Wszystkie cztery to przemianowania i zaostrzenia w TWOICH
-    rekordach — żadne nie naprawia dziś działającego błędu.
+- **DECYZJE WŁAŚCICIELA, runda 7 (DOM-8, DOM-12, DOM-14, AUTH-2) — ZROBIONE 2026-09-13.**
+  DOM-14: `normalizedEmail` jest teraz WYLICZANY w kompaktowym konstruktorze `User` z adresu,
+  cokolwiek poda wołający. To tożsamość, po której konto się ZNAJDUJE (unikalny indeks i każde
+  wyszukanie), więc `User`, którego własny rekord się z nią nie zgadza, to konto, które istnieje i
+  nie da się do niego zalogować. Wszystkie miejsca konstrukcji podawały spójną wartość i nic ich do
+  tego nie zmuszało — teraz nic nie musi.
+  DOM-8: skasowane trzyargumentowe `SessionTokens.createFor`, które po cichu wybierało
+  `AccessTokenMint.RANDOM`. W produkcji NIC go nie wołało (wszędzie JWT), więc jedynym skutkiem było
+  to, że garść testów ćwiczyła token, którego ta usługa nie wydaje, czytając się, jakby ćwiczyła
+  prawdziwy.
+  DOM-12: `AuthorizationTokenExpiration` → `AccessTokenExpiration`, `AuthorizationDataRepository` →
+  `SessionRepository` (i adaptery: `JdbcSessionRepository`, `InMemorySessionRepository`). Jeden
+  słownik: token dostępu i sesje. Raport `docs/review-2026-09-08.md` CELOWO zostaje ze starymi
+  nazwami — to zapis tego, co znaleziono 2026-09-08, a nie żywy dokument.
+  AUTH-2: `PendingAuthentication` pamięta `Source`, z którego zaczęło się logowanie, a błędny dowód
+  idzie przez `_UpdateBruteForceRecords` na tę samą parę, co błędne hasło. Pięć prób NA BILET nigdy
+  nie było limitem dla człowieka: kto doszedł do kroku czynnikowego, ma już hasło, więc świeży bilet
+  kosztuje jedno żądanie i sześciocyfrowy kod dawało się chodzić w tym tempie. `Source` jest
+  `Optional`, bo przez ten sam rekord przechodzi łańcuch STEP-UPU, który nie jest zgadywaniem konta
+  (ma swój limit per dzwoniący) — puste znaczy „to nie jest próba logowania", a nie „ktoś zapomniał
+  ustawić".
+
+- **Otwarte z raportu — stan na 2026-09-13, po SIEDMIU rundach decyzji.** Wszystkie 98 znalezisk
+  zamknięte albo zapisane jako świadoma decyzja. Zostają CZTERY świadome „nie", każde z powodem:
+  ATK-8 (limity po DOKŁADNYM adresie, IPv6 rotuje w /64 — przejście na podsieć to decyzja o tym,
+  kogo jeszcze blokujemy razem z atakującym), MFA-13 (licznik podpisów i flaga UV — synchronizowane
+  passkeye raportują licznik 0, a wymaganie UV zderza się z `userVerification: 'preferred'`, którego
+  używa UI), UI-9/TEST-11 (wylogowanie cross-origin nie kończy sesji serwera — udokumentowane przez
+  właściciela w TRZECH miejscach), OPS-21 cz. 2 (nazwa jara na sztywno — zmiana wersji wywala się
+  GŁOŚNO na `COPY`, więc to nie jest cicha pułapka).
 
 ## ~~Otwarte — pilne (2026-08-08)~~ — ZAMKNIĘTE, sekcja była NIEAKTUALNA (sprostowane 2026-09-12)
 
