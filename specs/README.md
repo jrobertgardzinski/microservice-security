@@ -7,11 +7,20 @@ copied:
 | layer | runner | selects by | glue |
 |---|---|---|---|
 | **application** (use-case objects, no HTTP) | `security-application` → `RunCucumberTest` | file name, listed in the suite | `…security.application.feature.*` |
-| **infrastructure** (Micronaut HTTP) | `security-infrastructure` → one `RunHttp*Test` per file | file name, one suite per feature | `…security.infrastructure.feature.*` |
+| **infrastructure** (Micronaut HTTP) | `security-infrastructure` → one `RunHttp*Test` per file, except the three named below | file name, one suite per feature | `…security.infrastructure.feature.*` |
 | **UI** (React + Playwright) | `security-ui` → `cucumber-js --config e2e/cucumber.mjs` | **tag**: `@ui and not @http-only` | `security-ui/e2e/steps/*.mjs` |
 
 The JVM runners read this directory as a test resource (the `add-shared-specs` execution of
 `build-helper-maven-plugin`); cucumber-js reads `../specs/*.feature` straight from disk.
+
+## Not every file has all three yet
+
+`federated-sign-in.feature`, `mfa.feature` and `mfa-passkey.feature` have no HTTP suite. The
+behaviour is covered over real HTTP by hand-written tests (`OauthFlowHttpTest`, `MfaHttpTest`) —
+what is missing is driving THESE files through the wire, so their HTTP contract is not stated by
+the spec. `EverySpecHasAnHttpSuiteTest` holds that list: adding a feature without a suite fails
+until somebody writes down what covers it instead, and an exemption that has been fixed fails until
+it is removed.
 
 ## Tags are asymmetric
 

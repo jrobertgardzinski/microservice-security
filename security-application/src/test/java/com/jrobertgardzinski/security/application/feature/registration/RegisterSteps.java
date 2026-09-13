@@ -5,9 +5,7 @@ import com.jrobertgardzinski.email.config.CanRegisterConfig;
 import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
-import com.jrobertgardzinski.password.config.MinLength;
 import com.jrobertgardzinski.password.domain.HashedPassword;
-import com.jrobertgardzinski.password.config.SpecialChars;
 import com.jrobertgardzinski.security.application.feature.support.InMemoryUserRepository;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.system.registration.Register;
@@ -29,7 +27,12 @@ public class RegisterSteps {
             users,
             new CanRegisterConfig(),
             new Argon2HashAlgorithm(),
-            () -> PasswordPolicy.defaultsExcept(new MinLength(12), new SpecialChars("#?!")));
+            // The REBUILD defaults, and not a policy invented here. The spec's literals are samples
+            // of what this service ships with (specs/README.md), so judging them against a
+            // min-length of 12 and a special-character set of "#?!" made the .feature describe a
+            // deployment nobody has: "StrongPassword1!" was accepted and "weak" refused for reasons
+            // the shipped policy does not hold.
+            PasswordPolicy::withDefaults);
 
     private RegisterResult result;
 

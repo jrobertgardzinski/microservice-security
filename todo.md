@@ -401,6 +401,25 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   UI-10: asercja passkeya nie podawała `rpId`, więc przeglądarka szukała klucza pod domeną STRONY —
   dobre tylko dopóki `security.webauthn.rp-id` równa się hostowi UI. `WEBAUTHN_RP_ID` w `lib.ts`
   tą samą drabinką co `SECURITY` (window → VITE → puste = domena strony).
+- **LOW, paczka 14 — co naprawdę jest sprawdzane (AUTH-15, TEST-7, TEST-2) — ZROBIONE 2026-09-13.**
+  AUTH-15: obie reguły liczenia strażnika brute-force były pinowane WYŁĄCZNIE mockami, a mock nie
+  może się pomylić co do zapytania — test mówił „countFailuresOnAccount zwraca 3" i strażnik się
+  tak zachowywał, cokolwiek naprawdę liczył SQL pod spodem. `BruteForceCountingTest` na realnym
+  Postgresie: poprawne hasło kasuje TĘ PARĘ i nic więcej, a pułap per źródło widzi to, czego licznik
+  pary nie widzi nigdy (pięć strzałów w pięć różnych kont). Obie mutacje zapalają go na czerwono.
+  TEST-7: glue rejestracji sądził literały specyfikacji polityką WŁASNEJ roboty
+  (`MinLength(12)`, `SpecialChars("#?!")`), więc `.feature` opisywał wdrożenie, którego nikt nie ma —
+  a README specs mówi wprost, że zmiana `MinLength.DEFAULT` MA te pliki zapalić. Teraz
+  `PasswordPolicy::withDefaults`, a `SpecLiteralsAreRebuildSamplesTest` jest prawem, które tego
+  pilnuje w całej warstwie application.
+  TEST-2: README obiecywał „jeden `RunHttp*Test` na plik", a było 16 suit na 19 plików — zdanie
+  czytało się jak gwarancja, będąc aspiracją. `EverySpecHasAnHttpSuiteTest` trzyma listę trzech
+  wyjątków (`federated-sign-in`, `mfa`, `mfa-passkey`) razem z tym, CO je tymczasem pokrywa; nowy
+  feature bez suity pada, a wyjątek, który przestał być wyjątkiem, też pada.
+  SPRAWDZONE I ODRZUCONE: TEST-6 (rzekomy dryf „a registered USER" między glue przeglądarkową a
+  HTTP) — obie warstwy mają osobny krok „whose EMAIL is not verified yet" od 2026-07-05, a konta w
+  e2e są scenariuszowo-unikalne (`support/account.mjs`), więc Rule 1 verify-email NIE startuje na
+  zweryfikowanym koncie. Zostawiam bez zmian.
 - **Otwarte z raportu — stan na 2026-09-12 wieczorem.** Zamknięte: CRITICAL, wszystkie HIGH,
   wszystkie MEDIUM (w tym DOM-2 i DB-8 po decyzji właściciela) oraz paczki LOW 1–10 (opisane
   wyżej). Zostaje:
@@ -418,7 +437,7 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   - **czysta robota, nikogo nie pytam (następna kolejka):** MFA-9 (passwordless z zerem czynników
     jest „elevated" dla FULL_CHAIN), MFA-10 (ziarna TOTP jawne, choć javadoc/V11/docs obiecują
     szyfrowanie — potrzebny klucz, więc pół-decyzja), AUTH-15 i TEST-2/5/6/7/11/12/13 (testy
-    pinowane wyłącznie mockami), UI-9/13/14, TEST-2/6/7. ATK-8 (limity po dokładnym adresie, IPv6 rotuje
+    pinowane wyłącznie mockami: TEST-11 i reszta), UI-9/13/14. ATK-8 (limity po dokładnym adresie, IPv6 rotuje
     w /64) raport SAM nazywa udokumentowaną osią — nic do roboty poza decyzją o podsieci.
 
 ## ~~Otwarte — pilne (2026-08-08)~~ — ZAMKNIĘTE, sekcja była NIEAKTUALNA (sprostowane 2026-09-12)
