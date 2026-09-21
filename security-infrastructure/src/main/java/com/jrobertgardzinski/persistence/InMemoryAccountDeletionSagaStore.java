@@ -48,13 +48,13 @@ class InMemoryAccountDeletionSagaStore implements AccountDeletionSagaStore {
     }
 
     @Override
-    public synchronized boolean complete(String email, Instant at) {
-        return transition(email, "COMPLETED", at);
+    public synchronized boolean complete(UUID sagaId, String email, Instant at) {
+        return transition(sagaId, email, "COMPLETED", at);
     }
 
     @Override
-    public synchronized boolean compensate(String email, Instant at) {
-        return transition(email, "COMPENSATED", at);
+    public synchronized boolean compensate(UUID sagaId, String email, Instant at) {
+        return transition(sagaId, email, "COMPENSATED", at);
     }
 
     @Override
@@ -95,9 +95,11 @@ class InMemoryAccountDeletionSagaStore implements AccountDeletionSagaStore {
         return emails;
     }
 
-    private boolean transition(String email, String to, Instant at) {
+    /** A null {@code sagaId} matches by address alone, as the table's uncorrelated latch does. */
+    private boolean transition(UUID sagaId, String email, String to, Instant at) {
         for (Saga saga : sagas.values()) {
-            if (saga.email().equals(email) && saga.state().equals("STARTED")) {
+            if ((sagaId == null || saga.id().equals(sagaId))
+                    && saga.email().equals(email) && saga.state().equals("STARTED")) {
                 sagas.put(saga.id(), new Saga(saga.id(), saga.email(), to, saga.createdAt(), at));
                 return true;
             }

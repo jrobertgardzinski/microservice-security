@@ -139,9 +139,13 @@ public class AccountDeletionOrchestrator implements ContentPurge {
      * The portal announced its content purged (PORTAL_CONTENT_PURGED): the user is deleted for
      * good and a goodbye mail goes out. Duplicates and strays are no-ops — the store's
      * STARTED→COMPLETED latch admits exactly one caller.
+     *
+     * <p>{@code sagaId} is the saga the outcome is ABOUT, echoed back by the portal; a null one
+     * (an outcome from before the correlation existed, or hand-published) settles whichever
+     * deletion is running for the address, as every outcome once did.
      */
-    public void completePurge(String email) {
-        if (!sagas.complete(email, Instant.now(clock))) {
+    public void completePurge(UUID sagaId, String email) {
+        if (!sagas.complete(sagaId, email, Instant.now(clock))) {
             // Two very different reasons to be here, and they used to share one INFO line.
             //
             // A duplicate of an outcome already applied is routine. A genuine purge confirmation
@@ -168,8 +172,8 @@ public class AccountDeletionOrchestrator implements ContentPurge {
     }
 
     /** The portal announced the purge FAILED: the account unlocks and the user is apologised to. */
-    public void compensate(String email) {
-        compensate(email, java.util.List.of());
+    public void compensate(UUID sagaId, String email) {
+        compensate(sagaId, email, java.util.List.of());
     }
 
     /**
@@ -182,8 +186,8 @@ public class AccountDeletionOrchestrator implements ContentPurge {
      * cheap half of the fix and closes the operator's blind spot; putting it in front of the USER
      * means a new field on the mail request and a wider pact, which belongs with that decision.
      */
-    public void compensate(String email, java.util.List<String> alreadyPurged) {
-        if (!sagas.compensate(email, Instant.now(clock))) {
+    public void compensate(UUID sagaId, String email, java.util.List<String> alreadyPurged) {
+        if (!sagas.compensate(sagaId, email, Instant.now(clock))) {
             LOG.info("purge-failed outcome for {} matched no running deletion; ignoring",
                     masked(email));
             return;

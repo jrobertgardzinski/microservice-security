@@ -121,6 +121,7 @@ class OffboardingOutcomeListener {
         }
         String email = String.valueOf(event.get("email"));
         String outcomeId = String.valueOf(event.get("id"));
+        java.util.UUID sagaId = sagaOf(event, type, email);
         transactionBoundary.execute(() -> {
             // The id, not the e-mail, decides whether this outcome has already been acted on.
             // offboarding derives it from (saga, type) precisely so a re-announcement is
@@ -130,6 +131,12 @@ class OffboardingOutcomeListener {
             // one then closed the second, unblocking an account while the portal was still erasing
             // its content, and the real outcome of the second saga was ignored for having no
             // STARTED saga left to close.
+            //
+            // That is as far as the claim reaches, and it was once read as reaching further: it
+            // tells a SECOND announcement from a first one, and says nothing about WHICH saga the
+            // first one belongs to. An outcome of a saga this service already gave up on arrives
+            // as a first announcement and is claimed like any other — which is why the saga it
+            // names, read below, is what settles it.
             if ("null".equals(outcomeId) || outcomeId.isBlank()) {
                 // pre-ADR-0004 events and anything hand-published: fall through rather than drop,
                 // but say so — an outcome without an id cannot be deduplicated by anyone
@@ -141,15 +148,43 @@ class OffboardingOutcomeListener {
                 return null;
             }
             if (ClosureMessages.PORTAL_CONTENT_PURGED.equals(type)) {
-                orchestrator.completePurge(email);
+                orchestrator.completePurge(sagaId, email);
             } else {
                 // the partial-purge disclosure the portal has always sent and nobody read
                 Object confirmed = event.get("confirmed");
-                orchestrator.compensate(email, confirmed instanceof java.util.List<?> participants
+                orchestrator.compensate(sagaId, email, confirmed instanceof java.util.List<?> participants
                         ? participants.stream().map(String::valueOf).toList()
                         : java.util.List.of());
             }
             return null;
         });
+    }
+
+    /**
+     * WHICH deletion this outcome settles. The portal echoes security's own saga id back on every
+     * outcome for exactly this — an outcome is about one RUN, while the address it carries is a
+     * person, and a person can ask to be deleted twice. Settling by address alone meant the late
+     * outcome of a saga this service had already compensated closed the NEXT deletion for that
+     * person, deleting the account while the portal was still purging for the newer case.
+     *
+     * <p>The field is optional on the wire: the portal writes it only when the fact it answers
+     * carried one, so an older producer, a hand-published event or a saga from before the
+     * correlation existed names none. Same call as a missing id — fall through to the address-only
+     * match rather than drop an outcome nobody else will resend, and say so.
+     */
+    private java.util.UUID sagaOf(Map<?, ?> event, String type, String email) {
+        Object sagaId = event.get("sagaId");
+        if (sagaId != null) {
+            try {
+                return java.util.UUID.fromString(String.valueOf(sagaId));
+            } catch (IllegalArgumentException notASagaId) {
+                LOG.warn("offboarding outcome {} for {} names a saga that is not an id ({});"
+                        + " settling by address instead", type, masked(email), sagaId);
+                return null;
+            }
+        }
+        LOG.warn("offboarding outcome {} for {} names no saga; settling whichever deletion is"
+                + " running for that address", type, masked(email));
+        return null;
     }
 }

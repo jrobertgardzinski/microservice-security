@@ -73,7 +73,7 @@ public class SecurityEventPacts {
     @PactVerifyProvider("an account deleted mail request")
     public String anAccountDeletedMailRequest() {
         CapturingOutbox outbox = new CapturingOutbox();
-        orchestrator(outbox).completePurge("leaver@example.com");
+        orchestrator(outbox).completePurge(java.util.UUID.randomUUID(), "leaver@example.com");
         return outbox.only("mail-requests");
     }
 
@@ -110,7 +110,7 @@ public class SecurityEventPacts {
         // the saga opens: without this the orchestrator would take the "already running" branch and
         // announce no fact at all, and the pact would fail on an empty outbox
         when(sagas.start(any(), any(), any())).thenReturn(true);
-        when(sagas.complete(any(), any())).thenReturn(true);
+        when(sagas.complete(any(), any(), any())).thenReturn(true);
         when(sagas.compensateOverdue(any(), any())).thenReturn(List.of("leaver@example.com"));
         return new AccountDeletionOrchestrator(sagas, outbox, mock(DeleteAccount.class),
                 mock(UserRepository.class), JSON, Clock.systemUTC(), Duration.ofMinutes(5), true);

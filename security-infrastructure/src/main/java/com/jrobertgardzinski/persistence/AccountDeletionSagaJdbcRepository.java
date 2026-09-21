@@ -16,10 +16,22 @@ import java.util.UUID;
 interface AccountDeletionSagaJdbcRepository extends CrudRepository<AccountDeletionSagaEntity, UUID> {
 
     /**
-     * The once-latch. It matches by address and state rather than by id, because the portal's
-     * outcome names the address; the partial unique index of V22 is what makes that unambiguous —
-     * exactly one STARTED row per address can exist, so this can never settle a saga other than
-     * the one running (which is how it used to settle two at once).
+     * The once-latch, for the usual case: the outcome names the saga, so the id decides and the
+     * address is only there to keep a mistyped correlation from settling somebody else's deletion.
+     */
+    @Query("UPDATE account_deletion_sagas SET state = 'COMPLETED', updated_at = :at "
+            + "WHERE id = :id AND email = :email AND state = 'STARTED'")
+    long completeStartedSaga(UUID id, String email, Instant at);
+
+    @Query("UPDATE account_deletion_sagas SET state = 'COMPENSATED', updated_at = :at "
+            + "WHERE id = :id AND email = :email AND state = 'STARTED'")
+    long compensateStartedSaga(UUID id, String email, Instant at);
+
+    /**
+     * The same latch for an outcome that names no saga — the id is optional on the wire. It settles
+     * whatever is running for the address, which is what every outcome used to do; the partial
+     * unique index of V22 is what keeps that from settling two sagas at once, and nothing keeps it
+     * from settling the WRONG one, which is why the correlated pair above exists.
      */
     @Query("UPDATE account_deletion_sagas SET state = 'COMPLETED', updated_at = :at "
             + "WHERE email = :email AND state = 'STARTED'")

@@ -32,13 +32,17 @@ class JdbcAccountDeletionSagaStore implements AccountDeletionSagaStore {
     }
 
     @Override
-    public boolean complete(String email, Instant at) {
-        return repository.completeStarted(email, at) > 0;
+    public boolean complete(UUID sagaId, String email, Instant at) {
+        return (sagaId == null
+                ? repository.completeStarted(email, at)
+                : repository.completeStartedSaga(sagaId, email, at)) > 0;
     }
 
     @Override
-    public boolean compensate(String email, Instant at) {
-        return repository.compensateStarted(email, at) > 0;
+    public boolean compensate(UUID sagaId, String email, Instant at) {
+        return (sagaId == null
+                ? repository.compensateStarted(email, at)
+                : repository.compensateStartedSaga(sagaId, email, at)) > 0;
     }
 
     @Override

@@ -39,7 +39,7 @@ class ContentErasedAfterCompensationTest {
             return true;
         }
 
-        public boolean complete(String email, Instant at) {
+        public boolean complete(UUID sagaId, String email, Instant at) {
             if (!"STARTED".equals(state)) {
                 return false;
             }
@@ -47,7 +47,7 @@ class ContentErasedAfterCompensationTest {
             return true;
         }
 
-        public boolean compensate(String email, Instant at) {
+        public boolean compensate(UUID sagaId, String email, Instant at) {
             if (!"STARTED".equals(state)) {
                 return false;
             }
@@ -56,7 +56,7 @@ class ContentErasedAfterCompensationTest {
         }
 
         public List<String> compensateOverdue(Instant cutoff, Instant at) {
-            return compensate("leaver@example.com", at) ? List.of("leaver@example.com") : List.of();
+            return compensate(null, "leaver@example.com", at) ? List.of("leaver@example.com") : List.of();
         }
 
         public boolean lastSagaWasCompensated(String email) {
@@ -68,10 +68,10 @@ class ContentErasedAfterCompensationTest {
     @DisplayName("a success after a compensation is distinguishable from a harmless duplicate")
     void the_store_tells_the_catastrophe_from_the_duplicate() {
         LatchingStore afterCompensation = new LatchingStore();
-        afterCompensation.compensate("leaver@example.com", Instant.now());
+        afterCompensation.compensate(null, "leaver@example.com", Instant.now());
 
         // the portal comes back and confirms the purge it eventually completed
-        assertFalse(afterCompensation.complete("leaver@example.com", Instant.now()),
+        assertFalse(afterCompensation.complete(null, "leaver@example.com", Instant.now()),
                 "the latch is closed — nothing to complete");
         assertTrue(afterCompensation.lastSagaWasCompensated("leaver@example.com"),
                 "and THIS is what makes it an alarm rather than an INFO line: we already gave up,"
@@ -82,9 +82,9 @@ class ContentErasedAfterCompensationTest {
     @DisplayName("a duplicate of an already-completed deletion stays the routine case it is")
     void a_duplicate_completion_is_not_an_alarm() {
         LatchingStore afterCompletion = new LatchingStore();
-        afterCompletion.complete("leaver@example.com", Instant.now());
+        afterCompletion.complete(null, "leaver@example.com", Instant.now());
 
-        assertFalse(afterCompletion.complete("leaver@example.com", Instant.now()));
+        assertFalse(afterCompletion.complete(null, "leaver@example.com", Instant.now()));
         assertFalse(afterCompletion.lastSagaWasCompensated("leaver@example.com"),
                 "nothing went wrong here — the deletion finished, and this is its echo");
     }

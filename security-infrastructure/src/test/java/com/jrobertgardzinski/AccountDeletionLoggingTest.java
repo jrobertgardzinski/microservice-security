@@ -55,7 +55,7 @@ class AccountDeletionLoggingTest {
     @Test
     @DisplayName("the completed-deletion line carries a masked address")
     void completingADeletionDoesNotLogTheAddress() {
-        orchestrator(latchedStore(true)).completePurge(EMAIL);
+        orchestrator(latchedStore(true)).completePurge(UUID.randomUUID(), EMAIL);
 
         assertMasked();
     }
@@ -105,12 +105,12 @@ class AccountDeletionLoggingTest {
             }
 
             @Override
-            public boolean complete(String email, Instant at) {
+            public boolean complete(UUID sagaId, String email, Instant at) {
                 return latched;
             }
 
             @Override
-            public boolean compensate(String email, Instant at) {
+            public boolean compensate(UUID sagaId, String email, Instant at) {
                 return latched;
             }
 

@@ -80,25 +80,28 @@ class OffboardingOutcomeContractTest {
     @PactTestFor(pactMethod = "portalPurged")
     void thePurgedAnnouncementFinishesTheDeletion(List<Message> messages) {
         listener.handle(messages.get(0).contentsAsString());
-        verify(orchestrator).completePurge("leaver@example.com");
+        // null: the pact states only the fields this consumer REQUIRES, and the saga id is not one
+        // of them — the portal writes it only when the fact it answers carried one. This is the
+        // fallback an uncorrelated outcome takes, driven by the contract's own payload.
+        verify(orchestrator).completePurge(null, "leaver@example.com");
     }
 
     @Test
     @PactTestFor(pactMethod = "portalPurgeFailed")
     void theFailureAnnouncementRollsTheDeletionBack(List<Message> messages) {
         listener.handle(messages.get(0).contentsAsString());
-        verify(orchestrator).compensate("leaver@example.com", java.util.List.of());
+        verify(orchestrator).compensate(null, "leaver@example.com", java.util.List.of());
     }
 
     @Test
     @PactTestFor(pactMethod = "portalPurged")
     void theSameAnnouncementTwiceIsActedOnOnce(List<Message> messages) {
         // The sweeper re-publishes an outcome whose first announcement never got its outbox mark,
-        // and it does so byte-identically. Acting on it twice is what let a stale outcome close a
-        // NEWER saga for the same person: the account unlocked while the portal was still erasing.
+        // and it does so byte-identically. Acting on it twice used to apply one deletion's verdict
+        // twice; which saga a verdict applies TO is a separate question, answered by the saga id.
         listener.handle(messages.get(0).contentsAsString());
         listener.handle(messages.get(0).contentsAsString());
 
-        verify(orchestrator, org.mockito.Mockito.times(1)).completePurge("leaver@example.com");
+        verify(orchestrator, org.mockito.Mockito.times(1)).completePurge(null, "leaver@example.com");
     }
 }

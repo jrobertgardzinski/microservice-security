@@ -22,13 +22,15 @@ class InMemoryAccountDeletionSagaStoreTest {
 
         // a deletion that ran for a month and reached its verdict a minute ago
         String slow = "slow@example.com";
-        store.start(java.util.UUID.randomUUID(), slow, now.minus(java.time.Duration.ofDays(30)));
-        store.compensate(slow, now.minusSeconds(60));
+        java.util.UUID slowSaga = java.util.UUID.randomUUID();
+        store.start(slowSaga, slow, now.minus(java.time.Duration.ofDays(30)));
+        store.compensate(slowSaga, slow, now.minusSeconds(60));
 
         // and one that was settled three weeks ago: history, and nothing more
         String old = "old@example.com";
-        store.start(java.util.UUID.randomUUID(), old, now.minus(java.time.Duration.ofDays(30)));
-        store.compensate(old, now.minus(java.time.Duration.ofDays(21)));
+        java.util.UUID oldSaga = java.util.UUID.randomUUID();
+        store.start(oldSaga, old, now.minus(java.time.Duration.ofDays(30)));
+        store.compensate(oldSaga, old, now.minus(java.time.Duration.ofDays(21)));
 
         store.evictSettled();
 

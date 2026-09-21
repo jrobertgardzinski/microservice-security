@@ -15,9 +15,12 @@ import io.micronaut.http.HttpStatus;
 import io.micronaut.http.client.BlockingHttpClient;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
+import io.micronaut.json.JsonMapper;
 import io.micronaut.runtime.server.EmbeddedServer;
 
+import java.io.IOException;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -200,13 +203,25 @@ public class HttpDeleteAccountSteps {
     @When("the portal confirms the content purge")
     public void thePortalConfirmsTheContentPurge() {
         // the orchestrator method the Kafka listener calls on a PORTAL_CONTENT_PURGED outcome
-        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).completePurge(email);
+        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class)
+                .completePurge(announcedSagaId(), email);
     }
 
     @When("the portal reports the content purge failed")
     public void thePortalReportsTheContentPurgeFailed() {
         // ...and on a PORTAL_PURGE_FAILED outcome
-        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).compensate(email);
+        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class)
+                .compensate(announcedSagaId(), email);
+    }
+
+    /** The saga of the fact just announced — the handle the portal echoes back on its outcome. */
+    private UUID announcedSagaId() {
+        try {
+            return UUID.fromString(String.valueOf(
+                    JsonMapper.createDefault().readValue(announcedFact(), Map.class).get("sagaId")));
+        } catch (IOException notJson) {
+            throw new AssertionError("the announced deletion fact is not readable: " + announcedFact(), notJson);
+        }
     }
 
     @When("no portal outcome arrives within the time limit")
