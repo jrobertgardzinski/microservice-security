@@ -104,6 +104,19 @@ public class SecurityEventPacts {
         return outbox.only("security-events");
     }
 
+    // --- the address change, as the portal's content services consume it -----------------------
+
+    @PactVerifyProvider("an email changed fact")
+    public String anEmailChangedFact() {
+        CapturingOutbox outbox = new CapturingOutbox();
+        // the REAL announcer, so a renamed or dropped field fails here rather than in a live stack:
+        // memes, comments and collections all key their rows on an address and learn of a move
+        // only from this fact
+        new EmailChangedAnnouncer(outbox, JSON).announce(
+                Email.of("alice@old.example.com"), Email.of("alice@new.example.com"));
+        return outbox.only("security-events");
+    }
+
     /** The real orchestrator over a stubbed saga store: outcomes latch, timeouts expire. */
     private static AccountDeletionOrchestrator orchestrator(OutboxAppender outbox) {
         AccountDeletionSagaStore sagas = mock(AccountDeletionSagaStore.class);
