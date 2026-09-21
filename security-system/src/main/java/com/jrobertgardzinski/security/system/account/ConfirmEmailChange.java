@@ -117,7 +117,7 @@ public class ConfirmEmailChange {
                     }
                     sessionRepository.revokeAllSessions(change.currentEmail());
                     emailVerificationRepository.markVerified(change.newEmail());
-                    return new ConfirmEmailChangeResult.EmailChanged(change.newEmail());
+                    return new ConfirmEmailChangeResult.EmailChanged(change.currentEmail(), change.newEmail());
                 })
                 .orElseGet(ConfirmEmailChangeResult.InvalidToken::new);
     }

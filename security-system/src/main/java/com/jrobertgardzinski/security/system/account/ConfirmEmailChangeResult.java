@@ -8,7 +8,11 @@ import com.jrobertgardzinski.email.domain.Email;
  */
 public sealed interface ConfirmEmailChangeResult {
 
-    record EmailChanged(Email newEmail) implements ConfirmEmailChangeResult {}
+    /**
+     * Both addresses, because the move is announced to the rest of the estate and the announcement
+     * is useless without the one the other services' rows are still keyed by.
+     */
+    record EmailChanged(Email oldEmail, Email newEmail) implements ConfirmEmailChangeResult {}
 
     record InvalidToken() implements ConfirmEmailChangeResult {}
 

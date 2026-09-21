@@ -71,7 +71,7 @@ class ConfirmEmailChangeTest {
     void matching_token_changes_the_email() {
         Mockito.when(emailChangeRepository.confirmChange(TOKEN)).thenReturn(Optional.of(fresh(new EmailChange(OLD, NEW))));
 
-        assertEquals(new ConfirmEmailChangeResult.EmailChanged(NEW), confirmEmailChange.execute(TOKEN));
+        assertEquals(new ConfirmEmailChangeResult.EmailChanged(OLD, NEW), confirmEmailChange.execute(TOKEN));
         Mockito.verify(userRepository).updateEmail(OLD, NEW);
         Mockito.verify(emailVerificationRepository).markVerified(NEW);
     }
