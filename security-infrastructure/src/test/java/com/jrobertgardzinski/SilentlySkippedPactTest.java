@@ -49,6 +49,7 @@ class SilentlySkippedPactTest {
             new Consumer("portal", "microservice-memes", "pacts-http", "MeIntrospectionPactProviderTest"),
             new Consumer("portal", "microservice-memes", "pacts", "MemesFactsPactProviderTest"),
             new Consumer("portal", "microservice-comments", "pacts", "CommentsFactsPactProviderTest"),
+            new Consumer("portal", "microservice-user-collections", "pacts", "CollectionsFactsPactProviderTest"),
             new Consumer("portal", "microservice-offboarding", "pacts", "OffboardingFactsPactProviderTest"),
             // the other two carry the SAME @EnabledIf skip and had no witness at all: both live in
             // this workspace, so "not cloned" is not an excuse either of them can honestly make
