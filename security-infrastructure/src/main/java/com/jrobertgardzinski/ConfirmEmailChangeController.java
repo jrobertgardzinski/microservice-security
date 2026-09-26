@@ -24,13 +24,10 @@ final class ConfirmEmailChangeController {
 
     private final ConfirmEmailChange confirmEmailChange;
     private final TransactionBoundary transactionBoundary;
-    private final EmailChangedAnnouncer announcer;
 
-    ConfirmEmailChangeController(ConfirmEmailChange confirmEmailChange, TransactionBoundary transactionBoundary,
-                                 EmailChangedAnnouncer announcer) {
+    ConfirmEmailChangeController(ConfirmEmailChange confirmEmailChange, TransactionBoundary transactionBoundary) {
         this.confirmEmailChange = confirmEmailChange;
         this.transactionBoundary = transactionBoundary;
-        this.announcer = announcer;
     }
 
     @Post(consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
@@ -41,16 +38,9 @@ final class ConfirmEmailChangeController {
         } catch (IllegalArgumentException missingOrBlank) {
             return HttpResponse.badRequest().body(Map.of("status", "INVALID_TOKEN"));
         }
-        // the announcement goes inside the SAME transaction as the move, so the two commit or roll
-        // back together: the rest of the estate keys the person's rows on their address and learns
-        // they moved only from this fact
-        ConfirmEmailChangeResult result = transactionBoundary.execute(() -> {
-            ConfirmEmailChangeResult outcome = confirmEmailChange.execute(token);
-            if (outcome instanceof ConfirmEmailChangeResult.EmailChanged changed) {
-                announcer.announce(changed.oldEmail(), changed.newEmail());
-            }
-            return outcome;
-        });
+        // nobody else is told: the rest of the estate keys a person's rows on their id, and shows
+        // the address by asking this service (GET /users?ids=)
+        ConfirmEmailChangeResult result = transactionBoundary.execute(() -> confirmEmailChange.execute(token));
         return switch (result) {
             case ConfirmEmailChangeResult.EmailChanged changed ->
                     HttpResponse.ok(Map.of("status", "EMAIL_CHANGED", "email", changed.newEmail().value()));
