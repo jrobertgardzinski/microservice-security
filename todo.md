@@ -17,10 +17,14 @@ claim `email`, `/me` zwraca `id`, `GET /users?ids=` → `[{id, displayName}]` (m
 throttle per źródło), `offline-jwt` czyta `email` z fallbackiem na `sub` ze starych tokenów.
 Analiza i pełny plan: `shared/docs/analysis/2026-09-26-user-id-as-the-key.md`. Otwarte:
 
-- [ ] etap 2 — port `AuthorDirectory.namesOf(Collection<UserId>)` jako biblioteka (kontrakt w test-jarze),
-      kopiec w `account-closure-specs`, adapter HTTP-batch + cache w memes/comments; collections bez nazw
-- [ ] etap 3 — kolumny `author_id` obok e-maila w serwisach treści, backfill, przełączenie odczytów,
-      własności i sagi (`Field.USER_ID`) na id; anonimizacja zachowanej treści = `author_id NULL`
+- [x] etap 2 — biblioteka `shared/author-directory`: port, `SecurityAuthorDirectory` (batch 100 + cache TTL,
+      absencje też; security niedostępne = listing bez nazw + WARN), kontrakt w test-jarze, pakt
+      weryfikowany przez security (`DisplayNamesPactProviderTest`)
+- [~] etap 3 — ZROBIONE: `author_id` (memes V13, comments V7; nullable), zapis z `sub` przy publikacji/komentarzu,
+      `/meta` i listing wątku pokazują nazwę z katalogu (wiersz bez id = maska adresu, nieznane id = „deleted
+      account"), `portal/dev/backfill-author-ids.sh`. OTWARTE: collections (`user_id` w `collection_items`,
+      port `CollectionRepository.add` musi przyjąć id), własność/autoryzacja i saga (`Field.USER_ID`) nadal
+      po e-mailu, anonimizacja zachowanej treści = `author_id NULL`, kopiec `HeapAuthorDirectory` w runnerze
 - [ ] etap 4 — kasacja rekeya (`EMAIL_CHANGED`, `UserContentRekey`…) i kolumn e-mailowych; `ClosureCommand` v2
 - [ ] security samo nadal kluczuje tabele e-mailem (`AccountClosure(Email…)`, `UserRepository` per Email) — poza zakresem mechanizmu, do osobnej decyzji
 
