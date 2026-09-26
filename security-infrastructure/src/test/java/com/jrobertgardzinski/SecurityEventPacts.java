@@ -5,6 +5,10 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.persistence.AccountDeletionSagaStore;
 import com.jrobertgardzinski.persistence.OutboxAppender;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
+import java.util.Set;
+import java.util.Optional;
+import com.jrobertgardzinski.security.domain.entity.User;
+import com.jrobertgardzinski.identity.UserId;
 import com.jrobertgardzinski.security.domain.vo.AccountClosure;
 import com.jrobertgardzinski.security.domain.vo.PurgeChoices;
 import com.jrobertgardzinski.security.domain.vo.token.PasswordResetToken;
@@ -120,13 +124,17 @@ public class SecurityEventPacts {
     /** The real orchestrator over a stubbed saga store: outcomes latch, timeouts expire. */
     private static AccountDeletionOrchestrator orchestrator(OutboxAppender outbox) {
         AccountDeletionSagaStore sagas = mock(AccountDeletionSagaStore.class);
+        // the account exists, so the fact carries its id — the portal's pact expects one
+        UserRepository users = mock(UserRepository.class);
+        when(users.findBy(any())).thenReturn(Optional.of(new User(UserId.random(),
+                Email.of("leaver@example.com"), null, null, Set.of())));
         // the saga opens: without this the orchestrator would take the "already running" branch and
         // announce no fact at all, and the pact would fail on an empty outbox
         when(sagas.start(any(), any(), any())).thenReturn(true);
         when(sagas.complete(any(), any(), any())).thenReturn(true);
         when(sagas.compensateOverdue(any(), any())).thenReturn(List.of("leaver@example.com"));
         return new AccountDeletionOrchestrator(sagas, outbox, mock(DeleteAccount.class),
-                mock(UserRepository.class), JSON, Clock.systemUTC(), Duration.ofMinutes(5), true);
+                users, JSON, Clock.systemUTC(), Duration.ofMinutes(5), true);
     }
 
     /** Captures what the producer appended; the payload on the expected topic IS the message. */

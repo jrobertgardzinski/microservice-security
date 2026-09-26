@@ -6,6 +6,7 @@ import com.jrobertgardzinski.persistence.AccountDeletionSagaStore;
 import com.jrobertgardzinski.persistence.OutboxAppender;
 import com.jrobertgardzinski.security.domain.port.ContentPurge;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
+import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.vo.AccountClosure;
 import com.jrobertgardzinski.security.system.account.DeleteAccount;
 import io.micronaut.context.annotation.Value;
@@ -129,6 +130,10 @@ public class AccountDeletionOrchestrator implements ContentPurge {
                 // ALWAYS rather than only for the interesting value
                 "initiatedBy", closure.requestedBy().wire(),
                 "version", 1));
+        // the leaver by identity, beside the address: what the portal keys its rows on since the
+        // cutover. Additive within version 1; absent only for an account this service cannot find
+        userRepository.findBy(email).map(User::id)
+                .ifPresent(id -> fact.put(ClosureMessages.Field.USER_ID, id.toString()));
         if (!closure.choices().rules().isEmpty()) {
             fact.put("policy", closure.choices().rules());
         }

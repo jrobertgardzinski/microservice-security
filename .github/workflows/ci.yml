@@ -129,7 +129,7 @@ jobs:
 
       - name: Install the shared libraries (dependency order)
         run: |
-          for lib in test-starter constraint config adjustable-clock email password infrastructure-micronaut-clock offline-jwt account-closure user-id; do
+          for lib in test-starter constraint config adjustable-clock email password infrastructure-micronaut-clock offline-jwt user-id account-closure; do
             mvn -B -q --no-transfer-progress -f "shared/$lib/pom.xml" install -DskipTests
           done
 
