@@ -2,6 +2,7 @@ package com.jrobertgardzinski.security.application.feature.support;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
+import com.jrobertgardzinski.identity.UserId;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.vo.Role;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
@@ -16,6 +17,11 @@ public final class InMemoryUserRepository implements UserRepository {
     private final java.util.Set<String> pendingDeletion = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Map<String, User> byEmail = new HashMap<>();
     private final Map<String, User> byNormalizedEmail = new HashMap<>();
+
+    @Override
+    public java.util.List<User> findAllBy(java.util.Collection<UserId> ids) {
+        return byEmail.values().stream().filter(user -> ids.contains(user.id())).toList();
+    }
 
     @Override
     public Optional<User> findBy(Email email) {

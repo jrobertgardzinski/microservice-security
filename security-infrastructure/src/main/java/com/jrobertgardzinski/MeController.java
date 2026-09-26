@@ -28,11 +28,14 @@ final class MeController {
 
     private final com.jrobertgardzinski.security.system.roles.RequireRole roles;
     private final com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance;
+    private final UserRepository users;
 
     MeController(com.jrobertgardzinski.security.system.roles.RequireRole roles,
-                 com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance) {
+                 com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance,
+                 UserRepository users) {
         this.roles = roles;
         this.compliance = compliance;
+        this.users = users;
     }
 
     @Get(produces = MediaType.APPLICATION_JSON)
@@ -46,6 +49,7 @@ final class MeController {
         List<String> roles = roleSet.stream().map(Role::name).sorted().toList();
         // the MFA role floor, so consumers and the UI can nudge an under-protected privileged account
         return HttpResponse.ok(Map.of(
+                "id", users.findBy(email).map(user -> user.id().toString()).orElseThrow(),
                 "email", email.value(),
                 "roles", roles,
                 "mfaCompliant", compliance.isCompliant(email, roleSet),

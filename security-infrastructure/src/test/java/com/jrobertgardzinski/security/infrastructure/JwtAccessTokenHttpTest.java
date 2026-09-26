@@ -63,7 +63,7 @@ class JwtAccessTokenHttpTest {
     }
 
     @Test
-    @DisplayName("the access token is a JWT: subject and roles inside, signature verifiable via JWKS")
+    @DisplayName("the access token is a JWT: user id as subject, address and roles as claims, signature verifiable via JWKS")
     void access_token_verifies_offline_against_jwks() throws Exception {
         String email = "jwt-user@example.com";
         String token = registerVerifyAuthenticate(email).accessToken;
@@ -76,7 +76,10 @@ class JwtAccessTokenHttpTest {
         assertEquals("EdDSA", header.get("alg"));
         assertNotNull(header.get("kid"), "the header names the key so verifiers can pick it from the set");
         assertEquals("microservice-security", claims.get("iss"));
-        assertEquals(email, claims.get("sub"));
+        java.util.UUID.fromString((String) claims.get("sub"));   // the subject is the stable user id
+        assertEquals(email, claims.get("email"), "the address is a claim of its own");
+        assertEquals(claims.get("sub"), me(token).getBody(Map.class).orElseThrow().get("id"),
+                "/me names the same id the token carries");
         assertTrue(((List<?>) claims.get("roles")).contains("USER"), "roles ride inside the token");
         long exp = ((Number) claims.get("exp")).longValue();
         long iat = ((Number) claims.get("iat")).longValue();

@@ -1,6 +1,7 @@
 package com.jrobertgardzinski.security.domain.entity;
 
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.identity.UserId;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.security.domain.vo.FailuresCount;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
@@ -15,7 +16,6 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Set;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,16 +37,16 @@ class UserAndBlockRulesTest {
                 .as("a fresh registration is a plain USER")
                 .containsExactly(Role.USER);
 
-        assertThat(new User(UUID.randomUUID(), EMAIL, HASH, null, Set.of(Role.ADMIN)).roles())
+        assertThat(new User(UserId.random(), EMAIL, HASH, null, Set.of(Role.ADMIN)).roles())
                 .as("an admin is still signed in, so 'is a USER' must not be a different question"
                         + " from 'is signed in'")
                 .containsExactlyInAnyOrder(Role.USER, Role.ADMIN);
 
-        assertThat(new User(UUID.randomUUID(), EMAIL, HASH, null, Set.of()).roles())
+        assertThat(new User(UserId.random(), EMAIL, HASH, null, Set.of()).roles())
                 .as("an empty grant set is a USER, not a user with no authority at all")
                 .containsExactly(Role.USER);
 
-        assertThat(new User(UUID.randomUUID(), EMAIL, HASH, null, null).roles())
+        assertThat(new User(UserId.random(), EMAIL, HASH, null, null).roles())
                 .as("and so is none at all — the row's roles column may be absent")
                 .containsExactly(Role.USER);
     }
@@ -54,7 +54,7 @@ class UserAndBlockRulesTest {
     @Test
     @DisplayName("the normalized address is derived, never accepted")
     void the_identity_cannot_be_handed_in_wrong() {
-        User user = new User(UUID.randomUUID(), Email.of("Alice+Promo@Gmail.com"), HASH,
+        User user = new User(UserId.random(), Email.of("Alice+Promo@Gmail.com"), HASH,
                 // a caller's idea of the normalized form, and a wrong one: this is the shape of
                 // the mistake nothing prevented
                 com.jrobertgardzinski.email.domain.NormalizedEmail.of(Email.of("somebody-else@example.com")),
@@ -65,7 +65,7 @@ class UserAndBlockRulesTest {
                         + " own record disagrees with it exists and cannot be signed into")
                 .isEqualTo(com.jrobertgardzinski.email.domain.NormalizedEmail.of(Email.of("Alice+Promo@Gmail.com")));
 
-        assertThat(new User(UUID.randomUUID(), EMAIL, HASH, null, Set.of()).normalizedEmail())
+        assertThat(new User(UserId.random(), EMAIL, HASH, null, Set.of()).normalizedEmail())
                 .as("and null is not a hole either — there is nothing to supply")
                 .isEqualTo(com.jrobertgardzinski.email.domain.NormalizedEmail.of(EMAIL));
     }
@@ -74,7 +74,7 @@ class UserAndBlockRulesTest {
     @DisplayName("the role set cannot be edited from outside the user")
     void the_role_set_is_the_users_own() {
         java.util.Set<Role> granted = new java.util.HashSet<>(Set.of(Role.MODERATOR));
-        User user = new User(UUID.randomUUID(), EMAIL, HASH, null, granted);
+        User user = new User(UserId.random(), EMAIL, HASH, null, granted);
 
         granted.add(Role.ADMIN);
 

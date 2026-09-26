@@ -283,6 +283,23 @@ public class BeanFactory {
     // per-source window is what caps that loop; it is deliberately generous, because an address is
     // not a person, and it is the same window for /authenticate and /authenticate/factor.
     @Singleton
+    com.jrobertgardzinski.security.system.identity.DisplayNames displayNames(
+            com.jrobertgardzinski.security.domain.repository.UserRepository users) {
+        return new com.jrobertgardzinski.security.system.identity.DisplayNames(users);
+    }
+
+    // the display-name lookup is anonymous and cheap, but it is a way to enumerate which ids exist;
+    // a per-source window keeps a crawler from sweeping the id space at line speed
+    @Singleton
+    @Named("display-names")
+    SourceThrottle displayNamesThrottle(
+            @io.micronaut.context.annotation.Value("${security.display-names.max-per-window:120}") int maxPerWindow,
+            @io.micronaut.context.annotation.Value("${security.display-names.window-minutes:1}") int windowMinutes,
+            Clock clock) {
+        return new SourceThrottle(maxPerWindow, java.time.Duration.ofMinutes(windowMinutes), clock);
+    }
+
+    @Singleton
     @Named("authentication")
     SourceThrottle authenticationThrottle(
             @io.micronaut.context.annotation.Value("${security.authentication.max-per-window:30}") int maxPerWindow,

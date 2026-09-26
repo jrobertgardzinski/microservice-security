@@ -61,6 +61,7 @@ class StepUpCoverageTest {
             Map.entry("LogoutController", "ends a session: the safe direction, and a thief gains nothing by it"),
             Map.entry("SessionsController", "listing and revoking one's own sessions — the remedy, not the risk"),
             Map.entry("MeController", "reads the caller's own profile"),
+            Map.entry("UsersController", "anonymous read of masked display names — grants nothing"),
             Map.entry("JwksController", "serves public verification keys"),
             Map.entry("SecurityController", "registration and the verification mail — no session is involved"),
             Map.entry("VerifyEmailController", "consumes a token mailed to the address being verified"),

@@ -21,6 +21,7 @@ interface UserJdbcRepository extends CrudRepository<UserEntity, UUID> {
 
 
     Optional<UserEntity> findByEmail(String email);
+    java.util.List<UserEntity> findByIdIn(java.util.Collection<UUID> ids);
 
     boolean existsByNormalizedEmail(String normalizedEmail);
 

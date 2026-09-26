@@ -2,12 +2,12 @@ package com.jrobertgardzinski.security.domain.entity;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
+import com.jrobertgardzinski.identity.UserId;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.security.domain.vo.Role;
 
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * A registered participant in the system, with the {@link Role}s they hold. Every user is a
@@ -19,7 +19,7 @@ import java.util.UUID;
  * by; it is not a value anybody supplies.
  */
 public record User(
-        UUID id,
+        UserId id,
         Email email,
         HashedPassword passwordHash,
         NormalizedEmail normalizedEmail,
@@ -40,7 +40,7 @@ public record User(
 
     /** A freshly registered user: a plain USER until an admin grants more. */
     public User(Email email, HashedPassword passwordHash) {
-        this(UUID.randomUUID(), email, passwordHash, NormalizedEmail.of(email), Set.of(Role.USER));
+        this(UserId.random(), email, passwordHash, NormalizedEmail.of(email), Set.of(Role.USER));
     }
 
     public boolean hasRole(Role role) {

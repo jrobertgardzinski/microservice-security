@@ -36,6 +36,15 @@ final class JdbcUserRepository implements UserRepository {
     }
 
     @Override
+    public java.util.List<User> findAllBy(java.util.Collection<com.jrobertgardzinski.identity.UserId> ids) {
+        if (ids.isEmpty()) {
+            return java.util.List.of();
+        }
+        return repository.findByIdIn(ids.stream().map(com.jrobertgardzinski.identity.UserId::value).toList())
+                .stream().map(JdbcUserRepository::toDomain).toList();
+    }
+
+    @Override
     public Optional<User> findBy(Email email) {
         // by the normalized form, because that is the identity the unique index enforces; the
         // spelling somebody typed is not part of who they are
@@ -91,7 +100,7 @@ final class JdbcUserRepository implements UserRepository {
     public User save(User user) {
         try {
             repository.save(new UserEntity(
-                    user.id(), user.email().value(), user.normalizedEmail().value(), user.passwordHash().value(),
+                    user.id().value(), user.email().value(), user.normalizedEmail().value(), user.passwordHash().value(),
                     false, encodeRoles(user.roles()), java.time.LocalDateTime.now(clock)));
             return user;
         } catch (DataAccessException e) {
@@ -146,7 +155,7 @@ final class JdbcUserRepository implements UserRepository {
 
     private static User toDomain(UserEntity entity) {
         Email email = Email.of(entity.email());
-        return new User(entity.id(), email, new HashedPassword(entity.passwordHash()),
+        return new User(new com.jrobertgardzinski.identity.UserId(entity.id()), email, new HashedPassword(entity.passwordHash()),
                 NormalizedEmail.of(email), decodeRoles(entity.roles()));
     }
 }

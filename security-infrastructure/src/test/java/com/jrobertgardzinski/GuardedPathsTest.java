@@ -48,6 +48,7 @@ class GuardedPathsTest {
             "/logout",                // same cookie, and a logout must never need a live token
             "/oauth",                 // the provider's dance; the state cookie carries the session
             "/.well-known",           // the JWK set is public by definition
+            "/users",                 // masked display names behind ids: as public as the content that shows them, never the address
             "/test/mailbox",          // test environment only (@Requires(env = "test"))
             "/test/clock");           // the steerable clock, likewise test-only (shared library)
 

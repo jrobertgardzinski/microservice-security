@@ -16,6 +16,10 @@
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>email-domain</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>user-id</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>

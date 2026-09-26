@@ -2,10 +2,13 @@ package com.jrobertgardzinski.security.domain.repository;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
+import com.jrobertgardzinski.identity.UserId;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.vo.Role;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -21,6 +24,9 @@ public interface UserRepository {
      * "wrong e-mail or password" for ever after, and could not register again either.
      */
     Optional<User> findBy(Email email);
+
+    /** The accounts among these ids that exist; a deleted or unknown id is simply not in the answer. */
+    List<User> findAllBy(Collection<UserId> ids);
 
     /** Replace a user's whole role set (USER is always kept); a no-op if the user is absent. */
     void setRoles(Email email, Set<Role> roles);

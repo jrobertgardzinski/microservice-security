@@ -122,6 +122,7 @@ security:
   # authentication.max-per-window: 30   / authentication.window-minutes: 15   # /authenticate AND
   #                                       /authenticate/factor share this one window
   # change-password.max-per-window: 10  / change-password.window-minutes: 15
+  # display-names.max-per-window: 120   / display-names.window-minutes: 1     # GET /users?ids=
   #
   # oauth.allowed-return-prefixes: http://localhost:8083/   # where a federated sign-in may send the
   #   browser back to. The ACCESS TOKEN travels in that URL's fragment, so this list is what keeps

@@ -26,7 +26,6 @@ import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -145,7 +144,7 @@ public class FederatedSignInSteps {
     }
 
     /** The account as it stood after the FIRST contact — what "not a twin" is measured against. */
-    private UUID accountBefore;
+    private com.jrobertgardzinski.identity.UserId accountBefore;
 
     @Given("the USER already SIGNED IN with a PROVIDER identity vouching for {string}")
     public void alreadySignedInWith(String email) {

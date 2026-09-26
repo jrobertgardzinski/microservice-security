@@ -1,6 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.Role;
@@ -33,7 +34,8 @@ import java.util.UUID;
 
 /**
  * Mints access tokens as self-contained JWTs (EdDSA over Ed25519, plain JDK crypto — no extra
- * dependency). The claims — subject e-mail, roles, expiry — let OTHER services verify a caller
+ * dependency). The claims — the user id as subject, the address as its own claim, roles, expiry —
+ * let OTHER services verify a caller
  * offline against {@code /.well-known/jwks.json} instead of calling {@code /me}; the trade-off is
  * theirs to make: offline verification cannot see a logout or a role change until the token
  * expires, introspection can. Security itself keeps treating the value as an opaque secret
@@ -63,6 +65,7 @@ class JwtAccessTokenMint implements AccessTokenMint {
     private final List<PublicKey> previousPublicKeys;
     private final com.jrobertgardzinski.security.system.roles.RequireRole roles;
     private final com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance;
+    private final UserRepository users;
     private final Clock clock;
     private final JsonMapper json;
 
@@ -71,12 +74,13 @@ class JwtAccessTokenMint implements AccessTokenMint {
                        @Value("${security.jwt.previous-public-keys:}") String previousPublicKeysBase64,
                        com.jrobertgardzinski.security.system.roles.RequireRole roles,
                        com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance,
-                       Clock clock, JsonMapper json) {
+                       UserRepository users, Clock clock, JsonMapper json) {
         this.keyPair = load(privateKeyBase64, publicKeyBase64);
         this.keyId = keyIdOf(keyPair.getPublic());
         this.previousPublicKeys = loadPublicKeys(previousPublicKeysBase64);
         this.roles = roles;
         this.compliance = compliance;
+        this.users = users;
         this.clock = clock;
         this.json = json;
     }
@@ -91,7 +95,11 @@ class JwtAccessTokenMint implements AccessTokenMint {
         Map<String, Object> header = Map.of("alg", "EdDSA", "typ", "JWT", "kid", keyId);
         Map<String, Object> claims = new LinkedHashMap<>();
         claims.put("iss", ISSUER);
-        claims.put("sub", email.value());
+        // the subject is the identity that never changes; the address is an attribute of it
+        claims.put("sub", users.findBy(email).map(User::id)
+                .orElseThrow(() -> new IllegalStateException("minting a token for an account with no row"))
+                .toString());
+        claims.put("email", email.value());
         claims.put("roles", roles);
         // whether the account meets its role's factor floor AT MINT TIME — offline consumers use
         // it to withhold privileged roles from an under-enrolled caller. Same trade-off as the

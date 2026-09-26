@@ -41,8 +41,8 @@ documentation is the specs above and the value objects they exercise.
 > filter, JDBC adapters over Flyway migrations (with in-memory ones that take over when no
 > datasource is configured), and mail notifiers that reach a separate email microservice through a
 > transactional outbox and Kafka. The **UI** is built too — a small React app that is also the
-> specs' third entry point, driven by the same feature files through Playwright. Of the 19 specs,
-> 16 run at the HTTP layer, 11 in a real browser and 5 at the application layer — the counts are
+> specs' third entry point, driven by the same feature files through Playwright. Of the 20 specs,
+> 17 run at the HTTP layer, 11 in a real browser and 6 at the application layer — the counts are
 > held honest by tests that fail when a spec quietly stops being driven. The diagram below is the
 > full target shape; the executable specs are what's actually proven — nothing here is hand-waved.
 

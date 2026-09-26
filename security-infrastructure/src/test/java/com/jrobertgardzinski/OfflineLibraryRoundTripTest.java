@@ -57,7 +57,8 @@ class OfflineLibraryRoundTripTest {
         Optional<VerifiedToken> verified = theConsumersVerifier.verify(token);
 
         assertTrue(verified.isPresent(), "the library accepts what the service mints");
-        assertEquals(email, verified.get().subject());
+        java.util.UUID.fromString(verified.get().subject());   // the subject is the user id
+        assertEquals(email, verified.get().email(), "the address rides as its own claim");
         assertTrue(verified.get().roles().contains("USER"), "roles ride the token into the library");
     }
 

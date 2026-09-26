@@ -10,6 +10,20 @@ wire (`Challenge.publicData`→`challengeData` w 202, port `enrolledMaterial`),
 e2e na wirtualnym authenticatorze; Faza H w docs/mfa-design.md. 178 testów JVM +
 36 e2e zielone. S5 zamknięte (gałęzie już nie istniały; runda 2 czeka). S4 na userze.)
 
+## UserId zamiast e-maila jako klucz (2026-09-26, etap 1 ZROBIONY)
+
+Etap 1 w kodzie: `UserId` (biblioteka `shared/user-id`), `User.id: UserId`, token `sub` = UUID +
+claim `email`, `/me` zwraca `id`, `GET /users?ids=` → `[{id, displayName}]` (maska adresu, anonimowo,
+throttle per źródło), `offline-jwt` czyta `email` z fallbackiem na `sub` ze starych tokenów.
+Analiza i pełny plan: `shared/docs/analysis/2026-09-26-user-id-as-the-key.md`. Otwarte:
+
+- [ ] etap 2 — port `AuthorDirectory.namesOf(Collection<UserId>)` jako biblioteka (kontrakt w test-jarze),
+      kopiec w `account-closure-specs`, adapter HTTP-batch + cache w memes/comments; collections bez nazw
+- [ ] etap 3 — kolumny `author_id` obok e-maila w serwisach treści, backfill, przełączenie odczytów,
+      własności i sagi (`Field.USER_ID`) na id; anonimizacja zachowanej treści = `author_id NULL`
+- [ ] etap 4 — kasacja rekeya (`EMAIL_CHANGED`, `UserContentRekey`…) i kolumn e-mailowych; `ClosureCommand` v2
+- [ ] security samo nadal kluczuje tabele e-mailem (`AccountClosure(Email…)`, `UserRepository` per Email) — poza zakresem mechanizmu, do osobnej decyzji
+
 ## Stan (2026-07-02) — kontekst, nie backlog
 
 **19 feature'ów w `specs/`** (2026-09-12; było 13, gdy ta sekcja powstawała), każdy napędzany

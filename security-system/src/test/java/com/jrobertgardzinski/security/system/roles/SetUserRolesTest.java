@@ -13,7 +13,6 @@ import org.mockito.Mockito;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -90,7 +89,7 @@ class SetUserRolesTest {
 
     private static UserRepository usersWhere(Email email, Set<Role> roles, int admins) {
         UserRepository users = Mockito.mock(UserRepository.class);
-        User user = new User(UUID.randomUUID(), email, new HashedPassword("argon2"), null, roles);
+        User user = new User(com.jrobertgardzinski.identity.UserId.random(), email, new HashedPassword("argon2"), null, roles);
         Mockito.when(users.findBy(email)).thenReturn(Optional.of(user));
         Mockito.when(users.countAdmins()).thenReturn(admins);
         return users;
