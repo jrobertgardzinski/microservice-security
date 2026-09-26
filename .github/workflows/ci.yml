@@ -90,6 +90,11 @@ jobs:
         with:
           repository: jrobertgardzinski/user-id
           path: shared/user-id
+      # the consumer of GET /users?ids= — checked out for its pacts/, verified here
+      - uses: actions/checkout@v7
+        with:
+          repository: jrobertgardzinski/author-directory
+          path: shared/author-directory
 
       # offline-jwt is also a consumer (the JWKS pact) and a test dependency (the round-trip);
       # the other consumers are checkout only, no build
