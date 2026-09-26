@@ -35,7 +35,7 @@ import java.time.LocalDateTime;
 @Requires(beans = DataSource.class)
 final class JdbcRejectedAuthenticationRepository implements RejectedAuthenticationRepository {
 
-    /** {@code user_agent VARCHAR(400)} — V9__rejected_authentication_user_agent.sql. */
+    /** {@code user_agent VARCHAR(400)} — V1__schema.sql. */
     private static final int USER_AGENT_COLUMN_WIDTH = 400;
 
     private final RejectedAuthenticationJdbcRepository repository;
