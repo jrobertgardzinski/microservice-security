@@ -84,6 +84,10 @@ jobs:
       # the closure vocabulary this service shares with the portal's orchestrator and participants
       - uses: actions/checkout@v7
         with:
+          repository: jrobertgardzinski/unit-of-work
+          path: shared/unit-of-work
+      - uses: actions/checkout@v7
+        with:
           repository: jrobertgardzinski/account-closure
           path: shared/account-closure
       - uses: actions/checkout@v7
@@ -129,7 +133,7 @@ jobs:
 
       - name: Install the shared libraries (dependency order)
         run: |
-          for lib in test-starter constraint config adjustable-clock email password infrastructure-micronaut-clock offline-jwt user-id account-closure; do
+          for lib in test-starter constraint config adjustable-clock email password infrastructure-micronaut-clock offline-jwt user-id unit-of-work account-closure; do
             mvn -B -q --no-transfer-progress -f "shared/$lib/pom.xml" install -DskipTests
           done
 
