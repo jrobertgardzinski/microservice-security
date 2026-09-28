@@ -305,13 +305,13 @@
                  pact provider, declared for the dependency analyzer.
 
                  5.4.3, raised from 5.3.4 when Micronaut 5 arrived: it brings httpclient5 5.6.2,
-                 which pulls httpcore5-h2 5.4.3 and calls MessageSupport.parseHeaders(MessageHeaders,
+                 which pulls httpcore5-h2 5.4.4 and calls MessageSupport.parseHeaders(MessageHeaders,
                  String, BiConsumer) - a method that does not exist in 5.3. Left at 5.3.4 the
                  provider verification died with NoSuchMethodError, and only there: nothing else on
                  the classpath touches that call. -->
             <groupId>org.apache.httpcomponents.core5</groupId>
             <artifactId>httpcore5</artifactId>
-            <version>5.4.3</version>
+            <version>5.4.4</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
