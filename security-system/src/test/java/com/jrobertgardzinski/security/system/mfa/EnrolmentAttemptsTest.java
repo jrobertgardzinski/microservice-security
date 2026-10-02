@@ -14,10 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,7 +41,7 @@ class EnrolmentAttemptsTest {
                 new FactorRegistry(List.of(new CodeFactor(
                         channel, raw -> "hash:" + raw, ChallengeCodeConfig.withDefaults(), Clock.systemUTC()))),
                 new FactorStore(),
-                new PendingEnrolments());
+                new FakeEnrolmentChallengeStore());
 
         enrol.start(USER, FactorType.EMAIL_CODE, USER.value());
 
@@ -69,7 +66,7 @@ class EnrolmentAttemptsTest {
                 new FactorRegistry(List.of(new CodeFactor(
                         channel, raw -> "hash:" + raw, ChallengeCodeConfig.withDefaults(), Clock.systemUTC()))),
                 new FactorStore(),
-                new PendingEnrolments());
+                new FakeEnrolmentChallengeStore());
 
         enrol.start(USER, FactorType.EMAIL_CODE, USER.value());
         enrol.confirm(USER, FactorType.EMAIL_CODE, "000000");
@@ -130,31 +127,6 @@ class EnrolmentAttemptsTest {
             rows.removeAll(moving);
             moving.forEach(row -> rows.add(new EnrolledFactor(
                     toEmail, row.type(), row.label(), row.order(), row.secretMaterial())));
-        }
-    }
-
-    /** Pending enrolments in a map; expiry is somebody else's test. */
-    private static final class PendingEnrolments implements EnrolmentChallengeStore {
-
-        private final Map<String, PendingEnrolment> held = new HashMap<>();
-
-        @Override
-        public void put(Email user, FactorType type, PendingEnrolment enrolment) {
-            held.put(key(user, type), enrolment);
-        }
-
-        @Override
-        public Optional<PendingEnrolment> get(Email user, FactorType type) {
-            return Optional.ofNullable(held.get(key(user, type)));
-        }
-
-        @Override
-        public void remove(Email user, FactorType type) {
-            held.remove(key(user, type));
-        }
-
-        private static String key(Email user, FactorType type) {
-            return user.value() + "|" + type.value();
         }
     }
 }

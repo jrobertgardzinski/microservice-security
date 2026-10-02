@@ -15,7 +15,6 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,7 +44,7 @@ class ChainPositionsTest {
                 new CodeFactor(email, raw -> "hash:" + raw, ChallengeCodeConfig.withDefaults(), Clock.systemUTC()),
                 new CodeFactor(sms, raw -> "hash:" + raw, ChallengeCodeConfig.withDefaults(), Clock.systemUTC())));
         FactorStore factors = new FactorStore();
-        EnrolFactor enrol = new EnrolFactor(registry, factors, new PendingEnrolments());
+        EnrolFactor enrol = new EnrolFactor(registry, factors, new FakeEnrolmentChallengeStore());
 
         enrolFully(enrol, FactorType.EMAIL_CODE, "chain@example.com", email);
         enrolFully(enrol, FactorType.SMS_CODE, "+48111222333", sms);
@@ -124,31 +123,6 @@ class ChainPositionsTest {
             rows.removeAll(moving);
             moving.forEach(row -> rows.add(new EnrolledFactor(
                     toEmail, row.type(), row.label(), row.order(), row.secretMaterial())));
-        }
-    }
-
-    /** Pending enrolments, kept in a field; expiry is somebody else's test. */
-    private static final class PendingEnrolments implements EnrolmentChallengeStore {
-
-        private final java.util.Map<String, PendingEnrolment> held = new java.util.HashMap<>();
-
-        @Override
-        public void put(Email user, FactorType type, PendingEnrolment enrolment) {
-            held.put(key(user, type), enrolment);
-        }
-
-        @Override
-        public Optional<PendingEnrolment> get(Email user, FactorType type) {
-            return Optional.ofNullable(held.get(key(user, type)));
-        }
-
-        @Override
-        public void remove(Email user, FactorType type) {
-            held.remove(key(user, type));
-        }
-
-        private static String key(Email user, FactorType type) {
-            return user.value() + "|" + type.value();
         }
     }
 }
