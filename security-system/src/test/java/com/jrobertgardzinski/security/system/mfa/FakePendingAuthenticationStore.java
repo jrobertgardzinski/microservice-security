@@ -1,7 +1,4 @@
-package com.jrobertgardzinski.security.application.feature.support;
-
-import com.jrobertgardzinski.security.system.mfa.PendingAuthentication;
-import com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore;
+package com.jrobertgardzinski.security.system.mfa;
 
 import java.util.Map;
 import java.util.Optional;
@@ -9,7 +6,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** In-memory pending-authentication store for the application-level scenarios. */
-public final class InMemoryPendingAuthenticationStore implements PendingAuthenticationStore {
+public final class FakePendingAuthenticationStore implements PendingAuthenticationStore {
 
     private final Map<String, PendingAuthentication> byTicket = new ConcurrentHashMap<>();
 

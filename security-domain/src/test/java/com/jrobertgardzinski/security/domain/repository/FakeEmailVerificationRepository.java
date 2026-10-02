@@ -1,7 +1,6 @@
-package com.jrobertgardzinski.security.application.feature.support;
+package com.jrobertgardzinski.security.domain.repository;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
 
 import java.time.Clock;
@@ -14,14 +13,14 @@ import java.util.Optional;
  * Test double for {@link EmailVerificationRepository}: plain maps, raw token values as keys (test
  * scope, so no hashing).
  */
-public class InMemoryEmailVerificationRepository implements EmailVerificationRepository {
+public class FakeEmailVerificationRepository implements EmailVerificationRepository {
 
     private final Map<String, String> pendingTokenByEmail = new HashMap<>();
     private final Map<String, LocalDateTime> requestedAtByEmail = new HashMap<>();
     private final Map<String, Boolean> verifiedByEmail = new HashMap<>();
     private final Clock clock;
 
-    public InMemoryEmailVerificationRepository(Clock clock) {
+    public FakeEmailVerificationRepository(Clock clock) {
         this.clock = clock;
     }
 

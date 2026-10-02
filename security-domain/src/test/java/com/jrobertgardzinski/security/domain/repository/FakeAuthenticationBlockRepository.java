@@ -1,14 +1,13 @@
-package com.jrobertgardzinski.security.application.feature.support;
+package com.jrobertgardzinski.security.domain.repository;
 
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
-import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.vo.Source;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public final class InMemoryAuthenticationBlockRepository implements AuthenticationBlockRepository {
+public final class FakeAuthenticationBlockRepository implements AuthenticationBlockRepository {
 
     private final Map<Source, AuthenticationBlock> bySource = new HashMap<>();
 

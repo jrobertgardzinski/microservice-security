@@ -1,7 +1,6 @@
-package com.jrobertgardzinski.security.application.feature.support;
+package com.jrobertgardzinski.security.domain.repository;
 
 import com.jrobertgardzinski.security.domain.entity.RejectedAuthentication;
-import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.vo.FailuresCount;
 import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
 import com.jrobertgardzinski.security.domain.vo.Source;
@@ -22,7 +21,7 @@ import java.util.List;
  * infrastructure twin about what "the same subject" means. Two implementations of one port drifting
  * on exactly that question is how a green test came to prove the wrong thing before.
  */
-public final class InMemoryRejectedAuthenticationRepository implements RejectedAuthenticationRepository {
+public final class FakeRejectedAuthenticationRepository implements RejectedAuthenticationRepository {
 
     private final List<RejectedAuthentication> records = new ArrayList<>();
     private long sequence = 0;

@@ -1,9 +1,9 @@
 package com.jrobertgardzinski.security.application.feature.identity;
 
+import com.jrobertgardzinski.security.domain.repository.FakeUserRepository;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.identity.UserId;
 import com.jrobertgardzinski.password.domain.HashedPassword;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryUserRepository;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.vo.DisplayName;
 import com.jrobertgardzinski.security.system.identity.DisplayNames;
@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class DisplayNamesSteps {
 
-    private final InMemoryUserRepository users = new InMemoryUserRepository();
+    private final FakeUserRepository users = new FakeUserRepository();
     private final DisplayNames displayNames = new DisplayNames(users);
     private final UserId nobody = UserId.random();
     private Map<UserId, DisplayName> answer;

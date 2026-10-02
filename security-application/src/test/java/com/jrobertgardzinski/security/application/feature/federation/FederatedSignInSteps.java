@@ -1,12 +1,12 @@
 package com.jrobertgardzinski.security.application.feature.federation;
 
+import com.jrobertgardzinski.security.domain.repository.FakeEmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.repository.FakeSessionRepository;
+import com.jrobertgardzinski.security.domain.repository.FakeUserRepository;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.application.feature.support.FakeHashAlgorithm;
-import com.jrobertgardzinski.security.application.feature.support.InMemorySessionRepository;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryEmailVerificationRepository;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryUserRepository;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
@@ -41,9 +41,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class FederatedSignInSteps {
 
-    private final InMemoryUserRepository users = new InMemoryUserRepository();
-    private final InMemoryEmailVerificationRepository verifications = new InMemoryEmailVerificationRepository(java.time.Clock.systemUTC());
-    private final InMemorySessionRepository sessions = new InMemorySessionRepository(Clock.systemUTC());
+    private final FakeUserRepository users = new FakeUserRepository();
+    private final FakeEmailVerificationRepository verifications = new FakeEmailVerificationRepository(java.time.Clock.systemUTC());
+    private final FakeSessionRepository sessions = new FakeSessionRepository(Clock.systemUTC());
     private final FakeHashAlgorithm hashAlgorithm = new FakeHashAlgorithm();
     private final Map<String, String> links = new HashMap<>();
     private final FederatedIdentityRepository identities = new FederatedIdentityRepository() {
@@ -63,14 +63,14 @@ public class FederatedSignInSteps {
             links.replaceAll((key, email) -> fromEmail.value().equals(email) ? toEmail.value() : email);
         }
     };
-    private final com.jrobertgardzinski.security.application.feature.support.InMemoryPasswordlessAccountRepository passwordless =
-            new com.jrobertgardzinski.security.application.feature.support.InMemoryPasswordlessAccountRepository();
+    private final com.jrobertgardzinski.security.domain.repository.FakePasswordlessAccountRepository passwordless =
+            new com.jrobertgardzinski.security.domain.repository.FakePasswordlessAccountRepository();
     // a real e-mail factor over a capturing channel, so a scenario can enrol one and prove the
     // federated sign-in then owes it
-    private final com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolledFactorRepository enrolledFactors =
-            new com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolledFactorRepository();
-    private final com.jrobertgardzinski.security.application.feature.support.CapturingCodeChannel emailChannel =
-            new com.jrobertgardzinski.security.application.feature.support.CapturingCodeChannel(
+    private final com.jrobertgardzinski.security.domain.repository.FakeEnrolledFactorRepository enrolledFactors =
+            new com.jrobertgardzinski.security.domain.repository.FakeEnrolledFactorRepository();
+    private final com.jrobertgardzinski.security.domain.port.CapturingCodeChannel emailChannel =
+            new com.jrobertgardzinski.security.domain.port.CapturingCodeChannel(
                     com.jrobertgardzinski.security.domain.vo.FactorType.EMAIL_CODE);
     private final com.jrobertgardzinski.security.system.mfa.FactorRegistry registry =
             new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of(
@@ -78,16 +78,16 @@ public class FederatedSignInSteps {
                             com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(), Clock.systemUTC())));
     private final com.jrobertgardzinski.security.system.mfa.EnrolFactor enrolFactor =
             new com.jrobertgardzinski.security.system.mfa.EnrolFactor(registry, enrolledFactors,
-                    new com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolmentChallengeStore());
+                    new com.jrobertgardzinski.security.system.mfa.FakeEnrolmentChallengeStore());
     private final FederatedSignIn federatedSignIn = new FederatedSignIn(
             identities, users, verifications, sessions, hashAlgorithm,
             new SessionTokensConfig(new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1)),
             Clock.systemUTC(), AccessTokenMint.RANDOM, passwordless, enrolledFactors,
             new com.jrobertgardzinski.security.system.mfa.MfaChain(registry,
                     com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
-                    new com.jrobertgardzinski.security.application.feature.support.InMemoryRecoveryCodeRepository(),
+                    new com.jrobertgardzinski.security.domain.repository.FakeRecoveryCodeRepository(),
                     raw -> "hash:" + raw, Clock.systemUTC(), 10),
-            new com.jrobertgardzinski.security.application.feature.support.InMemoryPendingAuthenticationStore());
+            new com.jrobertgardzinski.security.system.mfa.FakePendingAuthenticationStore());
 
     private FederatedSignInResult result;
 

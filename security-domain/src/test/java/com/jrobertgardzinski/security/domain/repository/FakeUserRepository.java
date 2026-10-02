@@ -1,18 +1,17 @@
-package com.jrobertgardzinski.security.application.feature.support;
+package com.jrobertgardzinski.security.domain.repository;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.identity.UserId;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.vo.Role;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 /** Keyed by email value (string) so lookups don't depend on Email's identity. */
-public final class InMemoryUserRepository implements UserRepository {
+public final class FakeUserRepository implements UserRepository {
 
     private final java.util.Set<String> pendingDeletion = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Map<String, User> byEmail = new HashMap<>();

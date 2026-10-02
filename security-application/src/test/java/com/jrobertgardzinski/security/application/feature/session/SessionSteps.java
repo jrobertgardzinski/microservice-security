@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.application.feature.session;
 
+import com.jrobertgardzinski.security.domain.repository.FakeSessionRepository;
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.application.feature.support.InMemorySessionRepository;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
@@ -31,7 +31,7 @@ public class SessionSteps {
             new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1));
 
     private final Clock clock = Clock.fixed(Instant.parse("2026-06-15T10:00:00Z"), ZoneOffset.UTC);
-    private final InMemorySessionRepository authorizationData = new InMemorySessionRepository(clock);
+    private final FakeSessionRepository authorizationData = new FakeSessionRepository(clock);
     private final RefreshSession refreshSession = new RefreshSession(authorizationData, clock, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM,
             java.time.Duration.ofDays(30));
 

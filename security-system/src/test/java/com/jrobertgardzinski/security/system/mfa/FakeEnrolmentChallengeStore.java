@@ -1,15 +1,14 @@
-package com.jrobertgardzinski.security.application.feature.support;
+package com.jrobertgardzinski.security.system.mfa;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.vo.FactorType;
-import com.jrobertgardzinski.security.system.mfa.EnrolmentChallengeStore;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** In-memory enrolment-challenge store for the application-level scenarios. */
-public final class InMemoryEnrolmentChallengeStore implements EnrolmentChallengeStore {
+public final class FakeEnrolmentChallengeStore implements EnrolmentChallengeStore {
 
     private final Map<String, PendingEnrolment> byKey = new ConcurrentHashMap<>();
 

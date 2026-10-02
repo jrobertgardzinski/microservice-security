@@ -1,8 +1,7 @@
-package com.jrobertgardzinski.security.application.feature.support;
+package com.jrobertgardzinski.security.domain.repository;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
 import com.jrobertgardzinski.security.domain.vo.AccessGrant;
 import com.jrobertgardzinski.security.domain.vo.SessionFamily;
 import com.jrobertgardzinski.security.domain.vo.SessionStatus;
@@ -18,7 +17,7 @@ import java.util.Optional;
  * In-memory sessions keyed by refresh token (raw, since this is test support). Tracks lineage and
  * status so the use case can rotate and detect refresh-token reuse.
  */
-public final class InMemorySessionRepository implements SessionRepository {
+public final class FakeSessionRepository implements SessionRepository {
 
     private record Row(SessionTokens tokens, SessionFamily family, SessionStatus status,
                        java.time.LocalDateTime familyStartedAt) {}
@@ -32,7 +31,7 @@ public final class InMemorySessionRepository implements SessionRepository {
      */
     private final java.time.Clock clock;
 
-    public InMemorySessionRepository(java.time.Clock clock) {
+    public FakeSessionRepository(java.time.Clock clock) {
         this.clock = clock;
     }
 

@@ -1,8 +1,7 @@
-package com.jrobertgardzinski.security.application.feature.support;
+package com.jrobertgardzinski.security.domain.repository;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
-import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.vo.FactorType;
 
 import java.util.ArrayList;
@@ -12,7 +11,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** In-memory enrolled-factor repository for the application-level scenarios. */
-public final class InMemoryEnrolledFactorRepository implements EnrolledFactorRepository {
+public final class FakeEnrolledFactorRepository implements EnrolledFactorRepository {
 
     private final Map<String, List<EnrolledFactor>> byUser = new ConcurrentHashMap<>();
 

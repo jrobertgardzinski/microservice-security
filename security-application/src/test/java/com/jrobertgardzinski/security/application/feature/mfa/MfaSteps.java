@@ -1,18 +1,18 @@
 package com.jrobertgardzinski.security.application.feature.mfa;
 
+import com.jrobertgardzinski.security.domain.port.CapturingCodeChannel;
+import com.jrobertgardzinski.security.domain.repository.FakeAuthenticationBlockRepository;
+import com.jrobertgardzinski.security.domain.repository.FakeEmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.repository.FakeEnrolledFactorRepository;
+import com.jrobertgardzinski.security.domain.repository.FakeRejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.repository.FakeSessionRepository;
+import com.jrobertgardzinski.security.domain.repository.FakeUserRepository;
+import com.jrobertgardzinski.security.system.mfa.FakeEnrolmentChallengeStore;
+import com.jrobertgardzinski.security.system.mfa.FakePendingAuthenticationStore;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.security.application.feature.support.CapturingCodeChannel;
 import com.jrobertgardzinski.security.application.feature.support.FakeHashAlgorithm;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryAuthenticationBlockRepository;
-import com.jrobertgardzinski.security.application.feature.support.InMemorySessionRepository;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryEmailVerificationRepository;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolledFactorRepository;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolmentChallengeStore;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryPendingAuthenticationStore;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryRejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryUserRepository;
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
 import com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig;
 import com.jrobertgardzinski.security.domain.entity.User;
@@ -59,17 +59,17 @@ public class MfaSteps {
 
     private final Clock clock = Clock.fixed(Instant.parse("2026-07-05T10:00:00Z"), ZoneOffset.UTC);
     private final FakeHashAlgorithm hashAlgorithm = new FakeHashAlgorithm();
-    private final InMemoryUserRepository users = new InMemoryUserRepository();
-    private final InMemoryEmailVerificationRepository verifications = new InMemoryEmailVerificationRepository(java.time.Clock.systemUTC());
-    private final InMemorySessionRepository sessions = new InMemorySessionRepository(clock);
-    private final InMemoryRejectedAuthenticationRepository rejections = new InMemoryRejectedAuthenticationRepository();
-    private final InMemoryAuthenticationBlockRepository blocks = new InMemoryAuthenticationBlockRepository();
-    private final InMemoryEnrolledFactorRepository enrolledFactors = new InMemoryEnrolledFactorRepository();
-    private final InMemoryPendingAuthenticationStore pendingStore = new InMemoryPendingAuthenticationStore();
-    private final InMemoryEnrolmentChallengeStore enrolmentStore = new InMemoryEnrolmentChallengeStore();
+    private final FakeUserRepository users = new FakeUserRepository();
+    private final FakeEmailVerificationRepository verifications = new FakeEmailVerificationRepository(java.time.Clock.systemUTC());
+    private final FakeSessionRepository sessions = new FakeSessionRepository(clock);
+    private final FakeRejectedAuthenticationRepository rejections = new FakeRejectedAuthenticationRepository();
+    private final FakeAuthenticationBlockRepository blocks = new FakeAuthenticationBlockRepository();
+    private final FakeEnrolledFactorRepository enrolledFactors = new FakeEnrolledFactorRepository();
+    private final FakePendingAuthenticationStore pendingStore = new FakePendingAuthenticationStore();
+    private final FakeEnrolmentChallengeStore enrolmentStore = new FakeEnrolmentChallengeStore();
     private final CapturingCodeChannel emailChannel = new CapturingCodeChannel(FactorType.EMAIL_CODE);
-    private final com.jrobertgardzinski.security.application.feature.support.InMemoryRecoveryCodeRepository
-            recoveryCodes = new com.jrobertgardzinski.security.application.feature.support.InMemoryRecoveryCodeRepository();
+    private final com.jrobertgardzinski.security.domain.repository.FakeRecoveryCodeRepository
+            recoveryCodes = new com.jrobertgardzinski.security.domain.repository.FakeRecoveryCodeRepository();
 
     private final FactorRegistry registry = new FactorRegistry(List.of(
             new CodeFactor(emailChannel, raw -> "hash:" + raw, ChallengeCodeConfig.withDefaults(), clock)));

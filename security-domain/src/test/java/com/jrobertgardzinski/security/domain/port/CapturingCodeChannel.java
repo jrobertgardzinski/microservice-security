@@ -1,6 +1,5 @@
-package com.jrobertgardzinski.security.application.feature.support;
+package com.jrobertgardzinski.security.domain.port;
 
-import com.jrobertgardzinski.security.domain.port.CodeChannel;
 import com.jrobertgardzinski.security.domain.vo.FactorType;
 
 import java.util.Map;

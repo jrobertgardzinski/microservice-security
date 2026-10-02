@@ -1,13 +1,12 @@
-package com.jrobertgardzinski.security.application.feature.support;
+package com.jrobertgardzinski.security.domain.repository;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** In-memory passwordless-account flag for the application-level scenarios. */
-public final class InMemoryPasswordlessAccountRepository implements PasswordlessAccountRepository {
+public final class FakePasswordlessAccountRepository implements PasswordlessAccountRepository {
 
     private final Set<String> passwordless = ConcurrentHashMap.newKeySet();
 

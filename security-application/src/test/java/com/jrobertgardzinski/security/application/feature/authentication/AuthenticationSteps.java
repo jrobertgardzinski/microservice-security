@@ -1,13 +1,13 @@
 package com.jrobertgardzinski.security.application.feature.authentication;
 
+import com.jrobertgardzinski.security.domain.repository.FakeAuthenticationBlockRepository;
+import com.jrobertgardzinski.security.domain.repository.FakeEmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.repository.FakeRejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.repository.FakeSessionRepository;
+import com.jrobertgardzinski.security.domain.repository.FakeUserRepository;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.application.feature.support.FakeHashAlgorithm;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryAuthenticationBlockRepository;
-import com.jrobertgardzinski.security.application.feature.support.InMemorySessionRepository;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryEmailVerificationRepository;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryRejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.application.feature.support.InMemoryUserRepository;
 import com.jrobertgardzinski.clock.AdjustableClock;
 import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
 import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
@@ -51,14 +51,14 @@ public class AuthenticationSteps {
             new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1));
     private static final Pattern INTEGER = Pattern.compile("\\d+");
 
-    private final InMemoryUserRepository users = new InMemoryUserRepository();
-    private final InMemoryEmailVerificationRepository verifications = new InMemoryEmailVerificationRepository(java.time.Clock.systemUTC());
-    private final InMemoryRejectedAuthenticationRepository rejections = new InMemoryRejectedAuthenticationRepository();
-    private final InMemoryAuthenticationBlockRepository blocks = new InMemoryAuthenticationBlockRepository();
+    private final FakeUserRepository users = new FakeUserRepository();
+    private final FakeEmailVerificationRepository verifications = new FakeEmailVerificationRepository(java.time.Clock.systemUTC());
+    private final FakeRejectedAuthenticationRepository rejections = new FakeRejectedAuthenticationRepository();
+    private final FakeAuthenticationBlockRepository blocks = new FakeAuthenticationBlockRepository();
     private final AdjustableClock clock = new AdjustableClock(Instant.parse("2026-06-15T10:00:00Z"), ZoneOffset.UTC);
     // declared after the clock on purpose: the session store now answers listActiveSessions against
     // it, the same way both production adapters do
-    private final InMemorySessionRepository sessions = new InMemorySessionRepository(clock);
+    private final FakeSessionRepository sessions = new FakeSessionRepository(clock);
     private final FakeHashAlgorithm hashAlgorithm = new FakeHashAlgorithm();
     private final BlockDurationPolicy blockDuration = () -> FIXED_BLOCK_MINUTES;
 
@@ -188,13 +188,13 @@ public class AuthenticationSteps {
                     users, verifications, rejections, blocks, sessions, hashAlgorithm,
                     config, SESSION_TOKENS_CONFIG, clock, blockDuration,
                     com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM,
-                    new com.jrobertgardzinski.security.application.feature.support.InMemoryEnrolledFactorRepository(),
+                    new com.jrobertgardzinski.security.domain.repository.FakeEnrolledFactorRepository(),
                     new com.jrobertgardzinski.security.system.mfa.MfaChain(
                             new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of()),
                             com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
-                            new com.jrobertgardzinski.security.application.feature.support.InMemoryRecoveryCodeRepository(),
+                            new com.jrobertgardzinski.security.domain.repository.FakeRecoveryCodeRepository(),
                             raw -> "hash:" + raw, clock, 10),
-                    new com.jrobertgardzinski.security.application.feature.support.InMemoryPendingAuthenticationStore()
+                    new com.jrobertgardzinski.security.system.mfa.FakePendingAuthenticationStore()
                     ).authentication();
         }
         return authentication;

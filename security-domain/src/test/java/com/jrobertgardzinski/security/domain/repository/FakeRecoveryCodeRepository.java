@@ -1,14 +1,13 @@
-package com.jrobertgardzinski.security.application.feature.support;
+package com.jrobertgardzinski.security.domain.repository;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /** In-memory recovery codes for the feature glue: hash -> spent?, keyed by email. */
-public final class InMemoryRecoveryCodeRepository implements RecoveryCodeRepository {
+public final class FakeRecoveryCodeRepository implements RecoveryCodeRepository {
 
     private final Map<String, Map<String, Boolean>> byUser = new HashMap<>();
 
