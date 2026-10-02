@@ -10,7 +10,7 @@ import com.jrobertgardzinski.security.application.feature.support.FakeHashAlgori
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
-import com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository;
+import com.jrobertgardzinski.security.domain.repository.FakeFederatedIdentityRepository;
 import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
 import com.jrobertgardzinski.security.domain.vo.ProviderIdentity;
 import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
@@ -23,9 +23,6 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.time.Clock;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -45,24 +42,7 @@ public class FederatedSignInSteps {
     private final FakeEmailVerificationRepository verifications = new FakeEmailVerificationRepository(java.time.Clock.systemUTC());
     private final FakeSessionRepository sessions = new FakeSessionRepository(Clock.systemUTC());
     private final FakeHashAlgorithm hashAlgorithm = new FakeHashAlgorithm();
-    private final Map<String, String> links = new HashMap<>();
-    private final FederatedIdentityRepository identities = new FederatedIdentityRepository() {
-        public Optional<Email> findUserBy(String provider, String subject) {
-            return Optional.ofNullable(links.get(provider + "|" + subject)).map(Email::of);
-        }
-
-        public void link(String provider, String subject, Email userEmail) {
-            links.put(provider + "|" + subject, userEmail.value());
-        }
-
-        public void unlinkAll(Email userEmail) {
-            links.values().removeIf(userEmail.value()::equals);
-        }
-
-        public void relinkAll(Email fromEmail, Email toEmail) {
-            links.replaceAll((key, email) -> fromEmail.value().equals(email) ? toEmail.value() : email);
-        }
-    };
+    private final FakeFederatedIdentityRepository identities = new FakeFederatedIdentityRepository();
     private final com.jrobertgardzinski.security.domain.repository.FakePasswordlessAccountRepository passwordless =
             new com.jrobertgardzinski.security.domain.repository.FakePasswordlessAccountRepository();
     // a real e-mail factor over a capturing channel, so a scenario can enrol one and prove the
@@ -130,7 +110,7 @@ public class FederatedSignInSteps {
         // the whole point of the ordering: claimByEmail WRITES (password wiped, sessions revoked,
         // address verified, identity linked) and used to run BEFORE the pending-deletion check, so
         // an account on its way out got a provider identity welded onto it while sign-in was refused
-        assertFalse(links.containsValue(email),
+        assertEquals(0, identities.countLinksOf(Email.of(email)),
                 "a refused sign-in must leave no provider identity behind");
     }
 
