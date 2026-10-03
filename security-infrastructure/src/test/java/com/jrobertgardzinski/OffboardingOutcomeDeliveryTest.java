@@ -1,6 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.application.TransactionBoundary;
+import com.jrobertgardzinski.security.application.account.AccountDeletionService;
 import io.micronaut.configuration.kafka.annotation.ErrorStrategyValue;
 import io.micronaut.configuration.kafka.annotation.KafkaListener;
 import io.micronaut.configuration.kafka.annotation.OffsetStrategy;
@@ -67,7 +68,7 @@ class OffboardingOutcomeDeliveryTest {
     @DisplayName("a failure inside the transaction escapes the handler, so the container sees it")
     void a_failed_transaction_is_not_swallowed() {
         OffboardingOutcomeListener listener = new OffboardingOutcomeListener(
-                mock(AccountDeletionOrchestrator.class),
+                mock(AccountDeletionService.class),
                 new TransactionBoundary() {
                     @Override
                     public <T> T execute(Supplier<T> work) {

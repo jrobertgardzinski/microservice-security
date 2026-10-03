@@ -10,7 +10,7 @@ package com.jrobertgardzinski;
  * enough to harvest a mailing list from a log dump.
  *
  * <p>It lives here because the same four lines were pasted, word for word, into
- * {@link AccountDeletionOrchestrator} and {@link OffboardingOutcomeListener} — and a masking rule
+ * what is now {@link MaskedAccountDeletionLog} and {@link OffboardingOutcomeListener} — and a masking rule
  * duplicated is a masking rule that will be tightened in one copy only.
  */
 final class MaskedEmail {

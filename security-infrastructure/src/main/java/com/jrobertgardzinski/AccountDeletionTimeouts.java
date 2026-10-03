@@ -1,13 +1,14 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.application.TransactionBoundary;
+import com.jrobertgardzinski.security.application.account.AccountDeletionService;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;
 
 /**
  * Clock-driven edge of the saga: periodically rolls back deletions whose purge confirmation never
- * arrived. Off in the test environment — the Gherkin steps drive the orchestrator directly, with
+ * arrived. Off in the test environment — the Gherkin steps drive the saga directly, with
  * the steerable clock deciding what "overdue" means.
  */
 @Singleton
@@ -17,11 +18,11 @@ class AccountDeletionTimeouts {
     private static final org.slf4j.Logger LOG =
             org.slf4j.LoggerFactory.getLogger(AccountDeletionTimeouts.class);
 
-    private final AccountDeletionOrchestrator orchestrator;
+    private final AccountDeletionService accountDeletion;
     private final TransactionBoundary transactionBoundary;
 
-    AccountDeletionTimeouts(AccountDeletionOrchestrator orchestrator, TransactionBoundary transactionBoundary) {
-        this.orchestrator = orchestrator;
+    AccountDeletionTimeouts(AccountDeletionService accountDeletion, TransactionBoundary transactionBoundary) {
+        this.accountDeletion = accountDeletion;
         this.transactionBoundary = transactionBoundary;
     }
 
@@ -29,7 +30,7 @@ class AccountDeletionTimeouts {
     void tick() {
         try {
             transactionBoundary.execute(() -> {
-                orchestrator.compensateOverdue();
+                accountDeletion.compensateOverdue();
                 return null;
             });
         } catch (RuntimeException sweepFailed) {

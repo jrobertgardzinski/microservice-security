@@ -16,7 +16,7 @@ import com.jrobertgardzinski.security.domain.vo.AccountClosure;
  *   <li><strong>Across services</strong> — a saga. The content lives in other processes with other
  *       databases, so there is no shared transaction to lean on: a command goes out, every
  *       participant confirms, a quorum closes the case, a timeout compensates it, and a verdict
- *       comes back. That is what {@code AccountDeletionOrchestrator} does, and the ~900 lines it
+ *       comes back. That is what {@code AccountDeletionSaga} does, and the ~900 lines it
  *       takes are the price of the distribution, not of the deletion.</li>
  *   <li><strong>In one process</strong> — a transaction. With one database the same work is a few
  *       deletes that either all happen or none do, and every part of the saga above becomes

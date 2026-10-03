@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.persistence;
 
+import com.jrobertgardzinski.security.domain.repository.AccountDeletionSagaStore;
 import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

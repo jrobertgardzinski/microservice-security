@@ -1,6 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.application.TransactionBoundary;
+import com.jrobertgardzinski.security.application.account.AccountDeletionService;
 import com.jrobertgardzinski.closure.ClosureMessages;
 import io.micronaut.configuration.kafka.annotation.ErrorStrategy;
 import io.micronaut.configuration.kafka.annotation.ErrorStrategyValue;
@@ -77,17 +78,17 @@ class OffboardingOutcomeListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(OffboardingOutcomeListener.class);
 
-    private final AccountDeletionOrchestrator orchestrator;
+    private final AccountDeletionService accountDeletion;
     private final TransactionBoundary transactionBoundary;
     private final JsonMapper json;
     private final com.jrobertgardzinski.persistence.ProcessedOutcomes processedOutcomes;
     private final java.time.Clock clock;
 
-    OffboardingOutcomeListener(AccountDeletionOrchestrator orchestrator, TransactionBoundary transactionBoundary,
+    OffboardingOutcomeListener(AccountDeletionService accountDeletion, TransactionBoundary transactionBoundary,
                                JsonMapper json,
                                com.jrobertgardzinski.persistence.ProcessedOutcomes processedOutcomes,
                                java.time.Clock clock) {
-        this.orchestrator = orchestrator;
+        this.accountDeletion = accountDeletion;
         this.transactionBoundary = transactionBoundary;
         this.json = json;
         this.processedOutcomes = processedOutcomes;
@@ -148,14 +149,19 @@ class OffboardingOutcomeListener {
                         + " re-announcement", outcomeId, type);
                 return null;
             }
+            AccountDeletionService.Settlement settlement;
             if (ClosureMessages.PORTAL_CONTENT_PURGED.equals(type)) {
-                orchestrator.completePurge(sagaId, email);
+                settlement = accountDeletion.confirmPurge(sagaId, email);
             } else {
                 // the partial-purge disclosure the portal has always sent and nobody read
                 Object confirmed = event.get("confirmed");
-                orchestrator.compensate(sagaId, email, confirmed instanceof java.util.List<?> participants
+                settlement = accountDeletion.failPurge(sagaId, email, confirmed instanceof java.util.List<?> participants
                         ? participants.stream().map(String::valueOf).toList()
                         : java.util.List.of());
+            }
+            if (settlement instanceof AccountDeletionService.Settlement.UnreadableAddress) {
+                LOG.warn("offboarding outcome {} names an address nothing could have been deleted for;"
+                        + " ignoring it", type);
             }
             return null;
         });

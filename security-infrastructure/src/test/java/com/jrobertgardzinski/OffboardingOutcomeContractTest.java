@@ -1,6 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.application.TransactionBoundary;
+import com.jrobertgardzinski.security.application.account.AccountDeletionService;
 import au.com.dius.pact.consumer.MessagePactBuilder;
 import au.com.dius.pact.consumer.dsl.PactDslJsonBody;
 import au.com.dius.pact.consumer.junit5.PactConsumerTestExt;
@@ -39,13 +40,13 @@ import static org.mockito.Mockito.verify;
         pactVersion = PactSpecVersion.V3)
 class OffboardingOutcomeContractTest {
 
-    private final AccountDeletionOrchestrator orchestrator = mock(AccountDeletionOrchestrator.class);
+    private final AccountDeletionService accountDeletion = mock(AccountDeletionService.class);
 
     /** Remembers what it was handed, so a re-announcement is recognisable — the real thing is a table. */
     private final java.util.Set<String> alreadyActedOn = new java.util.HashSet<>();
 
     private final OffboardingOutcomeListener listener = new OffboardingOutcomeListener(
-            orchestrator,
+            accountDeletion,
             new TransactionBoundary() {
                 @Override
                 public <T> T execute(Supplier<T> work) {
@@ -84,14 +85,14 @@ class OffboardingOutcomeContractTest {
         // null: the pact states only the fields this consumer REQUIRES, and the saga id is not one
         // of them — the portal writes it only when the fact it answers carried one. This is the
         // fallback an uncorrelated outcome takes, driven by the contract's own payload.
-        verify(orchestrator).completePurge(null, "leaver@example.com");
+        verify(accountDeletion).confirmPurge(null, "leaver@example.com");
     }
 
     @Test
     @PactTestFor(pactMethod = "portalPurgeFailed")
     void theFailureAnnouncementRollsTheDeletionBack(List<Message> messages) {
         listener.handle(messages.get(0).contentsAsString());
-        verify(orchestrator).compensate(null, "leaver@example.com", java.util.List.of());
+        verify(accountDeletion).failPurge(null, "leaver@example.com", java.util.List.of());
     }
 
     @Test
@@ -103,6 +104,6 @@ class OffboardingOutcomeContractTest {
         listener.handle(messages.get(0).contentsAsString());
         listener.handle(messages.get(0).contentsAsString());
 
-        verify(orchestrator, org.mockito.Mockito.times(1)).completePurge(null, "leaver@example.com");
+        verify(accountDeletion, org.mockito.Mockito.times(1)).confirmPurge(null, "leaver@example.com");
     }
 }

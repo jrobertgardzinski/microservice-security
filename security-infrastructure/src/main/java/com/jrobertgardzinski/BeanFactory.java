@@ -771,6 +771,48 @@ public class BeanFactory {
                 passwordless, enrolledFactors, mfaChain, pendingStore);
     }
 
+    /**
+     * How a deletion waits for the portal's purge.
+     *
+     * <p>The safety net must fire well AFTER the portal's own worst case, so the portal's verdict
+     * wins the race and this net is left for what it is FOR: a coordinator that died, not a slow
+     * participant.
+     *
+     * <p>12m, and the number is derived rather than felt. The portal's sweeper measures its purge
+     * timeout from the last command the participant actually RECEIVED (P18), so a silent participant
+     * costs 120s per delivered command and the whole case takes purgeTimeout x (retries + 1) = 120s x
+     * 4 = 8 minutes, plus a 15s sweep and the mail road. The old default of 5m predates that change
+     * and had quietly become the FIRST of the two to fire: measured on the live stack 2026-08-08, the
+     * account came back at ~5 min and its content only at ~8. Nobody decided that; it was the sum of
+     * two timeouts nobody re-read together.
+     *
+     * <p>Raising this is the cheaper half of the fix. The expensive half would be teaching the two
+     * services about each other's clocks, and they are deliberately independent — so the rule is
+     * written down instead: this value stays above the portal's OFFBOARDING_PURGE_TIMEOUT_SEC x
+     * (OFFBOARDING_MAX_PURGE_RETRIES+1).
+     *
+     * <p>An identity-only deployment (no portal, e.g. security + the F1 game) sets
+     * {@code account-deletion.await-portal-purge=false}: the account deletes immediately.
+     */
+    @Context
+    com.jrobertgardzinski.security.config.account.AccountDeletionConfig accountDeletionConfig(
+            @Value("${account-deletion.purge-timeout:12m}") java.time.Duration purgeTimeout,
+            @Value("${account-deletion.await-portal-purge:true}") boolean awaitPortalPurge) {
+        return new com.jrobertgardzinski.security.config.account.AccountDeletionConfig(purgeTimeout, awaitPortalPurge);
+    }
+
+    /** The content purge, as a saga with the portal; it is also the {@link ContentPurge} the deletion starts. */
+    @Singleton
+    com.jrobertgardzinski.security.system.account.AccountDeletionSaga accountDeletionSaga(
+            com.jrobertgardzinski.security.domain.repository.AccountDeletionSagaStore sagas,
+            com.jrobertgardzinski.security.domain.port.ClosureAnnouncer announcer,
+            DeleteAccount deleteAccount, UserRepository userRepository,
+            com.jrobertgardzinski.security.domain.port.AccountDeletionLog log, Clock clock,
+            com.jrobertgardzinski.security.config.account.AccountDeletionConfig config) {
+        return new com.jrobertgardzinski.security.system.account.AccountDeletionSaga(
+                sagas, announcer, deleteAccount, userRepository, log, clock, config);
+    }
+
     @Singleton
     StartAccountDeletion startAccountDeletion(UserRepository userRepository,
                                               SessionRepository sessionRepository,
@@ -864,9 +906,11 @@ public class BeanFactory {
     }
 
     @Singleton
-    AccountDeletionService accountDeletionService(StartAccountDeletion startAccountDeletion, UserRepository users,
-                                                  RequireRole requireRole, TransactionBoundary transactionBoundary) {
-        return new AccountDeletionService(startAccountDeletion, users, requireRole, transactionBoundary);
+    AccountDeletionService accountDeletionService(StartAccountDeletion startAccountDeletion,
+                                                  com.jrobertgardzinski.security.system.account.AccountDeletionSaga saga,
+                                                  UserRepository users, RequireRole requireRole,
+                                                  TransactionBoundary transactionBoundary) {
+        return new AccountDeletionService(startAccountDeletion, saga, users, requireRole, transactionBoundary);
     }
 
     @Singleton

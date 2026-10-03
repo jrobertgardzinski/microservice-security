@@ -9,11 +9,15 @@ import com.jrobertgardzinski.security.domain.vo.AccountClosure;
 import com.jrobertgardzinski.security.domain.vo.PurgeChoices;
 import com.jrobertgardzinski.security.domain.vo.Role;
 import com.jrobertgardzinski.security.domain.vo.StepUpAction;
+import com.jrobertgardzinski.security.system.account.AccountDeletionSaga;
 import com.jrobertgardzinski.security.system.account.StartAccountDeletion;
 import com.jrobertgardzinski.security.system.roles.RequireRole;
 
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 /**
  * The ONE door out of an account, for the person whose account it is and for an administrator
@@ -22,19 +26,23 @@ import java.util.function.BooleanSupplier;
  * proven, and whether the caller may say what happens to the content.
  *
  * <p>Closing is a saga: {@link StartAccountDeletion} locks the account at once (sessions revoked,
- * sign-in refused) and asks the content services to purge; their confirmation — not this request —
- * deletes the account for good.
+ * sign-in refused) and asks the content services to purge; their outcome — not this request —
+ * settles it, through {@link #confirmPurge} or {@link #failPurge}, and {@link #compensateOverdue}
+ * settles the ones nobody answered for.
  */
 public final class AccountDeletionService {
 
     private final StartAccountDeletion startAccountDeletion;
+    private final AccountDeletionSaga saga;
     private final UserRepository users;
     private final RequireRole requireRole;
     private final TransactionBoundary transactionBoundary;
 
-    public AccountDeletionService(StartAccountDeletion startAccountDeletion, UserRepository users,
-                                  RequireRole requireRole, TransactionBoundary transactionBoundary) {
+    public AccountDeletionService(StartAccountDeletion startAccountDeletion, AccountDeletionSaga saga,
+                                  UserRepository users, RequireRole requireRole,
+                                  TransactionBoundary transactionBoundary) {
         this.startAccountDeletion = startAccountDeletion;
+        this.saga = saga;
         this.users = users;
         this.requireRole = requireRole;
         this.transactionBoundary = transactionBoundary;
@@ -108,6 +116,47 @@ public final class AccountDeletionService {
                 new Closure.StartedByAdministrator(target, caller));
     }
 
+    /**
+     * The portal confirmed its purge: the account goes for good. {@code sagaId} is the deletion the
+     * outcome names, null when it names none — then whichever deletion runs for the address is
+     * settled.
+     */
+    public Settlement confirmPurge(UUID sagaId, String leaver) {
+        return settle(leaver, email -> saga.completePurge(sagaId, email));
+    }
+
+    /**
+     * The portal reported its purge failed: the account unlocks.
+     *
+     * @param reserved the participants that had already reserved the content before the failure
+     */
+    public Settlement failPurge(UUID sagaId, String leaver, List<String> reserved) {
+        return settle(leaver, email -> saga.compensate(sagaId, email, reserved));
+    }
+
+    /** The safety net: every deletion nobody answered for in time unlocks. */
+    public void compensateOverdue() {
+        transactionBoundary.execute(() -> {
+            saga.compensateOverdue();
+            return null;
+        });
+    }
+
+    private Settlement settle(String leaver, Consumer<Email> settlement) {
+        Email email;
+        try {
+            email = Email.of(leaver);
+        } catch (IllegalArgumentException unreadable) {
+            // no deletion was ever started for an address the domain cannot read
+            return new Settlement.UnreadableAddress();
+        }
+        transactionBoundary.execute(() -> {
+            settlement.accept(email);
+            return null;
+        });
+        return new Settlement.Settled();
+    }
+
     private Closure started(AccountClosure closure, Closure outcome) {
         transactionBoundary.execute(() -> {
             startAccountDeletion.execute(closure);
@@ -136,5 +185,13 @@ public final class AccountDeletionService {
         record InvalidPurgeChoices() implements Closure {}
 
         record NoSuchUser() implements Closure {}
+    }
+
+    public sealed interface Settlement {
+
+        /** Handed to the saga, which decides whether it settles anything or is a duplicate. */
+        record Settled() implements Settlement {}
+
+        record UnreadableAddress() implements Settlement {}
     }
 }

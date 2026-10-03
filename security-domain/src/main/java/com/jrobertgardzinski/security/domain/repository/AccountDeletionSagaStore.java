@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.persistence;
+package com.jrobertgardzinski.security.domain.repository;
 
 import java.time.Instant;
 import java.util.List;

@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.persistence;
 
+import com.jrobertgardzinski.security.domain.repository.AccountDeletionSagaStore;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;

@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.persistence;
 
+import com.jrobertgardzinski.security.domain.repository.AccountDeletionSagaStore;
 import java.time.Instant;
 import java.util.UUID;
 

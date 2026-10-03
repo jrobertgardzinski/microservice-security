@@ -20,7 +20,7 @@ import java.time.Instant;
  * deletion was supposed to erase — who asked to leave, and when.
  *
  * <p><strong>Why {@code state <> 'STARTED'}.</strong> A running saga is the one row that must
- * survive at any age: {@code AccountDeletionOrchestrator#compensateOverdue} finds accounts to unlock
+ * survive at any age: {@code AccountDeletionSaga#compensateOverdue} finds accounts to unlock
  * by scanning exactly those rows, so sweeping one would strand an account locked for ever. Only a
  * saga that has reached a verdict — COMPLETED or COMPENSATED — is history, and its age is measured
  * on {@code updated_at}, the column that verdict wrote.

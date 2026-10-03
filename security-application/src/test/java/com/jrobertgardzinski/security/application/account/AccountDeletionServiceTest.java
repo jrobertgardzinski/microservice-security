@@ -7,6 +7,7 @@ import com.jrobertgardzinski.security.domain.entity.User;
 import com.jrobertgardzinski.security.domain.repository.FakeUserRepository;
 import com.jrobertgardzinski.security.domain.vo.Role;
 import com.jrobertgardzinski.security.domain.vo.StepUpAction;
+import com.jrobertgardzinski.security.system.account.AccountDeletionSaga;
 import com.jrobertgardzinski.security.system.account.StartAccountDeletion;
 import com.jrobertgardzinski.security.system.roles.BootstrapAdmins;
 import com.jrobertgardzinski.security.system.roles.RequireRole;
@@ -26,7 +27,8 @@ class AccountDeletionServiceTest {
 
     private final StartAccountDeletion startAccountDeletion = Mockito.mock(StartAccountDeletion.class);
     private final FakeUserRepository users = new FakeUserRepository();
-    private final AccountDeletionService service = new AccountDeletionService(startAccountDeletion, users,
+    private final AccountDeletionSaga saga = Mockito.mock(AccountDeletionSaga.class);
+    private final AccountDeletionService service = new AccountDeletionService(startAccountDeletion, saga, users,
             new RequireRole(BootstrapAdmins.of(Set.of(ADMIN.value())), email -> Set.of(Role.USER)),
             new TransactionBoundary() {
                 @Override
@@ -68,5 +70,22 @@ class AccountDeletionServiceTest {
                 service.start(ADMIN, OWNER.value(), null, () -> false, () -> true));
 
         Mockito.verify(startAccountDeletion).execute(Mockito.any());
+    }
+
+    @Test
+    void an_outcome_for_an_address_nobody_could_hold_reaches_no_saga() {
+        assertInstanceOf(AccountDeletionService.Settlement.UnreadableAddress.class,
+                service.confirmPurge(null, "null"));
+
+        Mockito.verifyNoInteractions(saga);
+    }
+
+    @Test
+    void an_outcome_reaches_the_saga_on_the_domain() {
+        java.util.UUID sagaId = java.util.UUID.randomUUID();
+
+        service.failPurge(sagaId, OWNER.value(), java.util.List.of("memes"));
+
+        Mockito.verify(saga).compensate(sagaId, OWNER, java.util.List.of("memes"));
     }
 }

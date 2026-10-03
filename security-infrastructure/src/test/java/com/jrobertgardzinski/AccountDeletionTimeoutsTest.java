@@ -1,6 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.application.TransactionBoundary;
+import com.jrobertgardzinski.security.application.account.AccountDeletionService;
 import io.micronaut.scheduling.annotation.Scheduled;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -18,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
  * The safety net behind the deletion saga, and the only thing that ever frees an account whose
  * portal outcome never arrived.
  *
- * <p>It is switched off in the {@code test} environment (the Gherkin steps drive the orchestrator
+ * <p>It is switched off in the {@code test} environment (the Gherkin steps drive the saga
  * directly, with the steerable clock deciding what "overdue" means) — which is exactly why nothing
  * exercised it at all: no suite boots the environment it lives in. So it is driven here as the
  * plain object it is.
@@ -35,11 +36,11 @@ class AccountDeletionTimeoutsTest {
     @DisplayName("the sweep runs inside the transaction boundary")
     void the_sweep_is_transactional() {
         List<String> order = new ArrayList<>();
-        AccountDeletionOrchestrator orchestrator = org.mockito.Mockito.mock(AccountDeletionOrchestrator.class);
+        AccountDeletionService accountDeletion = org.mockito.Mockito.mock(AccountDeletionService.class);
         org.mockito.Mockito.doAnswer(invocation -> order.add("swept"))
-                .when(orchestrator).compensateOverdue();
+                .when(accountDeletion).compensateOverdue();
 
-        new AccountDeletionTimeouts(orchestrator, recording(order)).tick();
+        new AccountDeletionTimeouts(accountDeletion, recording(order)).tick();
 
         assertThat(order)
                 .as("unlocking the account and mailing the apology are one unit of work; a sweep"
@@ -50,11 +51,11 @@ class AccountDeletionTimeoutsTest {
     @Test
     @DisplayName("a tick that fails is not the last tick")
     void a_failed_sweep_does_not_end_the_schedule() {
-        AccountDeletionOrchestrator orchestrator = org.mockito.Mockito.mock(AccountDeletionOrchestrator.class);
+        AccountDeletionService accountDeletion = org.mockito.Mockito.mock(AccountDeletionService.class);
         org.mockito.Mockito.doThrow(new IllegalStateException("the database is away"))
-                .when(orchestrator).compensateOverdue();
+                .when(accountDeletion).compensateOverdue();
 
-        assertThatCode(() -> new AccountDeletionTimeouts(orchestrator, recording(new ArrayList<>())).tick())
+        assertThatCode(() -> new AccountDeletionTimeouts(accountDeletion, recording(new ArrayList<>())).tick())
                 .as("this is the ONLY thing that unlocks an account nobody answered for; letting"
                         + " the exception out leaves those people locked out with nothing coming")
                 .doesNotThrowAnyException();

@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.infrastructure.feature.deleteaccount;
 
-import com.jrobertgardzinski.AccountDeletionOrchestrator;
+import com.jrobertgardzinski.security.application.account.AccountDeletionService;
 import com.jrobertgardzinski.CapturingEmailVerificationNotifier;
 import com.jrobertgardzinski.persistence.InMemoryOutboxAppender;
 import io.cucumber.java.After;
@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * HTTP glue for {@code delete-account.feature}. The saga's edges that need other services are
- * driven through the orchestrator bean — the same code path the Kafka listener calls — while
+ * driven through the application service — the same code path the Kafka listener calls — while
  * everything else stays black-box HTTP; the full loop over a real broker runs in the workspace's
  * compose smoke test. Time is steered through the test clock endpoint, so "overdue" is exact.
  */
@@ -202,16 +202,16 @@ public class HttpDeleteAccountSteps {
 
     @When("the portal confirms the content purge")
     public void thePortalConfirmsTheContentPurge() {
-        // the orchestrator method the Kafka listener calls on a PORTAL_CONTENT_PURGED outcome
-        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class)
-                .completePurge(announcedSagaId(), email);
+        // what the Kafka listener calls on a PORTAL_CONTENT_PURGED outcome
+        server.getApplicationContext().getBean(AccountDeletionService.class)
+                .confirmPurge(announcedSagaId(), email);
     }
 
     @When("the portal reports the content purge failed")
     public void thePortalReportsTheContentPurgeFailed() {
         // ...and on a PORTAL_PURGE_FAILED outcome
-        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class)
-                .compensate(announcedSagaId(), email);
+        server.getApplicationContext().getBean(AccountDeletionService.class)
+                .failPurge(announcedSagaId(), email, java.util.List.of());
     }
 
     /** The saga of the fact just announced — the handle the portal echoes back on its outcome. */
@@ -228,7 +228,7 @@ public class HttpDeleteAccountSteps {
     public void noPortalOutcomeArrivesInTime() {
         // past the two minutes this context pins (see startServer) — not past production's 12m
         client.exchange(HttpRequest.POST("/test/clock/advance", Map.of("duration", "PT3M")));
-        server.getApplicationContext().getBean(AccountDeletionOrchestrator.class).compensateOverdue();
+        server.getApplicationContext().getBean(AccountDeletionService.class).compensateOverdue();
     }
 
     @Then("the email is not yet free to REGISTER")

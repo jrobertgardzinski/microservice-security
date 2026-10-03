@@ -2,7 +2,7 @@ package com.jrobertgardzinski;
 
 import au.com.dius.pact.provider.PactVerifyProvider;
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.persistence.AccountDeletionSagaStore;
+import com.jrobertgardzinski.security.domain.repository.AccountDeletionSagaStore;
 import com.jrobertgardzinski.persistence.OutboxAppender;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import java.util.Set;
@@ -13,6 +13,8 @@ import com.jrobertgardzinski.security.domain.vo.AccountClosure;
 import com.jrobertgardzinski.security.domain.vo.PurgeChoices;
 import com.jrobertgardzinski.security.domain.vo.token.PasswordResetToken;
 import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
+import com.jrobertgardzinski.security.config.account.AccountDeletionConfig;
+import com.jrobertgardzinski.security.system.account.AccountDeletionSaga;
 import com.jrobertgardzinski.security.system.account.DeleteAccount;
 import io.micronaut.json.JsonMapper;
 
@@ -77,14 +79,14 @@ public class SecurityEventPacts {
     @PactVerifyProvider("an account deleted mail request")
     public String anAccountDeletedMailRequest() {
         CapturingOutbox outbox = new CapturingOutbox();
-        orchestrator(outbox).completePurge(java.util.UUID.randomUUID(), "leaver@example.com");
+        saga(outbox).completePurge(java.util.UUID.randomUUID(), Email.of("leaver@example.com"));
         return outbox.only("mail-requests");
     }
 
     @PactVerifyProvider("an account deletion failed mail request")
     public String anAccountDeletionFailedMailRequest() {
         CapturingOutbox outbox = new CapturingOutbox();
-        orchestrator(outbox).compensateOverdue();
+        saga(outbox).compensateOverdue();
         return outbox.only("mail-requests");
     }
 
@@ -93,7 +95,7 @@ public class SecurityEventPacts {
     @PactVerifyProvider("an account deletion requested fact")
     public String anAccountDeletionRequestedFact() {
         CapturingOutbox outbox = new CapturingOutbox();
-        orchestrator(outbox).begin(AccountClosure.requestedByOwner(Email.of("leaver@example.com")));
+        saga(outbox).begin(AccountClosure.requestedByOwner(Email.of("leaver@example.com")));
         return outbox.only("security-events");
     }
 
@@ -102,27 +104,28 @@ public class SecurityEventPacts {
         CapturingOutbox outbox = new CapturingOutbox();
         // an ADMINISTRATOR's closure, because that is the only kind that may state choices at all:
         // AccountClosure drops an owner's before anybody downstream can read them
-        orchestrator(outbox).begin(AccountClosure.requestedByAdministrator(
+        saga(outbox).begin(AccountClosure.requestedByAdministrator(
                 Email.of("leaver@example.com"),
                 new PurgeChoices(java.util.Map.of("memes", "DELETE", "comments", "ANONYMIZE_AUTHOR"))));
         return outbox.only("security-events");
     }
 
 
-    /** The real orchestrator over a stubbed saga store: outcomes latch, timeouts expire. */
-    private static AccountDeletionOrchestrator orchestrator(OutboxAppender outbox) {
+    /** The real saga and announcer over a stubbed saga store: outcomes latch, timeouts expire. */
+    private static AccountDeletionSaga saga(OutboxAppender outbox) {
         AccountDeletionSagaStore sagas = mock(AccountDeletionSagaStore.class);
         // the account exists, so the fact carries its id — the portal's pact expects one
         UserRepository users = mock(UserRepository.class);
         when(users.findBy(any())).thenReturn(Optional.of(new User(UserId.random(),
                 Email.of("leaver@example.com"), null, null, Set.of())));
-        // the saga opens: without this the orchestrator would take the "already running" branch and
+        // the saga opens: without this it would take the "already running" branch and
         // announce no fact at all, and the pact would fail on an empty outbox
         when(sagas.start(any(), any(), any())).thenReturn(true);
         when(sagas.complete(any(), any(), any())).thenReturn(true);
         when(sagas.compensateOverdue(any(), any())).thenReturn(List.of("leaver@example.com"));
-        return new AccountDeletionOrchestrator(sagas, outbox, mock(DeleteAccount.class),
-                users, JSON, Clock.systemUTC(), Duration.ofMinutes(5), true);
+        return new AccountDeletionSaga(sagas, new OutboxClosureAnnouncer(outbox, JSON), mock(DeleteAccount.class),
+                users, new MaskedAccountDeletionLog(), Clock.systemUTC(),
+                new AccountDeletionConfig(Duration.ofMinutes(5), true));
     }
 
     /** Captures what the producer appended; the payload on the expected topic IS the message. */

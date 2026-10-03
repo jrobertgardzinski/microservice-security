@@ -3,9 +3,11 @@ package com.jrobertgardzinski;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import com.jrobertgardzinski.persistence.AccountDeletionSagaStore;
+import com.jrobertgardzinski.security.domain.repository.AccountDeletionSagaStore;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.PurgeChoices;
+import com.jrobertgardzinski.security.config.account.AccountDeletionConfig;
+import com.jrobertgardzinski.security.system.account.AccountDeletionSaga;
 import com.jrobertgardzinski.security.system.account.DeleteAccount;
 import io.micronaut.json.JsonMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -37,7 +39,7 @@ class AccountDeletionLoggingTest {
     private static final String EMAIL = "victim@example.com";
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-30T12:00:00Z"), ZoneOffset.UTC);
 
-    private final Logger logger = (Logger) LoggerFactory.getLogger(AccountDeletionOrchestrator.class);
+    private final Logger logger = (Logger) LoggerFactory.getLogger(MaskedAccountDeletionLog.class);
     private final ListAppender<ILoggingEvent> captured = new ListAppender<>();
 
     @BeforeEach
@@ -55,7 +57,7 @@ class AccountDeletionLoggingTest {
     @Test
     @DisplayName("the completed-deletion line carries a masked address")
     void completingADeletionDoesNotLogTheAddress() {
-        orchestrator(latchedStore(true)).completePurge(UUID.randomUUID(), EMAIL);
+        saga(latchedStore(true), true).completePurge(UUID.randomUUID(), com.jrobertgardzinski.email.domain.Email.of(EMAIL));
 
         assertMasked();
     }
@@ -63,7 +65,7 @@ class AccountDeletionLoggingTest {
     @Test
     @DisplayName("the overdue-compensation line carries a masked address")
     void compensatingAnOverdueDeletionDoesNotLogTheAddress() {
-        orchestrator(latchedStore(true)).compensateOverdue();
+        saga(latchedStore(true), true).compensateOverdue();
 
         assertMasked();
     }
@@ -71,19 +73,18 @@ class AccountDeletionLoggingTest {
     @Test
     @DisplayName("the identity-only immediate deletion line carries a masked address")
     void deletingImmediatelyDoesNotLogTheAddress() {
-        new AccountDeletionOrchestrator(latchedStore(true), (topic, key, payload) -> { },
-                mock(DeleteAccount.class), mock(UserRepository.class), JsonMapper.createDefault(),
-                CLOCK, Duration.ofMinutes(5), false)
+        saga(latchedStore(true), false)
                 .begin(com.jrobertgardzinski.security.domain.vo.AccountClosure.requestedByOwner(
                         com.jrobertgardzinski.email.domain.Email.of(EMAIL)));
 
         assertMasked();
     }
 
-    private AccountDeletionOrchestrator orchestrator(AccountDeletionSagaStore sagas) {
-        return new AccountDeletionOrchestrator(sagas, (topic, key, payload) -> { },
-                mock(DeleteAccount.class), mock(UserRepository.class), JsonMapper.createDefault(),
-                CLOCK, Duration.ofMinutes(5), true);
+    private AccountDeletionSaga saga(AccountDeletionSagaStore sagas, boolean awaitPortalPurge) {
+        return new AccountDeletionSaga(sagas,
+                new OutboxClosureAnnouncer((topic, key, payload) -> { }, JsonMapper.createDefault()),
+                mock(DeleteAccount.class), mock(UserRepository.class), new MaskedAccountDeletionLog(),
+                CLOCK, new AccountDeletionConfig(Duration.ofMinutes(5), awaitPortalPurge));
     }
 
     private void assertMasked() {

@@ -1,8 +1,13 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.application.TransactionBoundary;
+import com.jrobertgardzinski.security.application.account.AccountDeletionService;
+import com.jrobertgardzinski.security.config.account.AccountDeletionConfig;
+import com.jrobertgardzinski.security.system.account.AccountDeletionSaga;
+import com.jrobertgardzinski.security.system.account.StartAccountDeletion;
+import com.jrobertgardzinski.security.system.roles.RequireRole;
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.persistence.AccountDeletionSagaStore;
+import com.jrobertgardzinski.security.domain.repository.AccountDeletionSagaStore;
 import com.jrobertgardzinski.persistence.InMemoryOutboxAppender;
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.AccountClosure;
@@ -43,7 +48,7 @@ import static org.mockito.Mockito.verify;
  * <p>The real store is used rather than a double on purpose: WHICH saga an outcome settles is a
  * store semantic, and this is the situation the double has already drifted on once (see
  * {@code AccountDeletionSagaStoreContract}). Everything above it is the production path — the real
- * listener parsing the portal's payload, the real orchestrator acting on it.
+ * listener parsing the portal's payload, the real saga acting on it.
  */
 @Epic("Account deletion")
 @Feature("Saga correlation")
@@ -71,25 +76,26 @@ class StaleOutcomeSettlesItsOwnSagaTest {
     void a_stale_outcome_does_not_settle_the_newer_saga() throws Exception {
         try (ApplicationContext context = ApplicationContext.run("test")) {
             AccountDeletionSagaStore sagas = context.getBean(AccountDeletionSagaStore.class);
-            AccountDeletionOrchestrator orchestrator = new AccountDeletionOrchestrator(
-                    sagas, outbox, deleteAccount, mock(UserRepository.class),
-                    JsonMapper.createDefault(), clock, Duration.ofMinutes(12), true);
+            AccountDeletionSaga saga = new AccountDeletionSaga(sagas,
+                    new OutboxClosureAnnouncer(outbox, JsonMapper.createDefault()), deleteAccount,
+                    mock(UserRepository.class), new MaskedAccountDeletionLog(), clock,
+                    new AccountDeletionConfig(Duration.ofMinutes(12), true));
 
             // alice asks to be deleted: saga A opens and the fact goes to the portal
-            orchestrator.begin(AccountClosure.requestedByOwner(Email.of(EMAIL)));
+            saga.begin(AccountClosure.requestedByOwner(Email.of(EMAIL)));
             UUID sagaA = announcedSaga();
 
             // the portal says nothing in time, so the net unlocks the account and apologises
             clock.advance(Duration.ofMinutes(13));
-            orchestrator.compensateOverdue();
+            saga.compensateOverdue();
 
             // alice asks again: saga B opens, and the portal is purging for it right now
-            orchestrator.begin(AccountClosure.requestedByOwner(Email.of(EMAIL)));
+            saga.begin(AccountClosure.requestedByOwner(Email.of(EMAIL)));
             UUID sagaB = announcedSaga();
             assertNotEquals(sagaA, sagaB, "a second request opens a second saga");
 
             // ...and NOW saga A's confirmation arrives. First announcement, nothing to deduplicate.
-            listener(orchestrator).handle(purged(sagaA));
+            listener(saga).handle(purged(sagaA));
 
             verify(deleteAccount, never()).execute(any());
             assertTrue(outbox.appended().stream()
@@ -102,15 +108,18 @@ class StaleOutcomeSettlesItsOwnSagaTest {
         }
     }
 
-    /** The real listener over the real orchestrator; the claim always succeeds — nothing repeats here. */
-    private OffboardingOutcomeListener listener(AccountDeletionOrchestrator orchestrator) {
-        return new OffboardingOutcomeListener(orchestrator,
-                new TransactionBoundary() {
-                    @Override
-                    public <T> T execute(Supplier<T> work) {
-                        return work.get();
-                    }
-                },
+    /** The real listener over the real saga; the claim always succeeds — nothing repeats here. */
+    private OffboardingOutcomeListener listener(AccountDeletionSaga saga) {
+        TransactionBoundary inline = new TransactionBoundary() {
+            @Override
+            public <T> T execute(Supplier<T> work) {
+                return work.get();
+            }
+        };
+        return new OffboardingOutcomeListener(
+                new AccountDeletionService(mock(StartAccountDeletion.class), saga, mock(UserRepository.class),
+                        mock(RequireRole.class), inline),
+                inline,
                 JsonMapper.createDefault(),
                 (outcomeId, outcomeType, at) -> true,
                 clock);
