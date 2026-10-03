@@ -34,6 +34,8 @@ class ReadmeCountsTest {
 
         assertThat(readme)
                 .as("the Readme names %d specs", specs())
+                // said twice on the page, and the first one had already aged past the second
+                .contains("all " + specs() + " executable specs")
                 .contains("Of the " + specs() + " specs,")
                 .contains(httpSuites() + " run at the HTTP layer")
                 .contains(browserSpecs() + " in a real browser")

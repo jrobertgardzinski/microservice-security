@@ -75,7 +75,7 @@ public class StepUp {
         this.clock = clock;
     }
 
-    public Result start(Email email, StepUpAction action, String accessToken, String passwordAttempt) {
+    public Result start(Email email, StepUpAction action, String accessToken, PlaintextPassword passwordAttempt) {
         StepUpRequirement requirement = policy.requirementFor(action);
         if (requirement == StepUpRequirement.NONE) {
             elevation.elevate(accessToken, action);
@@ -136,9 +136,15 @@ public class StepUp {
         return new Result.FactorRequired(ticket, tail.get(0).type(), advanced.challengeData());
     }
 
-    private boolean passwordMatches(Email email, String passwordAttempt) {
+    /**
+     * Null is "no password offered" — the caller sent none, or sent a blank the boundary reads as
+     * none — and it answers like a wrong one. The attempt arrives as a {@link PlaintextPassword}
+     * because building the domain type out of what came over the wire is the adapter's job, not
+     * this use case's.
+     */
+    private boolean passwordMatches(Email email, PlaintextPassword passwordAttempt) {
         return passwordAttempt != null && users.findBy(email)
-                .map(user -> hashAlgorithm.verify(user.passwordHash(), PlaintextPassword.of(passwordAttempt)))
+                .map(user -> hashAlgorithm.verify(user.passwordHash(), passwordAttempt))
                 .orElse(false);
     }
 }

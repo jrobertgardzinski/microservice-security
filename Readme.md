@@ -25,7 +25,7 @@ different way in. Each one reads like a short story:
 - **[Refreshing a session](./specs/refresh-session.feature)**
   — a user keeps a session alive by refreshing it; an expired or missing session can't be refreshed.
 
-These three are just the highlights — **all 19 executable specs live in [`specs/`](./specs/)**,
+These three are just the highlights — **all 20 executable specs live in [`specs/`](./specs/)**,
 also covering password reset, email change & verification, session management (logout, list,
 revoke everywhere), refresh-token reuse detection, multi-factor sign-in (codes, TOTP, passkeys),
 federated sign-in, roles, the password policy, runtime settings and account deletion (GDPR).
@@ -48,24 +48,28 @@ documentation is the specs above and the value objects they exercise.
 
 ---
 
-## Architecture — six layers, dependencies pointing down
+## Architecture — layers with dependencies pointing down
 
 A security microservice (registration, authentication, password hashing) built with
 **Domain-Driven Design** and **Hexagonal Architecture**. Every layer may use the ones below it,
 never the ones above:
 
 ```
-UI  →  Infrastructure  →  Application  →  System  →  Config  →  Domain
+UI  →  Infrastructure  →  System  →  Config  →  Domain
 ```
 
-### The three top layers — one behaviour, many doors
+`security-application` is the sixth module and stands beside that chain rather than inside it: it
+has **no `src/main`** — only Cucumber glue that drives the very same use cases in process, without
+HTTP. Nothing on the production path depends on it, which is why the chain above skips it.
+
+### The three entry points — one behaviour, many doors
 
 UI, Infrastructure and Application share the *same* BDD scenarios, but each implements them its
 own way:
 
 - **UI** — drives user interactions (fill a form, click).
 - **Infrastructure** — expects data over the network.
-- **Application** — translates between the outside world and the domain.
+- **Application** — calls the use-case objects directly, with no transport at all.
 
 *Same behaviour, different entry point. The domain doesn't care how you reach it.*
 
@@ -87,7 +91,7 @@ Proven by executable specifications (**jqwik** + **Allure**); concepts explained
 ### Two payoffs of clean boundaries
 
 - **Microservice or monolith — your choice.** This module is Domain → Config → System →
-  Application → Infrastructure, with the UI on top.
+  Infrastructure, with the UI on top.
   Making the boundaries explicit keeps the deployment shape — split into services or kept as one —
   an open decision.
 - **Reusable as a library.** A library spans Domain → System, and its System and Config layers can be
@@ -148,11 +152,13 @@ After installing, **open a new terminal** so the updated `PATH` is picked up.
 ## Clone & build the whole project
 
 This microservice depends on sibling modules that live in separate repositories: `test-starter`,
-`libs` (which holds the `constraint` artifact), `config`, `email`, `password`, `adjustable-clock`,
-`infrastructure-micronaut-clock` and `offline-jwt`. The list used to name five of the eight, and a
-build on a clean `~/.m2` simply failed on the first missing one — it is the same list CI checks
-out, and the easiest way to keep it honest is `shared/estate.sh clone`, which clones the whole
-estate from `estate/*.repos`.
+`libs` (which holds the `constraint` artifact), `config`, `adjustable-clock`, `email`, `password`,
+`infrastructure-micronaut-clock`, `offline-jwt`, `user-id`, `unit-of-work` and `account-closure`
+(the last three arrived later — the identity of an author, and the closure vocabulary this service
+shares with the portal). The list first named five of them, then eight, and a build on a clean
+`~/.m2` simply fails on the first missing one — so what follows is the same list, in the same
+order, that [CI](.github/workflows/ci.yml) checks out and installs. The easiest way to keep it
+honest is `shared/estate.sh clone`, which clones the whole estate from `estate/*.repos`.
 
 The commands below clone them into one workspace folder and build them in order via the bundled
 **Maven Wrapper** (`./mvnw`), installing each into your local Maven repository (`~/.m2`) so the
@@ -164,13 +170,15 @@ on first run.
 ```bash
 mkdir security && cd security
 
-for repo in test-starter libs config email password adjustable-clock \
-            infrastructure-micronaut-clock offline-jwt microservice-security; do
+for repo in test-starter libs config adjustable-clock email password \
+            infrastructure-micronaut-clock offline-jwt user-id unit-of-work \
+            account-closure microservice-security; do
   git clone "https://github.com/jrobertgardzinski/$repo.git"
 done
 
-for dir in test-starter libs config email password adjustable-clock \
-           infrastructure-micronaut-clock offline-jwt microservice-security; do
+for dir in test-starter libs config adjustable-clock email password \
+           infrastructure-micronaut-clock offline-jwt user-id unit-of-work \
+           account-closure microservice-security; do
   ( cd "$dir" && ./mvnw clean install ) || break
 done
 ```
@@ -180,13 +188,15 @@ done
 ```powershell
 mkdir security; cd security
 
-foreach ($repo in 'test-starter','libs','config','email','password','adjustable-clock',
-                  'infrastructure-micronaut-clock','offline-jwt','microservice-security') {
+foreach ($repo in 'test-starter','libs','config','adjustable-clock','email','password',
+                  'infrastructure-micronaut-clock','offline-jwt','user-id','unit-of-work',
+                  'account-closure','microservice-security') {
   git clone "https://github.com/jrobertgardzinski/$repo.git"
 }
 
-foreach ($dir in 'test-starter','libs','config','email','password','adjustable-clock',
-                 'infrastructure-micronaut-clock','offline-jwt','microservice-security') {
+foreach ($dir in 'test-starter','libs','config','adjustable-clock','email','password',
+                 'infrastructure-micronaut-clock','offline-jwt','user-id','unit-of-work',
+                 'account-closure','microservice-security') {
   Push-Location $dir
   .\mvnw.cmd clean install
   if ($LASTEXITCODE -ne 0) { Pop-Location; break }

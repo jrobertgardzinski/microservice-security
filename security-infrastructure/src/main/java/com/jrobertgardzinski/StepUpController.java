@@ -4,6 +4,7 @@ import com.jrobertgardzinski.security.domain.vo.StepUpAction;
 
 
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.vo.IpAddress;
 import com.jrobertgardzinski.security.system.mfa.StepUp;
 import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
@@ -58,8 +59,11 @@ final class StepUpController {
         }
         // a BLANK password is no password: it used to reach the value object and answer 500 with
         // its rule, where an absent one has always answered "wrong password" — one situation, one
-        // answer, and the use case already knows what to do with nothing
-        String password = JsonBody.missing(body, "password") ? null : body.get("password");
+        // answer, and the use case already knows what to do with nothing. Past that check the text
+        // can only build, so the domain type is made HERE, where the wire is read
+        PlaintextPassword password = JsonBody.missing(body, "password")
+                ? null
+                : PlaintextPassword.of(body.get("password"));
         return respond(stepUp.start(email, action.get(), token, password), request);
     }
 
