@@ -1,12 +1,8 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.application.TransactionBoundary;
-import com.jrobertgardzinski.security.domain.vo.StepUpAction;
-
-
-import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
+import com.jrobertgardzinski.security.application.mfa.MfaService;
 import com.jrobertgardzinski.security.domain.vo.Role;
+import com.jrobertgardzinski.security.domain.vo.StepUpAction;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
@@ -29,17 +25,14 @@ import java.util.Optional;
 @Controller("/admin/users")
 final class AdminFactorsController {
 
-    private final EnrolledFactorRepository factors;
+    private final MfaService mfa;
     private final RoleGuard roleGuard;
     private final StepUpGuard stepUpGuard;
-    private final TransactionBoundary transactionBoundary;
 
-    AdminFactorsController(EnrolledFactorRepository factors, RoleGuard roleGuard, StepUpGuard stepUpGuard,
-                           TransactionBoundary transactionBoundary) {
-        this.factors = factors;
+    AdminFactorsController(MfaService mfa, RoleGuard roleGuard, StepUpGuard stepUpGuard) {
+        this.mfa = mfa;
         this.roleGuard = roleGuard;
         this.stepUpGuard = stepUpGuard;
-        this.transactionBoundary = transactionBoundary;
     }
 
     @Put(value = "/{email}/factors/reset", produces = MediaType.APPLICATION_JSON)
@@ -48,14 +41,11 @@ final class AdminFactorsController {
         if (notAnAdmin.isPresent()) {
             return notAnAdmin.get();
         }
-        Optional<HttpResponse<Map<String, Object>>> stepUp = stepUpGuard.requireElevation(request, StepUpAction.ADMIN_RESET);
-        if (stepUp.isPresent()) {
-            return stepUp.get();
-        }
-        transactionBoundary.execute(() -> {
-            factors.removeAll(Email.of(email));
-            return null;
-        });
-        return HttpResponse.ok(Map.of("status", "FACTORS_RESET", "user", email));
+        return switch (mfa.resetFactors(email,
+                () -> stepUpGuard.requireElevation(request, StepUpAction.ADMIN_RESET).isEmpty())) {
+            case MfaService.AdminReset.Reset reset -> HttpResponse.ok(Map.of("status", "FACTORS_RESET", "user", email));
+            case MfaService.AdminReset.InvalidEmail invalid -> HttpResponse.badRequest(Map.of("status", "BAD_REQUEST"));
+            case MfaService.AdminReset.StepUpRequired stepUp -> StepUpGuard.refusal(StepUpAction.ADMIN_RESET);
+        };
     }
 }

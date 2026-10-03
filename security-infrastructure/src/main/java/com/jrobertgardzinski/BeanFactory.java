@@ -5,6 +5,8 @@ import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.security.application.authentication.AuthenticationService;
 import com.jrobertgardzinski.security.application.account.AccountService;
 import com.jrobertgardzinski.security.application.identity.IdentityService;
+import com.jrobertgardzinski.security.application.mfa.MfaService;
+import com.jrobertgardzinski.security.application.mfa.StepUpService;
 import com.jrobertgardzinski.security.application.passwordreset.PasswordResetService;
 import com.jrobertgardzinski.security.application.registration.RegistrationService;
 import com.jrobertgardzinski.security.application.session.SessionService;
@@ -829,5 +831,26 @@ public class BeanFactory {
                                     com.jrobertgardzinski.security.system.identity.DisplayNames displayNames,
                                     @Named("display-names") SourceThrottle throttle) {
         return new IdentityService(requireRole, compliance, users, displayNames, throttle);
+    }
+
+    @Singleton
+    MfaService mfaService(com.jrobertgardzinski.security.system.authentication.ContinueAuthentication continueAuthentication,
+                          com.jrobertgardzinski.security.system.mfa.EnrolFactor enrolFactor,
+                          com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
+                          com.jrobertgardzinski.security.system.mfa.FactorRegistry registry,
+                          UserRepository users,
+                          com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance,
+                          com.jrobertgardzinski.security.system.mfa.GenerateRecoveryCodes generateRecoveryCodes,
+                          com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository recoveryCodes,
+                          @Named("authentication") SourceThrottle authenticationThrottle,
+                          TransactionBoundary transactionBoundary) {
+        return new MfaService(continueAuthentication, enrolFactor, enrolledFactors, registry, users, compliance,
+                generateRecoveryCodes, recoveryCodes, authenticationThrottle, transactionBoundary);
+    }
+
+    @Singleton
+    StepUpService stepUpService(com.jrobertgardzinski.security.system.mfa.StepUp stepUp,
+                                @Named("step-up") SourceThrottle throttle) {
+        return new StepUpService(stepUp, throttle);
     }
 }

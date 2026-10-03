@@ -1,9 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.application.TransactionBoundary;
-import com.jrobertgardzinski.security.system.authentication.ContinueAuthentication;
-import com.jrobertgardzinski.security.system.authentication.ContinueAuthenticationResult;
-import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
+import com.jrobertgardzinski.security.application.mfa.MfaService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -13,7 +10,6 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
-import jakarta.inject.Named;
 
 import java.util.Map;
 
@@ -33,53 +29,41 @@ import java.util.Map;
 @Controller("/authenticate/factor")
 final class AuthFactorController {
 
-    private final ContinueAuthentication continueAuthentication;
+    private final MfaService mfa;
     private final RefreshCookies refreshCookies;
-    private final TransactionBoundary transactionBoundary;
-    private final SourceThrottle throttle;
     private final ClientIpResolver clientIpResolver;
 
-    AuthFactorController(ContinueAuthentication continueAuthentication, RefreshCookies refreshCookies,
-                         TransactionBoundary transactionBoundary,
-                         @Named("authentication") SourceThrottle throttle, ClientIpResolver clientIpResolver) {
-        this.continueAuthentication = continueAuthentication;
+    AuthFactorController(MfaService mfa, RefreshCookies refreshCookies, ClientIpResolver clientIpResolver) {
+        this.mfa = mfa;
         this.refreshCookies = refreshCookies;
-        this.transactionBoundary = transactionBoundary;
-        this.throttle = throttle;
         this.clientIpResolver = clientIpResolver;
     }
 
     @Post(consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map<String, Object>> submit(HttpRequest<?> request, @Body Map<String, String> body) {
-        SourceThrottle.Decision decision = throttle.check(clientIpResolver.resolve(request));
-        if (!decision.allowed()) {
-            return HttpResponse.<Map<String, Object>>status(HttpStatus.TOO_MANY_REQUESTS)
-                    .header("Retry-After", String.valueOf(decision.retryAfterSeconds()))
-                    .body(Map.of("status", "TOO_MANY_ATTEMPTS"));
-        }
-        if (JsonBody.missing(body, "mfaTicket") || JsonBody.missing(body, "proof")) {
-            return HttpResponse.<Map<String, Object>>badRequest().body(Map.of("status", "BAD_REQUEST"));
-        }
-        String ticket = body.get("mfaTicket");
-        String proof = body.get("proof");
-        ContinueAuthenticationResult result =
-                transactionBoundary.execute(() -> continueAuthentication.execute(ticket, proof));
-        return switch (result) {
-            case ContinueAuthenticationResult.Completed completed ->
+        return switch (mfa.continueSignIn(JsonBody.text(body, "mfaTicket"), JsonBody.text(body, "proof"),
+                clientIpResolver.resolve(request))) {
+            case MfaService.SignIn.Completed completed ->
                     HttpResponse.ok(Map.<String, Object>of("accessToken", completed.session().plainAccessToken()))
                             .cookie(refreshCookies.issue(completed.session().plainRefreshToken()));
-            case ContinueAuthenticationResult.NextFactor next ->
+            case MfaService.SignIn.NextFactor next ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.ACCEPTED)
-                            .body(MfaBody.of(ticket, next.type().value(), next.challengeData()));
-            case ContinueAuthenticationResult.WrongProof wrong ->
+                            .body(MfaBody.of(next.ticket(), next.type().value(), next.challengeData()));
+            case MfaService.SignIn.WrongProof wrong ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.UNAUTHORIZED)
                             .body(Map.of("status", "WRONG_CODE", "attemptsLeft", wrong.attemptsLeft()));
-            case ContinueAuthenticationResult.TooManyAttempts tooMany ->
+            case MfaService.SignIn.TooManyAttempts tooMany ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.UNAUTHORIZED)
                             .body(Map.of("status", "TOO_MANY_ATTEMPTS"));
-            case ContinueAuthenticationResult.InvalidTicket invalid ->
+            case MfaService.SignIn.InvalidTicket invalid ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.UNAUTHORIZED)
                             .body(Map.of("status", "INVALID_OR_EXPIRED_TICKET"));
+            case MfaService.SignIn.Incomplete incomplete ->
+                    HttpResponse.<Map<String, Object>>badRequest().body(Map.of("status", "BAD_REQUEST"));
+            case MfaService.SignIn.Throttled throttled ->
+                    HttpResponse.<Map<String, Object>>status(HttpStatus.TOO_MANY_REQUESTS)
+                            .header("Retry-After", String.valueOf(throttled.retryAfterSeconds()))
+                            .body(Map.of("status", "TOO_MANY_ATTEMPTS"));
         };
     }
 }
