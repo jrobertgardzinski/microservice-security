@@ -1,5 +1,9 @@
 package com.jrobertgardzinski.security.system.mfa;
 
+import com.jrobertgardzinski.security.domain.port.SessionElevation;
+import com.jrobertgardzinski.security.domain.port.StepUpStore;
+import com.jrobertgardzinski.security.domain.vo.PendingAuthentication;
+
 import com.jrobertgardzinski.security.domain.vo.StepUpRequirement;
 import com.jrobertgardzinski.security.domain.vo.StepUpAction;
 import com.jrobertgardzinski.email.domain.Email;

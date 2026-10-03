@@ -12,7 +12,7 @@ import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRe
 import com.jrobertgardzinski.security.domain.repository.UserRepository;
 import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
 import com.jrobertgardzinski.security.system.mfa.FactorRegistry;
-import com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore;
+import com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore;
 
 import java.time.Clock;
 

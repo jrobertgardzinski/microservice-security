@@ -58,7 +58,7 @@ public class FederatedSignInSteps {
                             com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(), Clock.systemUTC())));
     private final com.jrobertgardzinski.security.system.mfa.EnrolFactor enrolFactor =
             new com.jrobertgardzinski.security.system.mfa.EnrolFactor(registry, enrolledFactors,
-                    new com.jrobertgardzinski.security.system.mfa.FakeEnrolmentChallengeStore());
+                    new com.jrobertgardzinski.security.domain.port.FakeEnrolmentChallengeStore());
     private final FederatedSignIn federatedSignIn = new FederatedSignIn(
             identities, users, verifications, sessions, hashAlgorithm,
             new SessionTokensConfig(new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1)),
@@ -67,7 +67,7 @@ public class FederatedSignInSteps {
                     com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
                     new com.jrobertgardzinski.security.domain.repository.FakeRecoveryCodeRepository(),
                     raw -> "hash:" + raw, Clock.systemUTC(), 10),
-            new com.jrobertgardzinski.security.system.mfa.FakePendingAuthenticationStore());
+            new com.jrobertgardzinski.security.domain.port.FakePendingAuthenticationStore());
 
     private FederatedSignInResult result;
 

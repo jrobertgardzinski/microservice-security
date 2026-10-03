@@ -53,7 +53,7 @@ public class FederatedSignIn {
     private final com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless;
     private final com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors;
     private final com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain;
-    private final com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore pendingStore;
+    private final com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore pendingStore;
 
     public FederatedSignIn(FederatedIdentityRepository identities, UserRepository users,
                            EmailVerificationRepository verifications, SessionRepository sessions,
@@ -62,7 +62,7 @@ public class FederatedSignIn {
                            com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,
                            com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
                            com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
-                           com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore pendingStore) {
+                           com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore pendingStore) {
         this.identities = identities;
         this.users = users;
         this.verifications = verifications;
@@ -107,7 +107,7 @@ public class FederatedSignIn {
             return new FederatedSignInResult.SignedIn(sessions.create(
                     SessionTokens.createFor(account, config, clock, accessTokenMint), SessionFamily.start()));
         }
-        com.jrobertgardzinski.security.system.mfa.PendingAuthentication pending =
+        com.jrobertgardzinski.security.domain.vo.PendingAuthentication pending =
                 mfaChain.begin(account, factors);
         String ticket = pendingStore.open(pending);
         return new FederatedSignInResult.MfaRequired(ticket, factors.get(0).type(), pending.challengeData());

@@ -2,8 +2,8 @@ package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.domain.vo.StepUpAction;
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.system.mfa.PendingAuthentication;
-import com.jrobertgardzinski.security.system.mfa.StepUpStore;
+import com.jrobertgardzinski.security.domain.vo.PendingAuthentication;
+import com.jrobertgardzinski.security.domain.port.StepUpStore;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

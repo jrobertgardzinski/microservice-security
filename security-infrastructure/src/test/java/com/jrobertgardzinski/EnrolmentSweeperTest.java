@@ -2,8 +2,8 @@ package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.vo.FactorType;
-import com.jrobertgardzinski.security.system.mfa.Challenge;
-import com.jrobertgardzinski.security.system.mfa.EnrolmentChallengeStore.PendingEnrolment;
+import com.jrobertgardzinski.security.domain.vo.Challenge;
+import com.jrobertgardzinski.security.domain.port.EnrolmentChallengeStore.PendingEnrolment;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import org.junit.jupiter.api.DisplayName;

@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.system.mfa;
 
+import com.jrobertgardzinski.security.domain.vo.Challenge;
+
 /**
  * What beginning a factor's enrolment produces. {@code secretMaterial} is what gets stored for the
  * factor (an e-mail/phone target for the code factors; a generated TOTP secret). {@code display}

@@ -7,8 +7,8 @@ import com.jrobertgardzinski.security.domain.repository.FakeEnrolledFactorReposi
 import com.jrobertgardzinski.security.domain.repository.FakeRejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.repository.FakeSessionRepository;
 import com.jrobertgardzinski.security.domain.repository.FakeUserRepository;
-import com.jrobertgardzinski.security.system.mfa.FakeEnrolmentChallengeStore;
-import com.jrobertgardzinski.security.system.mfa.FakePendingAuthenticationStore;
+import com.jrobertgardzinski.security.domain.port.FakeEnrolmentChallengeStore;
+import com.jrobertgardzinski.security.domain.port.FakePendingAuthenticationStore;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;

@@ -6,7 +6,7 @@ import io.micronaut.context.annotation.Value;
 import io.micronaut.scheduling.annotation.Scheduled;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.vo.FactorType;
-import com.jrobertgardzinski.security.system.mfa.EnrolmentChallengeStore;
+import com.jrobertgardzinski.security.domain.port.EnrolmentChallengeStore;
 import jakarta.inject.Singleton;
 
 import java.util.Map;

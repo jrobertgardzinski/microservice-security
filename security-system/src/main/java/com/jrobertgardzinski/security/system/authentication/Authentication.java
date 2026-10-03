@@ -9,8 +9,8 @@ import com.jrobertgardzinski.security.domain.vo.Credentials;
 import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
 import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
 import com.jrobertgardzinski.security.domain.vo.Source;
-import com.jrobertgardzinski.security.system.mfa.PendingAuthentication;
-import com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore;
+import com.jrobertgardzinski.security.domain.vo.PendingAuthentication;
+import com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore;
 
 import java.util.List;
 

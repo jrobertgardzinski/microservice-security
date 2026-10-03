@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.system.mfa;
 
+import com.jrobertgardzinski.security.domain.port.FakeEnrolmentChallengeStore;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig;
 import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;

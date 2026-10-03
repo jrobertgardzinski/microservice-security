@@ -78,7 +78,7 @@ class AuthenticationTest {
                 new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of()),
                 com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
                 noRecoveryCodes(), raw -> "hash:" + raw, CLOCK, 10);
-        var pendingStore = Mockito.mock(com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore.class);
+        var pendingStore = Mockito.mock(com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore.class);
         authentication = new Authentication(
                 bruteForceGuard, verifyCredentials, requireVerifiedEmail, generateSession,
                 cleanBruteForceRecords, updateBruteForceRecords,

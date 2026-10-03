@@ -417,7 +417,7 @@ public class BeanFactory {
     @Singleton
     java.util.List<com.jrobertgardzinski.security.system.mfa.CodeFactor> codeFactors(
             java.util.List<com.jrobertgardzinski.security.domain.port.CodeChannel> channels,
-            com.jrobertgardzinski.security.system.mfa.CodeHasher codeHasher,
+            com.jrobertgardzinski.security.domain.port.CodeHasher codeHasher,
             com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig challengeCodeConfig,
             Clock clock) {
         return channels.stream()
@@ -430,7 +430,7 @@ public class BeanFactory {
     @Singleton
     com.jrobertgardzinski.security.system.mfa.TotpFactor totpFactor(
             Clock clock, @io.micronaut.context.annotation.Value("${security.mfa.totp.issuer:security}") String issuer,
-            com.jrobertgardzinski.security.system.mfa.SpentTotpSteps spentSteps) {
+            com.jrobertgardzinski.security.domain.port.SpentTotpSteps spentSteps) {
         return new com.jrobertgardzinski.security.system.mfa.TotpFactor(clock, issuer, spentSteps);
     }
 
@@ -492,7 +492,7 @@ public class BeanFactory {
     com.jrobertgardzinski.security.system.mfa.EnrolFactor enrolFactor(
             com.jrobertgardzinski.security.system.mfa.FactorRegistry factorRegistry,
             com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactorRepository,
-            com.jrobertgardzinski.security.system.mfa.EnrolmentChallengeStore enrolmentChallengeStore) {
+            com.jrobertgardzinski.security.domain.port.EnrolmentChallengeStore enrolmentChallengeStore) {
         return new com.jrobertgardzinski.security.system.mfa.EnrolFactor(
                 factorRegistry, enrolledFactorRepository, enrolmentChallengeStore);
     }
@@ -503,7 +503,7 @@ public class BeanFactory {
             com.jrobertgardzinski.security.system.mfa.FactorRegistry factorRegistry,
             com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig challengeCodeConfig,
             com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository recoveryCodeRepository,
-            com.jrobertgardzinski.security.system.mfa.RecoveryCodeHasher recoveryCodeHasher,
+            com.jrobertgardzinski.security.domain.port.RecoveryCodeHasher recoveryCodeHasher,
             Clock clock,
             @io.micronaut.context.annotation.Value("${security.mfa.ticket-ttl-minutes:10}") int ticketTtlMinutes) {
         return new com.jrobertgardzinski.security.system.mfa.MfaChain(
@@ -521,7 +521,7 @@ public class BeanFactory {
     @Singleton
     com.jrobertgardzinski.security.system.mfa.GenerateRecoveryCodes generateRecoveryCodes(
             com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository recoveryCodeRepository,
-            com.jrobertgardzinski.security.system.mfa.RecoveryCodeHasher recoveryCodeHasher,
+            com.jrobertgardzinski.security.domain.port.RecoveryCodeHasher recoveryCodeHasher,
             com.jrobertgardzinski.security.config.mfa.RecoveryCodeConfig recoveryCodeConfig) {
         return new com.jrobertgardzinski.security.system.mfa.GenerateRecoveryCodes(
                 recoveryCodeRepository, recoveryCodeHasher, recoveryCodeConfig);
@@ -543,7 +543,7 @@ public class BeanFactory {
             AccessTokenMint accessTokenMint,
             com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactorRepository,
             com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
-            com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore pendingAuthenticationStore) {
+            com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore pendingAuthenticationStore) {
         return AuthenticationFactory.assemble(
                 userRepository, emailVerificationRepository, rejectedAuthenticationRepository,
                 authenticationBlockRepository, sessionRepository, hashAlgorithm,
@@ -679,8 +679,8 @@ public class BeanFactory {
             com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,
             com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
             com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
-            com.jrobertgardzinski.security.system.mfa.StepUpStore stepUpStore,
-            com.jrobertgardzinski.security.system.mfa.SessionElevation sessionElevation,
+            com.jrobertgardzinski.security.domain.port.StepUpStore stepUpStore,
+            com.jrobertgardzinski.security.domain.port.SessionElevation sessionElevation,
             Clock clock) {
         return new com.jrobertgardzinski.security.system.mfa.StepUp(
                 stepUpPolicy, userRepository, hashAlgorithm, passwordless, enrolledFactors,
@@ -764,7 +764,7 @@ public class BeanFactory {
             com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,
             com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
             com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
-            com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore pendingStore) {
+            com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore pendingStore) {
         return new com.jrobertgardzinski.security.system.federation.FederatedSignIn(
                 federatedIdentities, userRepository, emailVerificationRepository,
                 sessionRepository, hashAlgorithm, sessionTokensConfig, clock, accessTokenMint,

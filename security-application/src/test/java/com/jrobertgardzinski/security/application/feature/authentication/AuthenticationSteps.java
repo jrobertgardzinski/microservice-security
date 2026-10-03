@@ -194,7 +194,7 @@ public class AuthenticationSteps {
                             com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
                             new com.jrobertgardzinski.security.domain.repository.FakeRecoveryCodeRepository(),
                             raw -> "hash:" + raw, clock, 10),
-                    new com.jrobertgardzinski.security.system.mfa.FakePendingAuthenticationStore()
+                    new com.jrobertgardzinski.security.domain.port.FakePendingAuthenticationStore()
                     ).authentication();
         }
         return authentication;

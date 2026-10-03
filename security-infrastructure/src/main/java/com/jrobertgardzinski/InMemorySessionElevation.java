@@ -1,7 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.domain.vo.StepUpAction;
-import com.jrobertgardzinski.security.system.mfa.SessionElevation;
+import com.jrobertgardzinski.security.domain.port.SessionElevation;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;

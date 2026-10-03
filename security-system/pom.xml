@@ -61,6 +61,14 @@
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>unit-test-starter</artifactId>
         </dependency>
+        <dependency>
+            <!-- the fakes of the MFA stores, beside their ports -->
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>security-domain</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -68,17 +76,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

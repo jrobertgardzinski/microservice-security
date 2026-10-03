@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.mfa;
+package com.jrobertgardzinski.security.domain.vo;
 
 import java.time.Clock;
 import java.time.LocalDateTime;

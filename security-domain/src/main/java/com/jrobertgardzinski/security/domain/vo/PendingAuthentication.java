@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.mfa;
+package com.jrobertgardzinski.security.domain.vo;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;

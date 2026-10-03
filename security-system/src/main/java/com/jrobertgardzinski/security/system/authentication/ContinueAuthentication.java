@@ -1,8 +1,8 @@
 package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
-import com.jrobertgardzinski.security.system.mfa.PendingAuthentication;
-import com.jrobertgardzinski.security.system.mfa.PendingAuthenticationStore;
+import com.jrobertgardzinski.security.domain.vo.PendingAuthentication;
+import com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore;
 
 import java.time.Clock;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.mfa;
+package com.jrobertgardzinski.security.domain.port;
 
 /**
  * How a RECOVERY code is turned into what the database holds — deliberately a different port from

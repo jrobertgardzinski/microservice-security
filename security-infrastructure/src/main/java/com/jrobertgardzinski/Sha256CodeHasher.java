@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.system.mfa.CodeHasher;
+import com.jrobertgardzinski.security.domain.port.CodeHasher;
 import jakarta.inject.Singleton;
 
 import java.nio.charset.StandardCharsets;

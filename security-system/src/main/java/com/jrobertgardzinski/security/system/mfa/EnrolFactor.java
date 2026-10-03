@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.system.mfa;
 
+import com.jrobertgardzinski.security.domain.port.EnrolmentChallengeStore;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
 import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;

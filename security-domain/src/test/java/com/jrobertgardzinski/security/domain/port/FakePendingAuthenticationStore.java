@@ -1,4 +1,6 @@
-package com.jrobertgardzinski.security.system.mfa;
+package com.jrobertgardzinski.security.domain.port;
+
+import com.jrobertgardzinski.security.domain.vo.PendingAuthentication;
 
 import java.util.Map;
 import java.util.Optional;

@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.system.mfa;
 
+import com.jrobertgardzinski.security.domain.port.RecoveryCodeHasher;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.config.mfa.RecoveryCodeConfig;
 import com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository;
