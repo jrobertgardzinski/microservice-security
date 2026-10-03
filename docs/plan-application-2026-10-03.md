@@ -2,6 +2,12 @@
 
 Zaplanowane na polecenie właściciela 2026-10-03. **Plan, nie wykonanie — nic jeszcze nie zmienione.**
 
+> **Wykonane 2026-10-03, kroki 0–8, gałąź `application-bridge`** (`e940a68..7a6b232`), bez
+> postoju po kroku 2 — właściciel kazał robić do końca. Odstępstwa od planu: logi sagi usuwania
+> idą przez trzeci port `AccountDeletionLog` (moduły wewnętrzne nie logują); w roli admina na
+> drodze usuwania cudzego konta pyta serwis (`RequireRole`), nie `RoleGuard`, bo to serwis wybiera
+> drogę; suity Testcontainers (36 testów) nie poszły — na maszynie nie ma Dockera.
+
 ## Reguła właściciela (cel, nie propozycja)
 
 - **`application` = pomost** między frameworkiem / klasami Javy a domeną: bierze prymitywy i
