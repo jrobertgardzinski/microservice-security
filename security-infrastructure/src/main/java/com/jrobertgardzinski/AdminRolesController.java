@@ -1,13 +1,11 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.domain.vo.StepUpAction;
-
-
-import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.security.application.admin.AdminService;
 import com.jrobertgardzinski.security.domain.vo.Role;
-import com.jrobertgardzinski.security.system.roles.SetUserRoles;
+import com.jrobertgardzinski.security.domain.vo.StepUpAction;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
+import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
@@ -16,11 +14,9 @@ import io.micronaut.http.annotation.Put;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Admin-only: grant or revoke another user's roles. {@link AuthorizationFilter} has already
@@ -32,71 +28,43 @@ import java.util.stream.Collectors;
 @Controller("/admin/users")
 final class AdminRolesController {
 
-    private final SetUserRoles setUserRoles;
+    private final AdminService admin;
     private final RoleGuard roleGuard;
     private final StepUpGuard stepUpGuard;
 
-    AdminRolesController(SetUserRoles setUserRoles, RoleGuard roleGuard, StepUpGuard stepUpGuard) {
-        this.setUserRoles = setUserRoles;
+    AdminRolesController(AdminService admin, RoleGuard roleGuard, StepUpGuard stepUpGuard) {
+        this.admin = admin;
         this.roleGuard = roleGuard;
         this.stepUpGuard = stepUpGuard;
     }
 
     @Put(value = "/{email}/roles", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> setRoles(HttpRequest<?> request, @PathVariable String email, @Body Map<String, Object> body) {
-        java.util.Optional<HttpResponse<Map<String, Object>>> notAnAdmin = roleGuard.require(request, Role.ADMIN);
+        // the role gate first, so a non-admin learns only that they are not an admin
+        Optional<HttpResponse<Map<String, Object>>> notAnAdmin = roleGuard.require(request, Role.ADMIN);
         if (notAnAdmin.isPresent()) {
             return notAnAdmin.get();
         }
-        // BEFORE the step-up guard, which CONSUMES a one-shot elevation: an address with a typo in
-        // it used to be parsed after, so the request died on the address (a 500, at that) with the
-        // elevation already spent — and the retry needed the whole chain walked again.
-        Email target;
-        try {
-            target = Email.of(email);
-        } catch (IllegalArgumentException notAnAddress) {
-            return HttpResponse.badRequest(Map.of("status", "INVALID_EMAIL"));
-        }
-        Set<Role> roles;
-        try {
-            roles = parseRoles(body.get("roles"));
-        } catch (IllegalArgumentException unknownRole) {
-            // the roles that exist, not the exception's sentence — which named the enum's class
-            return HttpResponse.badRequest(Map.of("status", "UNKNOWN_ROLE",
-                    "roles", java.util.Arrays.stream(Role.values()).map(Role::name).sorted().toList()));
-        }
-        // AFTER the role check, so a non-admin still learns only that they are not an admin. A
-        // granted role is a permanent widening of what a session may do, so a stolen admin session
-        // must prove itself again before handing that out — the same rule the factor reset next
-        // door already follows.
-        java.util.Optional<HttpResponse<Map<String, Object>>> stepUp =
-                stepUpGuard.requireElevation(request, StepUpAction.ADMIN_ROLES);
-        if (stepUp.isPresent()) {
-            return stepUp.get();
-        }
-        SetUserRoles.Result result = setUserRoles.execute(target, roles);
-        if (result.status() == SetUserRoles.Status.NO_SUCH_USER) {
-            return HttpResponse.notFound(Map.of("status", "NO_SUCH_USER"));
-        }
-        if (result.status() == SetUserRoles.Status.WOULD_LEAVE_NO_ADMIN) {
+        return switch (admin.setRoles(email, body.get("roles"),
+                () -> stepUpGuard.requireElevation(request, StepUpAction.ADMIN_ROLES).isEmpty())) {
+            case AdminService.RolesChange.Updated updated ->
+                    HttpResponse.ok(Map.of("email", email, "roles", names(updated.roles())));
+            case AdminService.RolesChange.NoSuchUser none -> HttpResponse.notFound(Map.of("status", "NO_SUCH_USER"));
             // 409, not 403: the caller IS allowed to do this, and the state of the system is what
             // refuses. Telling them which is the difference between "try again with proof" and
             // "grant somebody else first".
-            return HttpResponse.<Map<String, Object>>status(io.micronaut.http.HttpStatus.CONFLICT)
-                    .body(Map.of("status", "WOULD_LEAVE_NO_ADMIN",
-                            "roles", result.roles().stream().map(Role::name).sorted().toList()));
-        }
-        return HttpResponse.ok(Map.of("email", email,
-                "roles", result.roles().stream().map(Role::name).sorted().toList()));
+            case AdminService.RolesChange.WouldLeaveNoAdmin noAdmin ->
+                    HttpResponse.<Map<String, Object>>status(HttpStatus.CONFLICT)
+                            .body(Map.of("status", "WOULD_LEAVE_NO_ADMIN", "roles", names(noAdmin.roles())));
+            case AdminService.RolesChange.InvalidEmail invalid ->
+                    HttpResponse.badRequest(Map.of("status", "INVALID_EMAIL"));
+            case AdminService.RolesChange.UnknownRole unknown ->
+                    HttpResponse.badRequest(Map.of("status", "UNKNOWN_ROLE", "roles", unknown.known()));
+            case AdminService.RolesChange.StepUpRequired stepUp -> StepUpGuard.refusal(StepUpAction.ADMIN_ROLES);
+        };
     }
 
-    @SuppressWarnings("unchecked")
-    private static Set<Role> parseRoles(Object raw) {
-        if (!(raw instanceof List<?> list)) {
-            throw new IllegalArgumentException("roles must be a list");
-        }
-        return ((List<Object>) list).stream()
-                .map(o -> Role.valueOf(String.valueOf(o).trim().toUpperCase(Locale.ROOT)))
-                .collect(Collectors.toUnmodifiableSet());
+    private static java.util.List<String> names(Set<Role> roles) {
+        return roles.stream().map(Role::name).sorted().toList();
     }
 }

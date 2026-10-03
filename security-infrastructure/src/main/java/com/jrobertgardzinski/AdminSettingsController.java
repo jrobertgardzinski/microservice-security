@@ -1,12 +1,10 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.config.ConfigValue;
-import com.jrobertgardzinski.config.Configuration;
-import com.jrobertgardzinski.config.LiveKey;
 import com.jrobertgardzinski.config.ladder.Resolution;
+import com.jrobertgardzinski.security.application.admin.AdminService;
 import com.jrobertgardzinski.security.domain.vo.Role;
 import com.jrobertgardzinski.security.domain.vo.StepUpAction;
-import com.jrobertgardzinski.security.system.settings.SetSetting;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -39,15 +37,12 @@ final class AdminSettingsController {
 
     static final StepUpAction STEP_UP_ACTION = StepUpAction.ADMIN_SETTINGS;
 
-    private final SetSetting setSetting;
-    private final Configuration configuration;
+    private final AdminService admin;
     private final RoleGuard roleGuard;
     private final StepUpGuard stepUpGuard;
 
-    AdminSettingsController(SetSetting setSetting, Configuration configuration,
-                            RoleGuard roleGuard, StepUpGuard stepUpGuard) {
-        this.setSetting = setSetting;
-        this.configuration = configuration;
+    AdminSettingsController(AdminService admin, RoleGuard roleGuard, StepUpGuard stepUpGuard) {
+        this.admin = admin;
         this.roleGuard = roleGuard;
         this.stepUpGuard = stepUpGuard;
     }
@@ -58,9 +53,7 @@ final class AdminSettingsController {
         if (notAnAdmin.isPresent()) {
             return notAnAdmin.get();
         }
-        Map<String, Object> report = new LinkedHashMap<>();
-        configuration.liveKeys().forEach((key, live) -> report.put(key, report(live)));
-        return HttpResponse.ok(report);
+        return HttpResponse.ok(report(admin.settings()));
     }
 
     @Put(value = "/{key}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
@@ -69,30 +62,30 @@ final class AdminSettingsController {
         if (notAnAdmin.isPresent()) {
             return notAnAdmin.get();
         }
-        Optional<HttpResponse<Map<String, Object>>> stepUp = stepUpGuard.requireElevation(request, STEP_UP_ACTION);
-        if (stepUp.isPresent()) {
-            return stepUp.get();
-        }
-        Object told = body.get("value");
-        if (told == null) {
-            return HttpResponse.badRequest(Map.of("status", "NO_VALUE"));
-        }
-        SetSetting.Result result = setSetting.execute(key, String.valueOf(told));
-        return switch (result.status()) {
-            case ACCEPTED -> HttpResponse.ok(Map.of("status", "ACCEPTED", "key", key, "value", result.value()));
-            case REFUSED -> HttpResponse.badRequest(Map.of("status", "REFUSED", "key", key, "reason", result.reason()));
-            case UNKNOWN_KEY -> HttpResponse.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("status", "UNKNOWN_KEY", "key", key, "reason", result.reason()));
+        return switch (admin.setSetting(key, body.get("value"),
+                () -> stepUpGuard.requireElevation(request, STEP_UP_ACTION).isEmpty())) {
+            case AdminService.SettingChange.Accepted accepted ->
+                    HttpResponse.ok(Map.of("status", "ACCEPTED", "key", key, "value", accepted.value()));
+            case AdminService.SettingChange.Refused refused ->
+                    HttpResponse.badRequest(Map.of("status", "REFUSED", "key", key, "reason", refused.reason()));
+            case AdminService.SettingChange.UnknownKey unknown -> HttpResponse.<Map<String, Object>>status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("status", "UNKNOWN_KEY", "key", key, "reason", unknown.reason()));
+            case AdminService.SettingChange.NoValue none -> HttpResponse.badRequest(Map.of("status", "NO_VALUE"));
+            // the catalogue reads every value as text; only the minimum length parses one itself
+            case AdminService.SettingChange.NotANumber notANumber -> HttpResponse.badRequest(Map.of("status", "NOT_A_NUMBER"));
+            case AdminService.SettingChange.StepUpRequired stepUp -> StepUpGuard.refusal(STEP_UP_ACTION);
         };
     }
 
-    private static Map<String, Object> report(LiveKey live) {
-        Resolution<? extends ConfigValue<?>> resolution = live.resolution();
-        return Map.of(
+    /** Each rule's value, the level that answered, and what was refused on the way. */
+    static Map<String, Object> report(Map<String, Resolution<? extends ConfigValue<?>>> resolutions) {
+        Map<String, Object> report = new LinkedHashMap<>();
+        resolutions.forEach((key, resolution) -> report.put(key, Map.of(
                 "value", resolution.value().value(),
                 "source", resolution.source(),
                 "rejected", resolution.rejected().stream()
                         .map(r -> Map.<String, Object>of("source", r.source(), "value", r.value(), "reason", r.reason()))
-                        .toList());
+                        .toList())));
+        return report;
     }
 }

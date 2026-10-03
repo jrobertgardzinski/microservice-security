@@ -3,7 +3,10 @@ package com.jrobertgardzinski;
 import com.jrobertgardzinski.security.domain.vo.StepUpAction;
 import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.security.application.authentication.AuthenticationService;
+import com.jrobertgardzinski.security.application.account.AccountDeletionService;
 import com.jrobertgardzinski.security.application.account.AccountService;
+import com.jrobertgardzinski.security.application.admin.AdminService;
+import com.jrobertgardzinski.security.application.federation.FederationService;
 import com.jrobertgardzinski.security.application.identity.IdentityService;
 import com.jrobertgardzinski.security.application.mfa.MfaService;
 import com.jrobertgardzinski.security.application.mfa.StepUpService;
@@ -852,5 +855,23 @@ public class BeanFactory {
     StepUpService stepUpService(com.jrobertgardzinski.security.system.mfa.StepUp stepUp,
                                 @Named("step-up") SourceThrottle throttle) {
         return new StepUpService(stepUp, throttle);
+    }
+
+    @Singleton
+    AdminService adminService(com.jrobertgardzinski.security.system.roles.SetUserRoles setUserRoles, SetSetting setSetting,
+                              Configuration configuration, LadderedPasswordPolicy passwordPolicy) {
+        return new AdminService(setUserRoles, setSetting, configuration, passwordPolicy::inForce);
+    }
+
+    @Singleton
+    AccountDeletionService accountDeletionService(StartAccountDeletion startAccountDeletion, UserRepository users,
+                                                  RequireRole requireRole, TransactionBoundary transactionBoundary) {
+        return new AccountDeletionService(startAccountDeletion, users, requireRole, transactionBoundary);
+    }
+
+    @Singleton
+    FederationService federationService(com.jrobertgardzinski.security.system.federation.FederatedSignIn federatedSignIn,
+                                        TransactionBoundary transactionBoundary) {
+        return new FederationService(federatedSignIn, transactionBoundary);
     }
 }

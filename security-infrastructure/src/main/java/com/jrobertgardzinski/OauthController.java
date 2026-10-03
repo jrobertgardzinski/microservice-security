@@ -1,10 +1,8 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.application.TransactionBoundary;
+import com.jrobertgardzinski.security.application.federation.FederationService;
 import com.jrobertgardzinski.security.config.oauth.OauthProviderSettings;
 import com.jrobertgardzinski.security.domain.vo.ProviderIdentity;
-import com.jrobertgardzinski.security.system.federation.FederatedSignIn;
-import com.jrobertgardzinski.security.system.federation.FederatedSignInResult;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -31,7 +29,8 @@ import java.util.Map;
 /**
  * HTTP entry points for social sign-in: {@code GET /oauth/{provider}/start} sends the browser to
  * the configured provider (Authorization Code + PKCE, S256), {@code GET /oauth/callback} receives
- * it back, exchanges the code server-side and drives the {@link FederatedSignIn} use case. On
+ * it back, exchanges the code server-side and hands the proven identity to
+ * {@link FederationService}. On
  * success the browser is redirected to the {@code return} URL it asked for — the access token
  * rides in the URL FRAGMENT (never sent to any server; readable by the SPA), the refresh token in
  * the usual HttpOnly cookie. The return URL must match a configured prefix, otherwise the
@@ -60,15 +59,13 @@ final class OauthController {
     private final Map<String, OauthProviderSettings> providers;
     private final OauthFlowStore flows;
     private final OidcClient oidc;
-    private final FederatedSignIn federatedSignIn;
+    private final FederationService federation;
     private final RefreshCookies refreshCookies;
-    private final TransactionBoundary transactionBoundary;
     private final List<String> allowedReturnPrefixes;
     private final boolean secureCookies;
 
     OauthController(List<OauthProviderSettings> providers, OauthFlowStore flows, OidcClient oidc,
-                    FederatedSignIn federatedSignIn, RefreshCookies refreshCookies,
-                    TransactionBoundary transactionBoundary,
+                    FederationService federation, RefreshCookies refreshCookies,
                     @Value("${security.oauth.allowed-return-prefixes:http://localhost:8083/}")
                     List<String> allowedReturnPrefixes,
                     @Value("${security.cookie.secure:true}") boolean secureCookies) {
@@ -77,9 +74,8 @@ final class OauthController {
                 .collect(java.util.stream.Collectors.toMap(OauthProviderSettings::name, p -> p));
         this.flows = flows;
         this.oidc = oidc;
-        this.federatedSignIn = federatedSignIn;
+        this.federation = federation;
         this.refreshCookies = refreshCookies;
-        this.transactionBoundary = transactionBoundary;
         // A RAW startsWith on a prefix without a trailing slash is not a host check: the natural
         // thing to configure ("http://app.example.com") also admits http://app.example.com.evil.net/
         // and http://app.example.com@evil.net/ — both of which would then RECEIVE the access token
@@ -165,18 +161,17 @@ final class OauthController {
             LOG.warn("federated sign-in through {} failed: {}", flow.provider(), refused.toString());
             return backTo(flow.returnUrl(), "#oauthError=SIGN_IN_FAILED").cookie(clearedStateCookie());
         }
-        FederatedSignInResult result = transactionBoundary.execute(() -> federatedSignIn.execute(identity));
-        return switch (result) {
-            case FederatedSignInResult.SignedIn signedIn -> backTo(flow.returnUrl(),
+        return switch (federation.signIn(identity)) {
+            case FederationService.Outcome.SignedIn signedIn -> backTo(flow.returnUrl(),
                     "#accessToken=" + encode(signedIn.session().plainAccessToken()))
                     .cookie(refreshCookies.issue(signedIn.session().plainRefreshToken()))
                     .cookie(clearedStateCookie());
             // the account has enrolled factors: hand the ticket back so the UI can finish the chain
             // through /authenticate/factor, exactly like a password sign-in
-            case FederatedSignInResult.MfaRequired mfa -> backTo(flow.returnUrl(),
+            case FederationService.Outcome.MfaRequired mfa -> backTo(flow.returnUrl(),
                     "#mfaTicket=" + encode(mfa.ticket()) + "&nextFactor=" + encode(mfa.nextFactor().value())
                             + (mfa.challengeData() == null ? "" : "&challengeData=" + encode(mfa.challengeData())));
-            case FederatedSignInResult.Refused refused ->
+            case FederationService.Outcome.Refused refused ->
                     backTo(flow.returnUrl(), "#oauthError=" + encode(refused.reason()));
         };
     }
