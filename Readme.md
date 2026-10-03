@@ -48,19 +48,23 @@ documentation is the specs above and the value objects they exercise.
 
 ---
 
-## Architecture — layers with dependencies pointing down
+## Architecture — six layers, dependencies pointing down
 
 A security microservice (registration, authentication, password hashing) built with
 **Domain-Driven Design** and **Hexagonal Architecture**. Every layer may use the ones below it,
 never the ones above:
 
 ```
-UI  →  Infrastructure  →  System  →  Config  →  Domain
+UI  →  Infrastructure  →  Application  →  System  →  Config  →  Domain
 ```
 
-`security-application` is the sixth module and stands beside that chain rather than inside it: it
-has **no `src/main`** — only Cucumber glue that drives the very same use cases in process, without
-HTTP. Nothing on the production path depends on it, which is why the chain above skips it.
+- **Application** is the bridge between the outside world and the domain: it takes the caller's
+  strings, builds the domain's values from them, and only then runs the use cases — grouped into
+  one service per area (registration, sign-in, sessions, factors, …). No framework in it.
+- **Infrastructure** does two things and nothing else: it plugs the production adapters into the
+  ports, and it maps the application services onto the framework — controllers and beans.
+- **System** holds the use cases; they read the domain and the configuration, and the ports they
+  need live in the domain.
 
 ### The three entry points — one behaviour, many doors
 
@@ -91,7 +95,7 @@ Proven by executable specifications (**jqwik** + **Allure**); concepts explained
 ### Two payoffs of clean boundaries
 
 - **Microservice or monolith — your choice.** This module is Domain → Config → System →
-  Infrastructure, with the UI on top.
+  Application → Infrastructure, with the UI on top.
   Making the boundaries explicit keeps the deployment shape — split into services or kept as one —
   an open decision.
 - **Reusable as a library.** A library spans Domain → System, and its System and Config layers can be

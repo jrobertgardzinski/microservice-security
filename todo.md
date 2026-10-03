@@ -10,6 +10,15 @@ wire (`Challenge.publicData`→`challengeData` w 202, port `enrolledMaterial`),
 e2e na wirtualnym authenticatorze; Faza H w docs/mfa-design.md. 178 testów JVM +
 36 e2e zielone. S5 zamknięte (gałęzie już nie istniały; runda 2 czeka). S4 na userze.)
 
+## Sprostowanie 2026-10-03: `security-application` ma `src/main`
+
+Linie niżej, które mówią, że `security-application` „nie ma `src/main`" / jest „wyłącznie runnerem"
+(sekcje z 2026-09: OPS-10, S5, analogia orkiestratora), były wnioskiem AI z `401c7ed`, nie regułą
+właściciela — zostają jako zapis tamtego stanu. Od gałęzi `application-bridge` (plan:
+`docs/plan-application-2026-10-03.md`) application jest pomostem: 12 serwisów przyjmuje prymitywy,
+buduje domenę, odpala use case'y w transakcji; kontrolery tylko tłumaczą HTTP. Saga usuwania konta
+(`AccountDeletionSaga`) siedzi w `security-system`, jej porty w `security-domain`.
+
 ## UserId zamiast e-maila jako klucz (2026-09-26, etap 1 ZROBIONY)
 
 Etap 1 w kodzie: `UserId` (biblioteka `shared/user-id`), `User.id: UserId`, token `sub` = UUID +
