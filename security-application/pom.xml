@@ -25,7 +25,6 @@
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>user-id</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>

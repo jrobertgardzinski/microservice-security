@@ -1,19 +1,15 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.application.TransactionBoundary;
-
-import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.security.application.session.SessionService;
 import com.jrobertgardzinski.security.domain.vo.ActiveSession;
-import com.jrobertgardzinski.security.system.session.ListActiveSessions;
-import com.jrobertgardzinski.security.system.session.RevokeAllSessions;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
-import io.micronaut.scheduling.TaskExecutors;
-import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 
 import java.util.List;
 import java.util.Map;
@@ -29,33 +25,23 @@ import java.util.Map;
 @Controller("/sessions")
 final class SessionsController {
 
-    private final ListActiveSessions listActiveSessions;
-    private final RevokeAllSessions revokeAllSessions;
-    private final TransactionBoundary transactionBoundary;
+    private final SessionService sessions;
 
-    SessionsController(ListActiveSessions listActiveSessions, RevokeAllSessions revokeAllSessions,
-                       TransactionBoundary transactionBoundary) {
-        this.listActiveSessions = listActiveSessions;
-        this.revokeAllSessions = revokeAllSessions;
-        this.transactionBoundary = transactionBoundary;
+    SessionsController(SessionService sessions) {
+        this.sessions = sessions;
     }
 
     @Get(produces = MediaType.APPLICATION_JSON)
     public HttpResponse<Map<String, Object>> list(HttpRequest<?> request) {
-        Email email = Caller.of(request);
-        List<Map<String, Object>> sessions = listActiveSessions.execute(email).stream()
+        List<Map<String, Object>> active = sessions.list(Caller.of(request)).stream()
                 .map(SessionsController::toJson)
                 .toList();
-        return HttpResponse.ok(Map.of("sessions", sessions));
+        return HttpResponse.ok(Map.of("sessions", active));
     }
 
     @Post(value = "/revoke-all", consumes = MediaType.ALL, produces = MediaType.APPLICATION_JSON)
     public HttpResponse<Map<String, Object>> revokeAll(HttpRequest<?> request) {
-        String email = Caller.of(request).value();
-        transactionBoundary.execute(() -> {
-            revokeAllSessions.execute(Email.of(email));
-            return null;
-        });
+        sessions.revokeAll(Caller.of(request));
         return HttpResponse.ok(Map.of("status", "ALL_SESSIONS_REVOKED"));
     }
 

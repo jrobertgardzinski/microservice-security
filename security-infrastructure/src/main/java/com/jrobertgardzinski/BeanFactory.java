@@ -3,7 +3,12 @@ package com.jrobertgardzinski;
 import com.jrobertgardzinski.security.domain.vo.StepUpAction;
 import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.security.application.authentication.AuthenticationService;
+import com.jrobertgardzinski.security.application.account.AccountService;
+import com.jrobertgardzinski.security.application.identity.IdentityService;
+import com.jrobertgardzinski.security.application.passwordreset.PasswordResetService;
 import com.jrobertgardzinski.security.application.registration.RegistrationService;
+import com.jrobertgardzinski.security.application.session.SessionService;
+import com.jrobertgardzinski.security.application.verification.VerificationService;
 import com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier;
 import com.jrobertgardzinski.config.ladder.ConfigLadder;
 import com.jrobertgardzinski.config.source.live.LiveConfigPort;
@@ -785,5 +790,44 @@ public class BeanFactory {
                                                 @Named("authentication") SourceThrottle throttle,
                                                 TransactionBoundary transactionBoundary) {
         return new AuthenticationService(authentication, throttle, transactionBoundary);
+    }
+
+    @Singleton
+    SessionService sessionService(RefreshSession refreshSession, Logout logout, ListActiveSessions listActiveSessions,
+                                  RevokeAllSessions revokeAllSessions, TransactionBoundary transactionBoundary) {
+        return new SessionService(refreshSession, logout, listActiveSessions, revokeAllSessions, transactionBoundary);
+    }
+
+    @Singleton
+    VerificationService verificationService(RequestEmailVerification requestEmailVerification, VerifyEmail verifyEmail,
+                                            @Named("verification") SourceThrottle throttle,
+                                            TransactionBoundary transactionBoundary) {
+        return new VerificationService(requestEmailVerification, verifyEmail, throttle, transactionBoundary);
+    }
+
+    @Singleton
+    PasswordResetService passwordResetService(RequestPasswordReset requestPasswordReset, ResetPassword resetPassword,
+                                              @Named("password-reset") SourceThrottle throttle,
+                                              TransactionBoundary transactionBoundary) {
+        return new PasswordResetService(requestPasswordReset, resetPassword, throttle, transactionBoundary);
+    }
+
+    @Singleton
+    AccountService accountService(ChangePassword changePassword, RequestEmailChange requestEmailChange,
+                                  ConfirmEmailChange confirmEmailChange,
+                                  RegistrationNoticeNotifier noticeNotifier,
+                                  @Named("change-password") SourceThrottle changePasswordThrottle,
+                                  TransactionBoundary transactionBoundary) {
+        return new AccountService(changePassword, requestEmailChange, confirmEmailChange, noticeNotifier,
+                changePasswordThrottle, transactionBoundary);
+    }
+
+    @Singleton
+    IdentityService identityService(RequireRole requireRole,
+                                    com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance,
+                                    UserRepository users,
+                                    com.jrobertgardzinski.security.system.identity.DisplayNames displayNames,
+                                    @Named("display-names") SourceThrottle throttle) {
+        return new IdentityService(requireRole, compliance, users, displayNames, throttle);
     }
 }

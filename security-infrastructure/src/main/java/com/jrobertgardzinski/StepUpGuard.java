@@ -30,8 +30,13 @@ public final class StepUpGuard {
         if (token != null && elevation.consume(token, action)) {
             return Optional.empty();
         }
-        return Optional.of(HttpResponse.<Map<String, Object>>status(HttpStatus.FORBIDDEN)
-                .body(Map.of("status", "STEP_UP_REQUIRED", "action", action.wire())));
+        return Optional.of(refusal(action));
+    }
+
+    /** The 403 a caller gets for an action they have not stepped up for. */
+    public static HttpResponse<Map<String, Object>> refusal(StepUpAction action) {
+        return HttpResponse.<Map<String, Object>>status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "STEP_UP_REQUIRED", "action", action.wire()));
     }
 
     public static String bearerToken(HttpRequest<?> request) {

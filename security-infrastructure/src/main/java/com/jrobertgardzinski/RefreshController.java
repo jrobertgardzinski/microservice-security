@@ -1,25 +1,21 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.application.TransactionBoundary;
-import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
-import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
-import com.jrobertgardzinski.security.system.session.RefreshSession;
-import com.jrobertgardzinski.security.system.session.RefreshSessionResult;
+import com.jrobertgardzinski.security.application.session.SessionService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Post;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
-import io.micronaut.http.annotation.Post;
 
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * HTTP entry point for session refresh. Drives the same {@link RefreshSession} use case as the
- * application-level Cucumber glue — shared behaviour, different entry point. The refresh token
+ * HTTP entry point for session refresh, through
+ * {@link com.jrobertgardzinski.security.application.session.SessionService}. The refresh token
  * travels only in the {@code HttpOnly} cookie (see {@link RefreshCookies}); the user is found from
  * the token, so the client never names itself.
  *
@@ -36,15 +32,12 @@ import java.util.Optional;
 @Controller("/refresh")
 public class RefreshController {
 
-    private final RefreshSession refreshSession;
+    private final SessionService sessions;
     private final RefreshCookies refreshCookies;
-    private final TransactionBoundary transactionBoundary;
 
-    public RefreshController(RefreshSession refreshSession, RefreshCookies refreshCookies,
-                            TransactionBoundary transactionBoundary) {
-        this.refreshSession = refreshSession;
+    public RefreshController(SessionService sessions, RefreshCookies refreshCookies) {
+        this.sessions = sessions;
         this.refreshCookies = refreshCookies;
-        this.transactionBoundary = transactionBoundary;
     }
 
     @Post(consumes = MediaType.ALL, produces = MediaType.APPLICATION_JSON)
@@ -53,20 +46,11 @@ public class RefreshController {
         if (presentedToken.isEmpty()) {
             return HttpResponse.status(HttpStatus.UNAUTHORIZED);
         }
-
-        SessionRefreshRequest refreshRequest = new SessionRefreshRequest(new RefreshToken(presentedToken.get()));
-        RefreshSessionResult result = transactionBoundary.execute(() -> refreshSession.execute(refreshRequest));
-
-        return switch (result) {
-            case RefreshSessionResult.Refreshed refreshed ->
+        return switch (sessions.refresh(presentedToken.get())) {
+            case SessionService.Refresh.Refreshed refreshed ->
                     HttpResponse.ok(Map.<String, Object>of("accessToken", refreshed.sessionTokens().plainAccessToken()))
                             .cookie(refreshCookies.issue(refreshed.sessionTokens().plainRefreshToken()));
-            case RefreshSessionResult.Expired expired ->
-                    HttpResponse.status(HttpStatus.UNAUTHORIZED);
-            case RefreshSessionResult.NotFound notFound ->
-                    HttpResponse.status(HttpStatus.UNAUTHORIZED);
-            case RefreshSessionResult.ReuseDetected reuseDetected ->
-                    HttpResponse.status(HttpStatus.UNAUTHORIZED);
+            case SessionService.Refresh.Refused refused -> HttpResponse.status(HttpStatus.UNAUTHORIZED);
         };
     }
 }
