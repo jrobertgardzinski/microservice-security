@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.persistence;
 
-import com.jrobertgardzinski.TransactionBoundary;
+import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.config.retention.vo.UnverifiedAccountDays;
 import com.jrobertgardzinski.security.system.account.DeleteAccount;

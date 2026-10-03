@@ -1,5 +1,6 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.InvalidEmailException;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;

@@ -13,17 +13,14 @@
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>security-domain</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>security-system</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>email-domain</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
@@ -33,7 +30,6 @@
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>password-domain</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
@@ -43,7 +39,6 @@
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>email-config</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
@@ -53,7 +48,6 @@
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
             <artifactId>password-usecase</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>

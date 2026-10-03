@@ -1,5 +1,6 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.application.TransactionBoundary;
 import io.micronaut.scheduling.annotation.Scheduled;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;

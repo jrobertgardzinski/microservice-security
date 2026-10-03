@@ -1,6 +1,9 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.domain.vo.StepUpAction;
+import com.jrobertgardzinski.security.application.TransactionBoundary;
+import com.jrobertgardzinski.security.application.registration.RegistrationService;
+import com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier;
 import com.jrobertgardzinski.config.ladder.ConfigLadder;
 import com.jrobertgardzinski.config.source.live.LiveConfigPort;
 import com.jrobertgardzinski.config.source.live.SnapshotLiveConfigPort;
@@ -762,5 +765,17 @@ public class BeanFactory {
                                               SessionRepository sessionRepository,
                                               ContentPurge saga) {
         return new StartAccountDeletion(userRepository, sessionRepository, saga);
+    }
+
+    // ---- the application services: the bridge each controller calls, mapped onto beans ----
+
+    @Singleton
+    RegistrationService registrationService(Register register, RequestEmailVerification requestEmailVerification,
+                                            EmailVerificationRepository emailVerifications,
+                                            RegistrationNoticeNotifier registrationNoticeNotifier,
+                                            @Named("registration") SourceThrottle throttle,
+                                            TransactionBoundary transactionBoundary) {
+        return new RegistrationService(register, requestEmailVerification, emailVerifications,
+                registrationNoticeNotifier, throttle, transactionBoundary);
     }
 }

@@ -1,5 +1,6 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.closure.ClosureMessages;
 import io.micronaut.configuration.kafka.annotation.ErrorStrategy;
 import io.micronaut.configuration.kafka.annotation.ErrorStrategyValue;

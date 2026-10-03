@@ -1,5 +1,6 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.application.TransactionBoundary;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 

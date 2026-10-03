@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.infrastructure.persistence;
 
-import com.jrobertgardzinski.TransactionBoundary;
+import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.entity.SessionTokens;
 import com.jrobertgardzinski.security.domain.repository.SessionRepository;

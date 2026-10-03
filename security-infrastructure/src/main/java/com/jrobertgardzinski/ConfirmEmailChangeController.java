@@ -1,5 +1,6 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
 import com.jrobertgardzinski.security.system.account.ConfirmEmailChange;
 import com.jrobertgardzinski.security.system.account.ConfirmEmailChangeResult;

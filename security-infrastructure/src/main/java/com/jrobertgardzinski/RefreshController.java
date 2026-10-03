@@ -1,5 +1,6 @@
 package com.jrobertgardzinski;
 
+import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
 import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
