@@ -2,6 +2,7 @@ package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.domain.vo.StepUpAction;
 import com.jrobertgardzinski.security.application.TransactionBoundary;
+import com.jrobertgardzinski.security.application.authentication.AuthenticationService;
 import com.jrobertgardzinski.security.application.registration.RegistrationService;
 import com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier;
 import com.jrobertgardzinski.config.ladder.ConfigLadder;
@@ -777,5 +778,12 @@ public class BeanFactory {
                                             TransactionBoundary transactionBoundary) {
         return new RegistrationService(register, requestEmailVerification, emailVerifications,
                 registrationNoticeNotifier, throttle, transactionBoundary);
+    }
+
+    @Singleton
+    AuthenticationService authenticationService(Authentication authentication,
+                                                @Named("authentication") SourceThrottle throttle,
+                                                TransactionBoundary transactionBoundary) {
+        return new AuthenticationService(authentication, throttle, transactionBoundary);
     }
 }

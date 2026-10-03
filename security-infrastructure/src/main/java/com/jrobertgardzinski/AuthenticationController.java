@@ -1,14 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.application.TransactionBoundary;
-import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
-import com.jrobertgardzinski.security.domain.vo.Source;
-import com.jrobertgardzinski.security.system.authentication.Authentication;
-import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
-import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
-import jakarta.inject.Named;
+import com.jrobertgardzinski.security.application.authentication.AuthenticationService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -25,11 +17,10 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
- * HTTP entry point for authentication. Drives the same {@link Authentication} use case the
- * application-level Cucumber glue drives directly — "same behaviour, different entry point". The
- * source IP that brute-force protection keys on is resolved from the connection (see
+ * HTTP entry point for authentication: the body's credentials, the caller's address and its
+ * User-Agent go to {@link AuthenticationService}, its outcome comes back as a response. The source
+ * IP that brute-force protection keys on is resolved from the connection (see
  * {@link ClientIpResolver}), not from the request body, so a caller cannot pick its own source.
- * The User-Agent header rides along as observed context — forensics only, never part of the key.
  *
  * <p>The HTTP contract:
  * <ul>
@@ -41,11 +32,13 @@ import java.util.Map;
  *       {@code credentials: 'include'} on the fetch and {@code allow-credentials} on the CORS
  *       configuration — the whole of the 2026-07-29 sign-in outage) went undocumented. Described
  *       the way {@code RefreshController} already describes its own rotated cookie.</li>
- *   <li>{@code Rejected}         &rarr; 401 Unauthorized</li>
+ *   <li>{@code Rejected}         &rarr; 401 Unauthorized; {@code Unreadable} (a credential the
+ *       domain cannot construct) the same 401 without a body</li>
  *   <li>{@code EmailNotVerified} &rarr; 403 Forbidden, {@code {"error": "EMAIL_NOT_VERIFIED"}}
  *       (correct credentials, but the address awaits verification)</li>
  *   <li>{@code Blocked}          &rarr; 429 Too Many Requests, with a {@code Retry-After} header
- *       (seconds until the block expires)</li>
+ *       (seconds until the block expires); {@code Throttled} (too many attempts from one
+ *       source) the same, with the throttle's window</li>
  * </ul>
  */
 // controllers do blocking work (JDBC, the mail service's HTTP client) — keep it off the event loop
@@ -53,70 +46,49 @@ import java.util.Map;
 @Controller("/authenticate")
 public class AuthenticationController {
 
-    private final Authentication authentication;
+    private final AuthenticationService authentication;
     private final ClientIpResolver ipResolver;
     private final RefreshCookies refreshCookies;
-    private final TransactionBoundary transactionBoundary;
-    private final SourceThrottle throttle;
     private final Clock clock;
 
-    public AuthenticationController(Authentication authentication, ClientIpResolver ipResolver,
-                                    RefreshCookies refreshCookies, TransactionBoundary transactionBoundary,
-                                    @Named("authentication") SourceThrottle throttle, Clock clock) {
+    public AuthenticationController(AuthenticationService authentication, ClientIpResolver ipResolver,
+                                    RefreshCookies refreshCookies, Clock clock) {
         this.authentication = authentication;
         this.ipResolver = ipResolver;
         this.refreshCookies = refreshCookies;
-        this.transactionBoundary = transactionBoundary;
-        this.throttle = throttle;
         this.clock = clock;
     }
 
     @Post(consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public HttpResponse<Map<String, Object>> authenticate(@Body Map<String, String> body, HttpRequest<?> request) {
-        Source source = new Source(ipResolver.resolve(request),
-                request.getHeaders().findFirst("User-Agent").orElse(""));
-        // the per-account guard counts FAILURES and a correct password clears them, so it does not
-        // bound how many attempts one source may start — this does
-        SourceThrottle.Decision decision = throttle.check(source.ipAddress());
-        if (!decision.allowed()) {
-            return HttpResponse.<Map<String, Object>>status(HttpStatus.TOO_MANY_REQUESTS)
-                    .header("Retry-After", String.valueOf(decision.retryAfterSeconds()))
-                    .body(Refusal.alsoAsError("TOO_MANY_ATTEMPTS"));
-        }
-        AuthenticationRequest authenticationRequest;
-        try {
-            authenticationRequest = new AuthenticationRequest(
-                    source, Email.of(body.get("email")), PlaintextPassword.of(body.get("password")));
-        } catch (IllegalArgumentException unreadable) {
-            // A credential the domain cannot even construct used to escape as a 500 carrying the
-            // domain's own sentence: an Internal Server Error for a typo, plus a stack trace in the
-            // log for every one of them. To the caller it is not a different KIND of failure — an
-            // address that cannot exist owns no account — so it answers exactly like a wrong
-            // password, and learns nothing the 401 did not already say. It costs no lookup and
-            // therefore no brute-force count: there is no account here to guess at.
-            return HttpResponse.status(HttpStatus.UNAUTHORIZED);
-        }
-        AuthenticationResult result = transactionBoundary.execute(() -> authentication.execute(authenticationRequest));
+        AuthenticationService.Outcome outcome = authentication.authenticate(body.get("email"), body.get("password"),
+                ipResolver.resolve(request), request.getHeaders().findFirst("User-Agent").orElse(""));
 
-        return switch (result) {
-            case AuthenticationResult.Authenticated authenticated ->
+        return switch (outcome) {
+            case AuthenticationService.Outcome.Authenticated authenticated ->
                     HttpResponse.ok(Map.<String, Object>of("accessToken", authenticated.session().plainAccessToken()))
                             .cookie(refreshCookies.issue(authenticated.session().plainRefreshToken()));
-            case AuthenticationResult.Rejected rejected ->
+            case AuthenticationService.Outcome.Rejected rejected ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.UNAUTHORIZED)
                             .body(Refusal.of("WRONG_CREDENTIALS"));
-            case AuthenticationResult.EmailNotVerified notVerified ->
+            // an address that cannot exist owns no account: the same 401, and no more said
+            case AuthenticationService.Outcome.Unreadable unreadable -> HttpResponse.status(HttpStatus.UNAUTHORIZED);
+            case AuthenticationService.Outcome.EmailNotVerified notVerified ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.FORBIDDEN)
                             .body(Refusal.alsoAsError("EMAIL_NOT_VERIFIED"));
-            case AuthenticationResult.Blocked blocked ->
+            case AuthenticationService.Outcome.Blocked blocked ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.TOO_MANY_REQUESTS)
-                            .header("Retry-After", Long.toString(secondsUntil(blocked.authenticationBlock().expiryDate())))
+                            .header("Retry-After", Long.toString(secondsUntil(blocked.expiry())))
                             .body(Refusal.alsoAsError("TOO_MANY_ATTEMPTS"));
             // password was right, but the user has factors — no session yet; the first challenge is out.
             // The refresh token is withheld until the chain completes (see AuthFactorController).
-            case AuthenticationResult.MfaRequired mfa ->
+            case AuthenticationService.Outcome.MfaRequired mfa ->
                     HttpResponse.<Map<String, Object>>status(HttpStatus.ACCEPTED)
                             .body(MfaBody.of(mfa.ticket(), mfa.nextFactor().value(), mfa.challengeData()));
+            case AuthenticationService.Outcome.Throttled throttled ->
+                    HttpResponse.<Map<String, Object>>status(HttpStatus.TOO_MANY_REQUESTS)
+                            .header("Retry-After", String.valueOf(throttled.retryAfterSeconds()))
+                            .body(Refusal.alsoAsError("TOO_MANY_ATTEMPTS"));
         };
     }
 
