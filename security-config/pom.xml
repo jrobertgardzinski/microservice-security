@@ -14,7 +14,12 @@
     <dependencies>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain</artifactId>
+            <artifactId>security-domain-session</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.jrobertgardzinski</groupId>
+            <artifactId>security-domain-mfa</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

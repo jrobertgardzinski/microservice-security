@@ -66,6 +66,14 @@ UI  →  Infrastructure  →  Application  →  System  →  Config  →  Domain
 - **System** holds the use cases; they read the domain and the configuration, and the ports they
   need live in the domain.
 
+Domain and System are each cut by area, one Maven module per area, so work on one area sees only
+what it depends on:
+
+```
+domain:  core ← session      core ← authentication ← mfa      core ← mailbox ← account
+system:  core, session, mailbox, mfa, authentication (→ system-mfa), account — each over its own domain
+```
+
 ### The three entry points — one behaviour, many doors
 
 UI, Infrastructure and Application share the *same* BDD scenarios, but each implements them its

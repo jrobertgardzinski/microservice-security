@@ -22,9 +22,19 @@
     </properties>
 
     <modules>
-        <module>security-domain</module>
+        <module>security-domain-core</module>
+        <module>security-domain-session</module>
+        <module>security-domain-authentication</module>
+        <module>security-domain-mailbox</module>
+        <module>security-domain-mfa</module>
+        <module>security-domain-account</module>
         <module>security-config</module>
-        <module>security-system</module>
+        <module>security-system-core</module>
+        <module>security-system-session</module>
+        <module>security-system-mailbox</module>
+        <module>security-system-mfa</module>
+        <module>security-system-authentication</module>
+        <module>security-system-account</module>
         <module>security-application</module>
         <module>security-infrastructure</module>
     </modules>
@@ -133,7 +143,32 @@
                  outgrows the BOM again, the import goes back in with the date and the symptom. -->
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-domain</artifactId>
+                <artifactId>security-domain-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-domain-session</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-domain-authentication</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-domain-mfa</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-domain-mailbox</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-domain-account</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -143,7 +178,32 @@
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-system</artifactId>
+                <artifactId>security-system-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-system-session</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-system-authentication</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-system-mfa</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-system-mailbox</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-system-account</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

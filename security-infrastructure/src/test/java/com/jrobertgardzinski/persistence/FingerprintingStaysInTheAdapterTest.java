@@ -35,13 +35,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class FingerprintingStaysInTheAdapterTest {
 
-    private static final List<Path> LAYERS_BELOW_INFRASTRUCTURE = List.of(
-            Path.of("../security-domain/src/main/java"),
-            Path.of("../security-system/src/main/java"));
+    /** Every area's domain and system module — found by name, so a new area is checked too. */
+    private static List<Path> layersBelowInfrastructure() throws IOException {
+        try (Stream<Path> modules = Files.list(Path.of(".."))) {
+            List<Path> layers = modules
+                    .filter(module -> module.getFileName().toString().matches("security-(domain|system)-.+"))
+                    .map(module -> module.resolve("src/main/java"))
+                    .filter(Files::isDirectory)
+                    .sorted()
+                    .toList();
+            assertTrue(layers.size() >= 2, "no domain or system module found — the rule would pass on nothing");
+            return layers;
+        }
+    }
 
     @Test
     void no_layer_below_infrastructure_mentions_how_the_account_is_stored() throws IOException {
-        for (Path layer : LAYERS_BELOW_INFRASTRUCTURE) {
+        for (Path layer : layersBelowInfrastructure()) {
             try (Stream<Path> sources = Files.walk(layer)) {
                 List<String> leaks = sources
                         .filter(file -> file.toString().endsWith(".java"))

@@ -17,7 +17,9 @@ Linie niżej, które mówią, że `security-application` „nie ma `src/main`" /
 właściciela — zostają jako zapis tamtego stanu. Od gałęzi `application-bridge` (plan:
 `docs/plan-application-2026-10-03.md`) application jest pomostem: 12 serwisów przyjmuje prymitywy,
 buduje domenę, odpala use case'y w transakcji; kontrolery tylko tłumaczą HTTP. Saga usuwania konta
-(`AccountDeletionSaga`) siedzi w `security-system`, jej porty w `security-domain`.
+(`AccountDeletionSaga`) siedzi w `security-system-account`, jej porty w `security-domain-account`.
+Od 2026-10-04 domena i system są pocięte na moduły per obszar (core, session, authentication, mfa,
+mailbox, account) — starsze linie z `security-domain`/`security-system` mówią o całości sprzed cięcia.
 
 ## UserId zamiast e-maila jako klucz (2026-09-26, etap 1 ZROBIONY)
 

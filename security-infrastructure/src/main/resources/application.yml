@@ -74,7 +74,7 @@ security:
   # brute.force.min.block.minutes: 3        # 1-60
   # brute.force.max.block.minutes: 10       # 1-1440, never below min.block.minutes
   #
-  # The MFA rules and the token validities, the same way (security-config/mfa/vo, security-domain):
+  # The MFA rules and the token validities, the same way (security-config/mfa/vo, security-domain-session):
   # mfa.code.ttl.minutes: 5                 # > 0
   # mfa.code.max.attempts: 5                # > 0
   # mfa.code.length: 6                      # 4-10
@@ -91,7 +91,7 @@ security:
   #   ever. Deployment-level only: a live setting would let whoever holds an admin session at the
   #   time sign everybody else out.
   #
-  # The step-up requirement per sensitive action (the catalogue is StepUpAction in security-domain;
+  # The step-up requirement per sensitive action (the catalogue is StepUpAction in security-domain-mfa;
   # each constant ships its default): NONE, SECOND_FACTORS or FULL_CHAIN, anything else fails the boot.
   # step.up.delete.account: FULL_CHAIN
   # step.up.admin.reset: FULL_CHAIN

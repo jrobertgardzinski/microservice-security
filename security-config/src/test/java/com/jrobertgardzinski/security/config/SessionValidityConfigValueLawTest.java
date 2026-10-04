@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * A law over the session validities, which live in security-domain because the domain computes
+ * A law over the session validities, which live in security-domain-session because the domain computes
  * token expirations from them; the twin of the one in shared/password: each token validity honours
  * the {@link ConfigValue} contract the compiler can check, AND the half it cannot - a
  * {@code public static final DEFAULT} of its own type, a {@code KEY} that is what {@code key()}
@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Story("Each token validity knows its key, its value and the default the code ships")
 class SessionValidityConfigValueLawTest {
 
-    private static final Path SOURCES = Path.of("../security-domain/src/main/java/com/jrobertgardzinski/security/domain/vo");
+    private static final Path SOURCES = Path.of("../security-domain-session/src/main/java/com/jrobertgardzinski/security/domain/vo");
 
     @Test
     void each_validity_is_a_ConfigValue_with_a_static_DEFAULT_and_KEY_that_agree_with_the_instance() throws Exception {
