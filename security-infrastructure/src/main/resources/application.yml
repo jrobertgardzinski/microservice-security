@@ -67,14 +67,14 @@ security:
   # email.company.domains: acme.com        # a closed shop: only these domains may register
   #
   # The brute-force limits, restart over rebuild, each declared from its value object
-  # (security-config-authentication, bruteforce/vo); a value outside a limit's range fails the boot, by name:
+  # (security-config_authentication, bruteforce/vo); a value outside a limit's range fails the boot, by name:
   # brute.force.failure.window.minutes: 15  # 3-120
   # brute.force.max.failures: 3             # 1-20, per account
   # brute.force.max.failures.per.source: 30 # 5-500, per address, never below max.failures
   # brute.force.min.block.minutes: 3        # 1-60
   # brute.force.max.block.minutes: 10       # 1-1440, never below min.block.minutes
   #
-  # The MFA rules and the token validities, the same way (security-config-mfa, mfa/vo; security-domain-session):
+  # The MFA rules and the token validities, the same way (security-config_mfa, mfa/vo; security-domain_session):
   # mfa.code.ttl.minutes: 5                 # > 0
   # mfa.code.max.attempts: 5                # > 0
   # mfa.code.length: 6                      # 4-10
@@ -91,7 +91,7 @@ security:
   #   ever. Deployment-level only: a live setting would let whoever holds an admin session at the
   #   time sign everybody else out.
   #
-  # The step-up requirement per sensitive action (the catalogue is StepUpAction in security-domain-mfa;
+  # The step-up requirement per sensitive action (the catalogue is StepUpAction in security-domain_mfa;
   # each constant ships its default): NONE, SECOND_FACTORS or FULL_CHAIN, anything else fails the boot.
   # step.up.delete.account: FULL_CHAIN
   # step.up.admin.reset: FULL_CHAIN

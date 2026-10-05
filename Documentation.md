@@ -5,8 +5,8 @@
 > are a photograph of that morning, not the state of this repository today, and they cover other
 > services as well as this one. The README used to promise it as "detailed documentation of the
 > domain, config and system layers"; the living version of that promise is the code and the tests
-> themselves: `specs/*.feature` for behaviour, the value objects in the `security-domain-*` modules and
-> `security-config-*` for the rules, and `docs/` for the designs. Regenerate this file with
+> themselves: `specs/*.feature` for behaviour, the value objects in the `security-domain_*` modules and
+> `security-config_*` for the rules, and `docs/` for the designs. Regenerate this file with
 > `shared/aggregate_allure.py` after a full run if you want a fresh photograph.
 
 Generated on: 2026-07-02 07:37:33

@@ -17,7 +17,7 @@ Linie niżej, które mówią, że `security-application` „nie ma `src/main`" /
 właściciela — zostają jako zapis tamtego stanu. Od gałęzi `application-bridge` (plan:
 `docs/plan-application-2026-10-03.md`) application jest pomostem: 12 serwisów przyjmuje prymitywy,
 buduje domenę, odpala use case'y w transakcji; kontrolery tylko tłumaczą HTTP. Saga usuwania konta
-(`AccountDeletionSaga`) siedzi w `security-system-account`, jej porty w `security-domain-account`.
+(`AccountDeletionSaga`) siedzi w `security-system_account`, jej porty w `security-domain_account`.
 Od 2026-10-04 domena i system są pocięte na moduły per obszar (core, session, authentication, mfa,
 mailbox, account) — starsze linie z `security-domain`/`security-system` mówią o całości sprzed cięcia.
 
@@ -305,7 +305,7 @@ DB-8, `Source` w `PendingAuthentication`) są decyzją właściciela — tylko w
   wtedy trzeba najpierw `docs/db8-case-collisions.sql` i decyzja człowieka, które konto zostaje
   (migracja nie może tego wybrać za kogoś). `AddressCaseHttpTest` pada na starej regule.
 - **LOW, paczka 6 — build/ops/kontrakty (OPS-13, OPS-14, OPS-17, CFG-9, TEST-10, DOM-10, DOM-11)
-  — ZROBIONE 2026-09-12.** Skasowane: `set-security-domain-version.sh` (ustawiał property, którego
+  — ZROBIONE 2026-09-12.** Skasowane: `set-security-domain_version.sh` (ustawiał property, którego
   nie ma, a per-modułowe wersjonowanie rozjechałoby reaktor — w estacie wszystko jest
   1.0.0-SNAPSHOT) i katalog `docker-compose/` (sierota bez Kafki, z `.env` i hasłami w PUBLICZNYM
   repo; prawdziwy stack to `shared/docker-compose.identity.yml`). Pom: wywalona whitelista po

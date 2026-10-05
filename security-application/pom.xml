@@ -12,51 +12,51 @@
     <dependencies>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-core</artifactId>
+            <artifactId>security-domain_core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-session</artifactId>
+            <artifactId>security-domain_session</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-authentication</artifactId>
+            <artifactId>security-domain_authentication</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-mailbox</artifactId>
+            <artifactId>security-domain_mailbox</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-mfa</artifactId>
+            <artifactId>security-domain_mfa</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-account</artifactId>
+            <artifactId>security-domain_account</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-system-core</artifactId>
+            <artifactId>security-system_core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-system-session</artifactId>
+            <artifactId>security-system_session</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-system-authentication</artifactId>
+            <artifactId>security-system_authentication</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-system-mailbox</artifactId>
+            <artifactId>security-system_mailbox</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-system-mfa</artifactId>
+            <artifactId>security-system_mfa</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-system-account</artifactId>
+            <artifactId>security-system_account</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
@@ -84,12 +84,12 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-config-authentication</artifactId>
+            <artifactId>security-config_authentication</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-config-mfa</artifactId>
+            <artifactId>security-config_mfa</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -118,35 +118,35 @@
         <!-- the fakes of the ports, each beside its own -->
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-core</artifactId>
+            <artifactId>security-domain_core</artifactId>
             <version>1.0.0-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-session</artifactId>
+            <artifactId>security-domain_session</artifactId>
             <version>1.0.0-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-authentication</artifactId>
+            <artifactId>security-domain_authentication</artifactId>
             <version>1.0.0-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-mailbox</artifactId>
+            <artifactId>security-domain_mailbox</artifactId>
             <version>1.0.0-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-domain-mfa</artifactId>
+            <artifactId>security-domain_mfa</artifactId>
             <version>1.0.0-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>

@@ -22,23 +22,23 @@
     </properties>
 
     <modules>
-        <module>security-domain-core</module>
-        <module>security-domain-session</module>
-        <module>security-domain-authentication</module>
-        <module>security-domain-mailbox</module>
-        <module>security-domain-mfa</module>
-        <module>security-domain-account</module>
-        <module>security-config-session</module>
-        <module>security-config-authentication</module>
-        <module>security-config-mailbox</module>
-        <module>security-config-mfa</module>
-        <module>security-config-account</module>
-        <module>security-system-core</module>
-        <module>security-system-session</module>
-        <module>security-system-mailbox</module>
-        <module>security-system-mfa</module>
-        <module>security-system-authentication</module>
-        <module>security-system-account</module>
+        <module>security-domain_core</module>
+        <module>security-domain_session</module>
+        <module>security-domain_authentication</module>
+        <module>security-domain_mailbox</module>
+        <module>security-domain_mfa</module>
+        <module>security-domain_account</module>
+        <module>security-config_session</module>
+        <module>security-config_authentication</module>
+        <module>security-config_mailbox</module>
+        <module>security-config_mfa</module>
+        <module>security-config_account</module>
+        <module>security-system_core</module>
+        <module>security-system_session</module>
+        <module>security-system_mailbox</module>
+        <module>security-system_mfa</module>
+        <module>security-system_authentication</module>
+        <module>security-system_account</module>
         <module>security-application</module>
         <module>security-infrastructure</module>
     </modules>
@@ -147,87 +147,87 @@
                  outgrows the BOM again, the import goes back in with the date and the symptom. -->
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-domain-core</artifactId>
+                <artifactId>security-domain_core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-domain-session</artifactId>
+                <artifactId>security-domain_session</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-domain-authentication</artifactId>
+                <artifactId>security-domain_authentication</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-domain-mfa</artifactId>
+                <artifactId>security-domain_mfa</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-domain-mailbox</artifactId>
+                <artifactId>security-domain_mailbox</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-domain-account</artifactId>
+                <artifactId>security-domain_account</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-config-session</artifactId>
+                <artifactId>security-config_session</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-config-authentication</artifactId>
+                <artifactId>security-config_authentication</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-config-mailbox</artifactId>
+                <artifactId>security-config_mailbox</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-config-mfa</artifactId>
+                <artifactId>security-config_mfa</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-config-account</artifactId>
+                <artifactId>security-config_account</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-system-core</artifactId>
+                <artifactId>security-system_core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-system-session</artifactId>
+                <artifactId>security-system_session</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-system-authentication</artifactId>
+                <artifactId>security-system_authentication</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-system-mfa</artifactId>
+                <artifactId>security-system_mfa</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-system-mailbox</artifactId>
+                <artifactId>security-system_mailbox</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-system-account</artifactId>
+                <artifactId>security-system_account</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

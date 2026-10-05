@@ -39,7 +39,7 @@ class FingerprintingStaysInTheAdapterTest {
     private static List<Path> layersBelowInfrastructure() throws IOException {
         try (Stream<Path> modules = Files.list(Path.of(".."))) {
             List<Path> layers = modules
-                    .filter(module -> module.getFileName().toString().matches("security-(domain|system)-.+"))
+                    .filter(module -> module.getFileName().toString().matches("security-(domain|system)_.+"))
                     .map(module -> module.resolve("src/main/java"))
                     .filter(Files::isDirectory)
                     .sorted()
