@@ -9,7 +9,8 @@ wskazuje pliki.
 ## Zasady pracy w tym repo (obowiązują każde zadanie)
 
 - **Heksagon**: domena (`security-domain`) bez frameworka i bez adnotacji; use case'y
-  w **`security-system`**; **`security-application`** to pomost: z prymitywów buduje klasy
+  w **`security-system`**; w każdej warstwie pakiet per obszar (core, session, authentication,
+  mailbox, mfa, account), graf importów między obszarami pilnuje `AreaBoundariesTest` (od 2026-10-05); **`security-application`** to pomost: z prymitywów buduje klasy
   domenowe, odpala use case'y i grupuje je w serwisy, bez frameworka (sprostowane 2026-10-03 —
   wcześniejsze „nie ma `src/main`" było wnioskiem AI, nie regułą właściciela); stroiki/rekordy konfiguracyjne
   w `security-config`

@@ -10,5 +10,5 @@ import com.jrobertgardzinski.security.domain.mfa.Challenge;
  * issued challenge for challenge-response factors (the sent code), or {@code null} for possession
  * factors that verify the proof directly.
  */
-public record EnrolmentSetup(String secretMaterial, String display, Challenge challenge) {
+record EnrolmentSetup(String secretMaterial, String display, Challenge challenge) {
 }

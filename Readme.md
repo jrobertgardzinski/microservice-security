@@ -66,6 +66,11 @@ UI  →  Infrastructure  →  Application  →  System  →  Config  →  Domain
 - **System** holds the use cases; they read the domain and the configuration, and the ports they
   need live in the domain.
 
+Inside every layer the classes sit in one package per area — core, session, authentication,
+mailbox, mfa, account — so work on one area reads one directory per layer. The compiler does not
+guard packages, so a law does: `AreaBoundariesTest` holds the graph of which area may import which,
+and fails the build on any edge nobody wrote down, on an upward reach between layers, and on a cycle.
+
 ### The three entry points — one behaviour, many doors
 
 UI, Infrastructure and Application share the *same* BDD scenarios, but each implements them its

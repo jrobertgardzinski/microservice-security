@@ -1,7 +1,5 @@
 package com.jrobertgardzinski.security.domain.core;
 
-import com.jrobertgardzinski.security.domain.session.AccessToken;
-import com.jrobertgardzinski.security.domain.session.RefreshToken;
 
 import java.util.Objects;
 import java.util.UUID;
