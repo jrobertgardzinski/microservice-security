@@ -28,7 +28,11 @@
         <module>security-domain-mailbox</module>
         <module>security-domain-mfa</module>
         <module>security-domain-account</module>
-        <module>security-config</module>
+        <module>security-config-session</module>
+        <module>security-config-authentication</module>
+        <module>security-config-mailbox</module>
+        <module>security-config-mfa</module>
+        <module>security-config-account</module>
         <module>security-system-core</module>
         <module>security-system-session</module>
         <module>security-system-mailbox</module>
@@ -173,7 +177,27 @@
             </dependency>
             <dependency>
                 <groupId>com.jrobertgardzinski</groupId>
-                <artifactId>security-config</artifactId>
+                <artifactId>security-config-session</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-config-authentication</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-config-mailbox</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-config-mfa</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jrobertgardzinski</groupId>
+                <artifactId>security-config-account</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

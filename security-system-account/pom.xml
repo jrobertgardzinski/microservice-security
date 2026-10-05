@@ -35,7 +35,7 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-config</artifactId>
+            <artifactId>security-config-account</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>

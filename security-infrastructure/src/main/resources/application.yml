@@ -67,14 +67,14 @@ security:
   # email.company.domains: acme.com        # a closed shop: only these domains may register
   #
   # The brute-force limits, restart over rebuild, each declared from its value object
-  # (security-config/bruteforce/vo); a value outside a limit's range fails the boot, by name:
+  # (security-config-authentication, bruteforce/vo); a value outside a limit's range fails the boot, by name:
   # brute.force.failure.window.minutes: 15  # 3-120
   # brute.force.max.failures: 3             # 1-20, per account
   # brute.force.max.failures.per.source: 30 # 5-500, per address, never below max.failures
   # brute.force.min.block.minutes: 3        # 1-60
   # brute.force.max.block.minutes: 10       # 1-1440, never below min.block.minutes
   #
-  # The MFA rules and the token validities, the same way (security-config/mfa/vo, security-domain-session):
+  # The MFA rules and the token validities, the same way (security-config-mfa, mfa/vo; security-domain-session):
   # mfa.code.ttl.minutes: 5                 # > 0
   # mfa.code.max.attempts: 5                # > 0
   # mfa.code.length: 6                      # 4-10

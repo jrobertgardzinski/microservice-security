@@ -23,7 +23,7 @@
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>
-            <artifactId>security-config</artifactId>
+            <artifactId>security-config-mfa</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jrobertgardzinski</groupId>

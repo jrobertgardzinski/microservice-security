@@ -66,8 +66,8 @@ UI  →  Infrastructure  →  Application  →  System  →  Config  →  Domain
 - **System** holds the use cases; they read the domain and the configuration, and the ports they
   need live in the domain.
 
-Domain and System are each cut by area, one Maven module per area, so work on one area sees only
-what it depends on:
+Domain, Config and System are each cut by area, one Maven module per area, so work on one area
+sees only what it depends on (config has no core: session, authentication, mailbox, mfa, account):
 
 ```
 domain:  core ← session      core ← authentication ← mfa      core ← mailbox ← account

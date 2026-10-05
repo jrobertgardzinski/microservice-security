@@ -3,7 +3,7 @@
 Social sign-in is **pure configuration**: one entry under
 `security.oauth.providers.<name>.*` per provider, and `GET /oauth/providers`
 tells the UI which buttons to draw. The configuration type itself is
-`OauthProviderSettings` in the **config layer** (`security-config`) — a
+`OauthProviderSettings` in the **config layer** (`security-config-authentication`) — a
 framework-free record carrying every knob, its defaults and validation;
 the infrastructure layer only binds the properties into it. The dance (Authorization Code + PKCE S256,
 single-use state, allow-listed return URL, access token in the fragment) never

@@ -54,7 +54,7 @@ Two consequences:
   change the number — visibly, in the same file.
 
 Property-based tests one level down (jqwik, `@ForAll("accepted")` / `@ForAll("rejected")` in
-`password` and `security-config`) express the same accepted/rejected split for a single value
+`password` and `security-config-*`) express the same accepted/rejected split for a single value
 object. Here the split is written as `accepted` / `invalid` in an Examples table; the input stays
 concrete.
 

@@ -13,7 +13,7 @@ wskazuje pliki.
   account, po module Mavena na obszar i warstwę (od 2026-10-04); **`security-application`** to pomost: z prymitywów buduje klasy
   domenowe, odpala use case'y i grupuje je w serwisy, bez frameworka (sprostowane 2026-10-03 —
   wcześniejsze „nie ma `src/main`" było wnioskiem AI, nie regułą właściciela); stroiki/rekordy konfiguracyjne
-  w `security-config`
+  w `security-config-<obszar>` (session, authentication, mailbox, mfa, account)
   (framework-free, defaulty+walidacja w konstruktorze — wzór: `OauthProviderSettings`,
   `ChallengeCodeConfig`); `security-infrastructure` tylko przypina adaptery do portów i mapuje
   serwisy aplikacji na kontrolery/beany.
