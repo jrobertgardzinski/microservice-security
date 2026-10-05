@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.session;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
 
 public sealed interface RefreshSessionResult {
     /** A new session was issued; the old refresh token has been rotated out. */

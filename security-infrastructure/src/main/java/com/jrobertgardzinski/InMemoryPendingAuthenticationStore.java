@@ -1,7 +1,7 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.domain.vo.PendingAuthentication;
-import com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore;
+import com.jrobertgardzinski.security.domain.mfa.PendingAuthentication;
+import com.jrobertgardzinski.security.domain.mfa.PendingAuthenticationStore;
 import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;
 

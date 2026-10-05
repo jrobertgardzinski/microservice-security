@@ -1,26 +1,26 @@
 package com.jrobertgardzinski.security.application.feature.authentication;
 
-import com.jrobertgardzinski.security.domain.repository.FakeAuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.repository.FakeEmailVerificationRepository;
-import com.jrobertgardzinski.security.domain.repository.FakeRejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.repository.FakeSessionRepository;
-import com.jrobertgardzinski.security.domain.repository.FakeUserRepository;
+import com.jrobertgardzinski.security.domain.authentication.FakeAuthenticationBlockRepository;
+import com.jrobertgardzinski.security.domain.mailbox.FakeEmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.authentication.FakeRejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.session.FakeSessionRepository;
+import com.jrobertgardzinski.security.domain.core.FakeUserRepository;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.application.feature.support.FakeHashAlgorithm;
 import com.jrobertgardzinski.clock.AdjustableClock;
-import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
-import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
-import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
-import com.jrobertgardzinski.security.domain.vo.Source;
-import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
-import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
-import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
+import com.jrobertgardzinski.security.config.authentication.BruteForceConfig;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlock;
+import com.jrobertgardzinski.security.domain.core.User;
+import com.jrobertgardzinski.security.domain.session.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationRequest;
+import com.jrobertgardzinski.security.domain.core.IpAddress;
+import com.jrobertgardzinski.security.domain.authentication.Source;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.authentication.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationDetails;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
 import com.jrobertgardzinski.security.system.authentication.Authentication;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationFactory;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
@@ -187,14 +187,14 @@ public class AuthenticationSteps {
             authentication = AuthenticationFactory.assemble(
                     users, verifications, rejections, blocks, sessions, hashAlgorithm,
                     config, SESSION_TOKENS_CONFIG, clock, blockDuration,
-                    com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM,
-                    new com.jrobertgardzinski.security.domain.repository.FakeEnrolledFactorRepository(),
+                    com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM,
+                    new com.jrobertgardzinski.security.domain.mfa.FakeEnrolledFactorRepository(),
                     new com.jrobertgardzinski.security.system.mfa.MfaChain(
                             new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of()),
                             com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
-                            new com.jrobertgardzinski.security.domain.repository.FakeRecoveryCodeRepository(),
+                            new com.jrobertgardzinski.security.domain.mfa.FakeRecoveryCodeRepository(),
                             raw -> "hash:" + raw, clock, 10),
-                    new com.jrobertgardzinski.security.domain.port.FakePendingAuthenticationStore()
+                    new com.jrobertgardzinski.security.domain.mfa.FakePendingAuthenticationStore()
                     ).authentication();
         }
         return authentication;

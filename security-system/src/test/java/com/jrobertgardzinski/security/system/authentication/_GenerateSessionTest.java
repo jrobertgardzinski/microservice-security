@@ -1,11 +1,11 @@
 package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.session.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
@@ -38,13 +38,13 @@ class _GenerateSessionTest {
     @BeforeTry
     void init() {
         sessionRepository = Mockito.mock(SessionRepository.class);
-        generateSession = new _GenerateSession(sessionRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+        generateSession = new _GenerateSession(sessionRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
     }
 
     @Example
     @Label("Creates session tokens for the email and returns the persisted result")
     void creates_session_tokens_for_email() {
-        SessionTokens persisted = SessionTokens.createFor(EMAIL, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+        SessionTokens persisted = SessionTokens.createFor(EMAIL, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
         Mockito.when(sessionRepository.create(Mockito.any(), Mockito.any())).thenReturn(persisted);
 
         SessionTokens result = generateSession.create(EMAIL);

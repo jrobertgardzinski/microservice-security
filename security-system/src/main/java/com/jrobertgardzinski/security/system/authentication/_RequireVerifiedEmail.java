@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
 
 /**
  * Gate applied after the credentials check out: only a verified e-mail address may sign in. Keeps

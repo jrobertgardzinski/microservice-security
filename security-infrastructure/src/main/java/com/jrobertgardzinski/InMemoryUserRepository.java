@@ -3,10 +3,10 @@ package com.jrobertgardzinski;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.identity.UserId;
-import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.Role;
+import com.jrobertgardzinski.security.domain.core.User;
+import com.jrobertgardzinski.security.domain.core.EmailAlreadyTakenException;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.core.Role;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 

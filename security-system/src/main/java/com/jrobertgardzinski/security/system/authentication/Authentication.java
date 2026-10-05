@@ -1,16 +1,16 @@
 package com.jrobertgardzinski.security.system.authentication;
 
-import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
-import com.jrobertgardzinski.security.domain.event.AuthenticationEvent;
-import com.jrobertgardzinski.security.domain.event.BruteForceProtectionEvent;
-import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
-import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
-import com.jrobertgardzinski.security.domain.vo.Credentials;
-import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
-import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
-import com.jrobertgardzinski.security.domain.vo.Source;
-import com.jrobertgardzinski.security.domain.vo.PendingAuthentication;
-import com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationEvent;
+import com.jrobertgardzinski.security.domain.authentication.BruteForceProtectionEvent;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationRequest;
+import com.jrobertgardzinski.security.domain.authentication.Credentials;
+import com.jrobertgardzinski.security.domain.authentication.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
+import com.jrobertgardzinski.security.domain.authentication.Source;
+import com.jrobertgardzinski.security.domain.mfa.PendingAuthentication;
+import com.jrobertgardzinski.security.domain.mfa.PendingAuthenticationStore;
 
 import java.util.List;
 

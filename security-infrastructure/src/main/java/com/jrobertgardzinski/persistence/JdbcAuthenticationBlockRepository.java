@@ -1,9 +1,9 @@
 package com.jrobertgardzinski.persistence;
 
-import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
-import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
-import com.jrobertgardzinski.security.domain.vo.Source;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlock;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlockRepository;
+import com.jrobertgardzinski.security.domain.core.IpAddress;
+import com.jrobertgardzinski.security.domain.authentication.Source;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 

@@ -1,8 +1,8 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.port.PasswordResetNotifier;
-import com.jrobertgardzinski.security.domain.vo.token.PasswordResetToken;
+import com.jrobertgardzinski.security.domain.mailbox.PasswordResetNotifier;
+import com.jrobertgardzinski.security.domain.mailbox.PasswordResetToken;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 

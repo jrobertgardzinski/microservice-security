@@ -1,7 +1,7 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.domain.vo.Role;
-import com.jrobertgardzinski.security.system.roles.RequireRole;
+import com.jrobertgardzinski.security.domain.core.Role;
+import com.jrobertgardzinski.security.system.core.RequireRole;
 import com.jrobertgardzinski.util.constraint.Outcome;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;

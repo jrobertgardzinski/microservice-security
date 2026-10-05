@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.application.passwordreset.PasswordResetService;
+import com.jrobertgardzinski.security.application.mailbox.PasswordResetService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * HTTP entry points for the forgotten-password flow, through
- * {@link com.jrobertgardzinski.security.application.passwordreset.PasswordResetService}. Public (pre-login): {@code POST /reset-password/request} mails a
+ * {@link com.jrobertgardzinski.security.application.mailbox.PasswordResetService}. Public (pre-login): {@code POST /reset-password/request} mails a
  * link, {@code POST /reset-password} sets a new password with the token from that link. The
  * request side is throttled per source (429 + Retry-After) — it mints tokens and sends mails, so
  * unthrottled it is a mail-bomb aimed at any address the caller types in.

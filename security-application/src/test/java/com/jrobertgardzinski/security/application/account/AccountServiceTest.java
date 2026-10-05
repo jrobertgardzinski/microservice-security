@@ -2,13 +2,13 @@ package com.jrobertgardzinski.security.application.account;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.application.TransactionBoundary;
-import com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.core.RegistrationNoticeNotifier;
+import com.jrobertgardzinski.security.domain.core.IpAddress;
 import com.jrobertgardzinski.security.system.account.ChangePassword;
 import com.jrobertgardzinski.security.system.account.ConfirmEmailChange;
 import com.jrobertgardzinski.security.system.account.RequestEmailChange;
 import com.jrobertgardzinski.security.system.account.RequestEmailChangeResult;
-import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
+import com.jrobertgardzinski.security.system.core.SourceThrottle;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

@@ -1,12 +1,12 @@
 package com.jrobertgardzinski.persistence;
 
-import com.jrobertgardzinski.security.domain.entity.RejectedAuthentication;
-import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.vo.FailuresCount;
-import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
-import com.jrobertgardzinski.security.domain.vo.Source;
-import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
-import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationId;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthentication;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.authentication.FailuresCount;
+import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
+import com.jrobertgardzinski.security.domain.authentication.Source;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationDetails;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationId;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 
@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
  *
  * <p>This is the ONLY place that knows the account is stored as a fingerprint rather than as an
  * address ({@link AccountFingerprint} explains why). Everything above speaks in
- * {@link com.jrobertgardzinski.security.domain.vo.AttemptedAccount}; the secret that turns one into
+ * {@link com.jrobertgardzinski.security.domain.authentication.AttemptedAccount}; the secret that turns one into
  * the other is infrastructure's business and never climbs out of this layer.
  *
  * <p>It is also the only place that knows how wide the columns are, which is why the User-Agent is

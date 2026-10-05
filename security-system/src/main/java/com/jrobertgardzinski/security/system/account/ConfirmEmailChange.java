@@ -1,16 +1,16 @@
 package com.jrobertgardzinski.security.system.account;
 
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException;
-import com.jrobertgardzinski.security.domain.repository.EmailChangeRepository;
-import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
-import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
-import com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository;
-import com.jrobertgardzinski.security.domain.repository.PasswordResetRepository;
-import com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository;
-import com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.core.EmailAlreadyTakenException;
+import com.jrobertgardzinski.security.domain.account.EmailChangeRepository;
+import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
+import com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository;
+import com.jrobertgardzinski.security.domain.mailbox.PasswordResetRepository;
+import com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository;
+import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.mailbox.VerificationToken;
 
 /**
  * Completes an email change: a matching, unused token applies the pending change (moving the user

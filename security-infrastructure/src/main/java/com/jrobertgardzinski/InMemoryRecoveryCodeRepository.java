@@ -1,7 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository;
+import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 

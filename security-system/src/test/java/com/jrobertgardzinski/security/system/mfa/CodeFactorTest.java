@@ -1,13 +1,13 @@
 package com.jrobertgardzinski.security.system.mfa;
 
-import com.jrobertgardzinski.security.domain.port.CodeHasher;
-import com.jrobertgardzinski.security.domain.vo.Challenge;
+import com.jrobertgardzinski.security.domain.mfa.CodeHasher;
+import com.jrobertgardzinski.security.domain.mfa.Challenge;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig;
-import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
-import com.jrobertgardzinski.security.domain.port.CodeChannel;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
+import com.jrobertgardzinski.security.domain.mfa.CodeChannel;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import org.junit.jupiter.api.DisplayName;

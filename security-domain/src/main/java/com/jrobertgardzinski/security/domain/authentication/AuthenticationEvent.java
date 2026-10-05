@@ -1,0 +1,11 @@
+package com.jrobertgardzinski.security.domain.authentication;
+
+import com.jrobertgardzinski.email.domain.Email;
+
+public sealed interface AuthenticationEvent {
+    record Valid(Email email) implements AuthenticationEvent { }
+
+    // todo bring "permits" back whenever you are ready to introduce security notifications
+    record Invalid(Email email) implements AuthenticationEvent /*permits UserNotFoundEvent, WrongPasswordEvent*/ {}
+
+}

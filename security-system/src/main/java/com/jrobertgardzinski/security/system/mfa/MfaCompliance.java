@@ -2,9 +2,9 @@ package com.jrobertgardzinski.security.system.mfa;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.config.mfa.MfaPolicy;
-import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
-import com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository;
-import com.jrobertgardzinski.security.domain.vo.Role;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
+import com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository;
+import com.jrobertgardzinski.security.domain.core.Role;
 
 import java.util.Locale;
 import java.util.Set;

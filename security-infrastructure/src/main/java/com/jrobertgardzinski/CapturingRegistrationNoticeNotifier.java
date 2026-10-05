@@ -1,7 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier;
+import com.jrobertgardzinski.security.domain.core.RegistrationNoticeNotifier;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 

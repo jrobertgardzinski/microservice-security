@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.application.identity.IdentityService;
+import com.jrobertgardzinski.security.application.core.IdentityService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;

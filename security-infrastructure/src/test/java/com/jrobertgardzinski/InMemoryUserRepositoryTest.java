@@ -2,8 +2,8 @@ package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashedPassword;
-import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException;
+import com.jrobertgardzinski.security.domain.core.User;
+import com.jrobertgardzinski.security.domain.core.EmailAlreadyTakenException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

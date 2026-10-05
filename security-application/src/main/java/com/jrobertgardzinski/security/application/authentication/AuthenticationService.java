@@ -3,14 +3,14 @@ package com.jrobertgardzinski.security.application.authentication;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.application.TransactionBoundary;
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
-import com.jrobertgardzinski.security.domain.vo.Source;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationRequest;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.IpAddress;
+import com.jrobertgardzinski.security.domain.authentication.Source;
 import com.jrobertgardzinski.security.system.authentication.Authentication;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
-import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
+import com.jrobertgardzinski.security.system.core.SourceThrottle;
 
 import java.time.LocalDateTime;
 

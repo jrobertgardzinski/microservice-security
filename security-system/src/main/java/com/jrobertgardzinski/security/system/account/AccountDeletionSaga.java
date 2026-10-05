@@ -2,13 +2,13 @@ package com.jrobertgardzinski.security.system.account;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.config.account.AccountDeletionConfig;
-import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.port.AccountDeletionLog;
-import com.jrobertgardzinski.security.domain.port.ClosureAnnouncer;
-import com.jrobertgardzinski.security.domain.port.ContentPurge;
-import com.jrobertgardzinski.security.domain.repository.AccountDeletionSagaStore;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.AccountClosure;
+import com.jrobertgardzinski.security.domain.core.User;
+import com.jrobertgardzinski.security.domain.account.AccountDeletionLog;
+import com.jrobertgardzinski.security.domain.account.ClosureAnnouncer;
+import com.jrobertgardzinski.security.domain.account.ContentPurge;
+import com.jrobertgardzinski.security.domain.account.AccountDeletionSagaStore;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.account.AccountClosure;
 
 import java.time.Clock;
 import java.time.Instant;

@@ -1,12 +1,12 @@
 package com.jrobertgardzinski.security.system.authentication;
 
-import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
-import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
-import com.jrobertgardzinski.security.domain.event.BruteForceProtectionEvent;
-import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
-import com.jrobertgardzinski.security.domain.vo.Source;
+import com.jrobertgardzinski.security.config.authentication.BruteForceConfig;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlock;
+import com.jrobertgardzinski.security.domain.authentication.BruteForceProtectionEvent;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlockRepository;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
+import com.jrobertgardzinski.security.domain.authentication.Source;
 
 import java.time.Clock;
 import java.time.LocalDateTime;

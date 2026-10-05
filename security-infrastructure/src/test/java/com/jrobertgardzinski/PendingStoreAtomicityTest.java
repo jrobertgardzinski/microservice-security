@@ -1,10 +1,10 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
-import com.jrobertgardzinski.security.domain.vo.PendingAuthentication;
-import com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.mfa.PendingAuthentication;
+import com.jrobertgardzinski.security.domain.mfa.PendingAuthenticationStore;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import org.junit.jupiter.api.DisplayName;

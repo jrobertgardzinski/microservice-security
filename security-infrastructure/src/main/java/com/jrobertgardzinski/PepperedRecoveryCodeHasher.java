@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.domain.port.RecoveryCodeHasher;
+import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeHasher;
 import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.context.env.Environment;

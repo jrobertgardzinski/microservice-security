@@ -119,7 +119,7 @@ class StepUpCoverageTest {
             files.filter(path -> path.getFileName().toString().endsWith("Controller.java"))
                     .forEach(path -> sources.put(path.getFileName().toString().replace(".java", ""), read(path)));
         }
-        List<String> orphans = java.util.Arrays.stream(com.jrobertgardzinski.security.domain.vo.StepUpAction.values())
+        List<String> orphans = java.util.Arrays.stream(com.jrobertgardzinski.security.domain.mfa.StepUpAction.values())
                 .filter(action -> sources.values().stream().noneMatch(source -> source.contains("StepUpAction." + action.name())))
                 .map(Enum::name)
                 .toList();

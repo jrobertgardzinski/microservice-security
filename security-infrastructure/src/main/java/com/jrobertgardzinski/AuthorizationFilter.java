@@ -1,9 +1,9 @@
 package com.jrobertgardzinski;
 
 
-import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
-import com.jrobertgardzinski.security.system.authorization.Authorize;
-import com.jrobertgardzinski.security.system.authorization.AuthorizationResult;
+import com.jrobertgardzinski.security.domain.session.AccessToken;
+import com.jrobertgardzinski.security.system.session.Authorize;
+import com.jrobertgardzinski.security.system.session.AuthorizationResult;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -27,11 +27,11 @@ import io.micronaut.http.annotation.ServerFilter;
 final class AuthorizationFilter {
 
     private final Authorize authorize;
-    private final com.jrobertgardzinski.security.domain.repository.UserRepository users;
+    private final com.jrobertgardzinski.security.domain.core.UserRepository users;
     private final com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance;
 
     AuthorizationFilter(Authorize authorize,
-                        com.jrobertgardzinski.security.domain.repository.UserRepository users,
+                        com.jrobertgardzinski.security.domain.core.UserRepository users,
                         com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance) {
         this.authorize = authorize;
         this.users = users;
@@ -67,9 +67,9 @@ final class AuthorizationFilter {
     }
 
     private boolean isCompliant(com.jrobertgardzinski.email.domain.Email email) {
-        java.util.Set<com.jrobertgardzinski.security.domain.vo.Role> roles = users.findBy(email)
-                .map(com.jrobertgardzinski.security.domain.entity.User::roles)
-                .orElse(java.util.Set.of(com.jrobertgardzinski.security.domain.vo.Role.USER));
+        java.util.Set<com.jrobertgardzinski.security.domain.core.Role> roles = users.findBy(email)
+                .map(com.jrobertgardzinski.security.domain.core.User::roles)
+                .orElse(java.util.Set.of(com.jrobertgardzinski.security.domain.core.Role.USER));
         return compliance.isCompliant(email, roles);
     }
 

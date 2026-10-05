@@ -2,8 +2,8 @@ package com.jrobertgardzinski.persistence;
 
 import com.jrobertgardzinski.TokenHashing;
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.PasswordResetRepository;
-import com.jrobertgardzinski.security.domain.vo.token.PasswordResetToken;
+import com.jrobertgardzinski.security.domain.mailbox.PasswordResetRepository;
+import com.jrobertgardzinski.security.domain.mailbox.PasswordResetToken;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 

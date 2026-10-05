@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.domain.port.StepUpStore;
+import com.jrobertgardzinski.security.domain.mfa.StepUpStore;
 import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;
 

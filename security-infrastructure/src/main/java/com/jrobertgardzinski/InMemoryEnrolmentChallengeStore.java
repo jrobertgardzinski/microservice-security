@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.scheduling.annotation.Scheduled;
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
-import com.jrobertgardzinski.security.domain.port.EnrolmentChallengeStore;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.mfa.EnrolmentChallengeStore;
 import jakarta.inject.Singleton;
 
 import java.util.Map;

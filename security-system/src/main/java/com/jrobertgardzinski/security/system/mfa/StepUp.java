@@ -1,20 +1,20 @@
 package com.jrobertgardzinski.security.system.mfa;
 
-import com.jrobertgardzinski.security.domain.port.SessionElevation;
-import com.jrobertgardzinski.security.domain.port.StepUpStore;
-import com.jrobertgardzinski.security.domain.vo.PendingAuthentication;
+import com.jrobertgardzinski.security.domain.mfa.SessionElevation;
+import com.jrobertgardzinski.security.domain.mfa.StepUpStore;
+import com.jrobertgardzinski.security.domain.mfa.PendingAuthentication;
 
-import com.jrobertgardzinski.security.domain.vo.StepUpRequirement;
-import com.jrobertgardzinski.security.domain.vo.StepUpAction;
+import com.jrobertgardzinski.security.domain.mfa.StepUpRequirement;
+import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.config.mfa.StepUpPolicy;
-import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
-import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
-import com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
+import com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
 
 import java.time.Clock;
 import java.util.List;

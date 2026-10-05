@@ -1,0 +1,40 @@
+package com.jrobertgardzinski.security.domain.session;
+
+import com.jrobertgardzinski.config.ConfigValue;
+
+import com.jrobertgardzinski.security.domain.core.AbstractTokenValidityInHours;
+
+/** How long an access token stays valid, in hours; the deployment's property over the code default. */
+public final class AccessTokenValidityInHours extends AbstractTokenValidityInHours implements ConfigValue<Integer> {
+
+    /** The name this validity goes by on every level of a deployment's configuration ladder. */
+    public static final String KEY = "security.session.access.token.validity.hours";
+    public static final AccessTokenValidityInHours DEFAULT = new AccessTokenValidityInHours(1);
+
+    /**
+     * A day. An access token is the one this service cannot take back before it expires — offline
+     * verifiers hold it against the JWK set and never ask again — so its whole design rests on
+     * being short-lived and refreshed. Past a day it is not a session token any more, it is a
+     * password with an expiry date.
+     */
+    public static final int MAX = 24;
+
+    public AccessTokenValidityInHours(int value) {
+        super(value, MAX);
+    }
+
+    @Override
+    public String key() {
+        return KEY;
+    }
+
+    @Override
+    public Integer defaultValue() {
+        return DEFAULT.value();
+    }
+
+    @Override
+    public AccessTokenValidityInHours holding(Integer value) {
+        return new AccessTokenValidityInHours(value);
+    }
+}

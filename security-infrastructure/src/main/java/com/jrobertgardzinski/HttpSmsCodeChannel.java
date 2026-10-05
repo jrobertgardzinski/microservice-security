@@ -2,8 +2,8 @@ package com.jrobertgardzinski;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jrobertgardzinski.security.domain.port.CodeChannel;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
+import com.jrobertgardzinski.security.domain.mfa.CodeChannel;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.context.annotation.Value;
 import jakarta.inject.Singleton;

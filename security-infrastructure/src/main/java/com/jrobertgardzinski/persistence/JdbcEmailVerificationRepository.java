@@ -2,8 +2,8 @@ package com.jrobertgardzinski.persistence;
 
 import com.jrobertgardzinski.TokenHashing;
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
-import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
+import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.mailbox.VerificationToken;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 

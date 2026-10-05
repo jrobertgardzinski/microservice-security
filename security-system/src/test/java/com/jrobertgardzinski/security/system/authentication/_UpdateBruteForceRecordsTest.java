@@ -1,11 +1,11 @@
 package com.jrobertgardzinski.security.system.authentication;
 
-import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
-import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
-import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
-import com.jrobertgardzinski.security.domain.vo.Source;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationDetails;
+import com.jrobertgardzinski.security.domain.core.IpAddress;
+import com.jrobertgardzinski.security.domain.authentication.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
+import com.jrobertgardzinski.security.domain.authentication.Source;
 import com.jrobertgardzinski.email.domain.Email;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;

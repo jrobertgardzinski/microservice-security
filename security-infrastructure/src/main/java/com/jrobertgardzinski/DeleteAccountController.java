@@ -1,7 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.application.account.AccountDeletionService;
-import com.jrobertgardzinski.security.domain.vo.StepUpAction;
+import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;

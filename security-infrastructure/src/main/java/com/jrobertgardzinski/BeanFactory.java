@@ -1,28 +1,28 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.domain.vo.StepUpAction;
+import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
 import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.security.application.authentication.AuthenticationService;
 import com.jrobertgardzinski.security.application.account.AccountDeletionService;
 import com.jrobertgardzinski.security.application.account.AccountService;
-import com.jrobertgardzinski.security.application.admin.AdminService;
-import com.jrobertgardzinski.security.application.federation.FederationService;
-import com.jrobertgardzinski.security.application.identity.IdentityService;
+import com.jrobertgardzinski.security.application.core.AdminService;
+import com.jrobertgardzinski.security.application.authentication.FederationService;
+import com.jrobertgardzinski.security.application.core.IdentityService;
 import com.jrobertgardzinski.security.application.mfa.MfaService;
 import com.jrobertgardzinski.security.application.mfa.StepUpService;
-import com.jrobertgardzinski.security.application.passwordreset.PasswordResetService;
-import com.jrobertgardzinski.security.application.registration.RegistrationService;
+import com.jrobertgardzinski.security.application.mailbox.PasswordResetService;
+import com.jrobertgardzinski.security.application.core.RegistrationService;
 import com.jrobertgardzinski.security.application.session.SessionService;
-import com.jrobertgardzinski.security.application.verification.VerificationService;
-import com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier;
+import com.jrobertgardzinski.security.application.mailbox.VerificationService;
+import com.jrobertgardzinski.security.domain.core.RegistrationNoticeNotifier;
 import com.jrobertgardzinski.config.ladder.ConfigLadder;
 import com.jrobertgardzinski.config.source.live.LiveConfigPort;
 import com.jrobertgardzinski.config.source.live.SnapshotLiveConfigPort;
 import com.jrobertgardzinski.config.source.restart.RestartConfigPort;
 import com.jrobertgardzinski.persistence.SecuritySettingsTable;
-import com.jrobertgardzinski.security.system.settings.SetSetting;
-import com.jrobertgardzinski.security.system.settings.SettingCatalog;
-import com.jrobertgardzinski.security.system.settings.SettingsRepository;
+import com.jrobertgardzinski.security.system.core.SetSetting;
+import com.jrobertgardzinski.security.system.core.SettingCatalog;
+import com.jrobertgardzinski.security.system.core.SettingsRepository;
 import com.jrobertgardzinski.email.config.BlockedDomains;
 import com.jrobertgardzinski.email.config.CanRegisterConfig;
 import com.jrobertgardzinski.email.config.CompanyDomains;
@@ -32,12 +32,12 @@ import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
 import com.jrobertgardzinski.password.policy.PasswordPolicyInForce;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.config.Configuration;
-import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
-import com.jrobertgardzinski.security.config.bruteforce.vo.FailureWindowMinutes;
-import com.jrobertgardzinski.security.config.bruteforce.vo.MaxBlockMinutes;
-import com.jrobertgardzinski.security.config.bruteforce.vo.MaxFailures;
-import com.jrobertgardzinski.security.config.bruteforce.vo.MaxFailuresPerSource;
-import com.jrobertgardzinski.security.config.bruteforce.vo.MinBlockMinutes;
+import com.jrobertgardzinski.security.config.authentication.BruteForceConfig;
+import com.jrobertgardzinski.security.config.authentication.vo.FailureWindowMinutes;
+import com.jrobertgardzinski.security.config.authentication.vo.MaxBlockMinutes;
+import com.jrobertgardzinski.security.config.authentication.vo.MaxFailures;
+import com.jrobertgardzinski.security.config.authentication.vo.MaxFailuresPerSource;
+import com.jrobertgardzinski.security.config.authentication.vo.MinBlockMinutes;
 import com.jrobertgardzinski.security.config.mfa.vo.AdminMinFactors;
 import com.jrobertgardzinski.security.config.mfa.vo.CodeLength;
 import com.jrobertgardzinski.security.config.mfa.vo.CodeMaxAttempts;
@@ -46,44 +46,44 @@ import com.jrobertgardzinski.security.config.mfa.vo.ModeratorMinFactors;
 import com.jrobertgardzinski.security.config.mfa.vo.RecoveryCodeCount;
 import com.jrobertgardzinski.security.config.mfa.vo.RecoveryCodeLength;
 import com.jrobertgardzinski.security.config.mfa.vo.UserMinFactors;
-import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.system.roles.BootstrapAdmins;
-import com.jrobertgardzinski.security.system.roles.RequireRole;
-import com.jrobertgardzinski.security.system.roles.RolesOf;
-import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
-import com.jrobertgardzinski.security.domain.port.EmailVerificationNotifier;
-import com.jrobertgardzinski.security.domain.port.PasswordResetNotifier;
-import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.repository.EmailChangeRepository;
-import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
-import com.jrobertgardzinski.security.domain.repository.PasswordResetRepository;
-import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.core.User;
+import com.jrobertgardzinski.security.system.core.BootstrapAdmins;
+import com.jrobertgardzinski.security.system.core.RequireRole;
+import com.jrobertgardzinski.security.system.core.RolesOf;
+import com.jrobertgardzinski.security.domain.session.AccessTokenMint;
+import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationNotifier;
+import com.jrobertgardzinski.security.domain.mailbox.PasswordResetNotifier;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlockRepository;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.account.EmailChangeRepository;
+import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.mailbox.PasswordResetRepository;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.session.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
 import com.jrobertgardzinski.security.system.authentication.Authentication;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationFactory;
 import com.jrobertgardzinski.security.system.authentication.BlockDurationPolicy;
 import com.jrobertgardzinski.security.system.authentication.RandomBlockDurationPolicy;
-import com.jrobertgardzinski.security.system.authorization.Authorize;
-import com.jrobertgardzinski.security.system.registration.Register;
-import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
+import com.jrobertgardzinski.security.system.session.Authorize;
+import com.jrobertgardzinski.security.system.core.Register;
+import com.jrobertgardzinski.security.system.core.SourceThrottle;
 import com.jrobertgardzinski.security.system.session.ListActiveSessions;
 import com.jrobertgardzinski.security.system.session.Logout;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RevokeAllSessions;
 import com.jrobertgardzinski.security.system.account.ChangePassword;
 import com.jrobertgardzinski.security.system.account.ConfirmEmailChange;
-import com.jrobertgardzinski.security.domain.port.ContentPurge;
+import com.jrobertgardzinski.security.domain.account.ContentPurge;
 import com.jrobertgardzinski.security.system.account.DeleteAccount;
 import com.jrobertgardzinski.security.system.account.StartAccountDeletion;
 import com.jrobertgardzinski.security.system.account.RequestEmailChange;
-import com.jrobertgardzinski.security.system.passwordreset.RequestPasswordReset;
-import com.jrobertgardzinski.security.system.passwordreset.ResetPassword;
-import com.jrobertgardzinski.security.system.verification.RequestEmailVerification;
-import com.jrobertgardzinski.security.system.verification.VerifyEmail;
+import com.jrobertgardzinski.security.system.mailbox.RequestPasswordReset;
+import com.jrobertgardzinski.security.system.mailbox.ResetPassword;
+import com.jrobertgardzinski.security.system.mailbox.RequestEmailVerification;
+import com.jrobertgardzinski.security.system.mailbox.VerifyEmail;
 import io.micronaut.context.annotation.Context;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.context.annotation.Factory;
@@ -297,9 +297,9 @@ public class BeanFactory {
     // per-source window is what caps that loop; it is deliberately generous, because an address is
     // not a person, and it is the same window for /authenticate and /authenticate/factor.
     @Singleton
-    com.jrobertgardzinski.security.system.identity.DisplayNames displayNames(
-            com.jrobertgardzinski.security.domain.repository.UserRepository users) {
-        return new com.jrobertgardzinski.security.system.identity.DisplayNames(users);
+    com.jrobertgardzinski.security.system.core.DisplayNames displayNames(
+            com.jrobertgardzinski.security.domain.core.UserRepository users) {
+        return new com.jrobertgardzinski.security.system.core.DisplayNames(users);
     }
 
     // the display-name lookup is anonymous and cheap, but it is a way to enumerate which ids exist;
@@ -336,10 +336,10 @@ public class BeanFactory {
     }
 
     @Singleton
-    com.jrobertgardzinski.security.system.roles.SetUserRoles setUserRoles(
+    com.jrobertgardzinski.security.system.core.SetUserRoles setUserRoles(
             UserRepository userRepository,
-            com.jrobertgardzinski.security.system.roles.BootstrapAdmins bootstrapAdmins) {
-        return new com.jrobertgardzinski.security.system.roles.SetUserRoles(userRepository, bootstrapAdmins);
+            com.jrobertgardzinski.security.system.core.BootstrapAdmins bootstrapAdmins) {
+        return new com.jrobertgardzinski.security.system.core.SetUserRoles(userRepository, bootstrapAdmins);
     }
 
     /**
@@ -369,10 +369,10 @@ public class BeanFactory {
      * form, reachable by whoever holds an admin session at the time.
      */
     @Context
-    com.jrobertgardzinski.security.config.retention.vo.UnverifiedAccountDays unverifiedAccountDays(
+    com.jrobertgardzinski.security.config.mailbox.vo.UnverifiedAccountDays unverifiedAccountDays(
             Configuration configuration) {
         return configuration.boundOver(
-                com.jrobertgardzinski.security.config.retention.vo.UnverifiedAccountDays.DEFAULT);
+                com.jrobertgardzinski.security.config.mailbox.vo.UnverifiedAccountDays.DEFAULT);
     }
 
     /** Token validities from the deployment's properties over the code defaults, declared from the value objects. */
@@ -399,7 +399,7 @@ public class BeanFactory {
      */
     @Context
     @io.micronaut.context.annotation.EachBean(OauthProviderConfig.class)
-    com.jrobertgardzinski.security.config.oauth.OauthProviderSettings oauthProvider(
+    com.jrobertgardzinski.security.config.authentication.OauthProviderSettings oauthProvider(
             OauthProviderConfig bound) {
         return bound.settings();
     }
@@ -416,8 +416,8 @@ public class BeanFactory {
      *  (e-mail, SMS): the channel decides the factor type, so a new channel bean is a new factor. */
     @Singleton
     java.util.List<com.jrobertgardzinski.security.system.mfa.CodeFactor> codeFactors(
-            java.util.List<com.jrobertgardzinski.security.domain.port.CodeChannel> channels,
-            com.jrobertgardzinski.security.domain.port.CodeHasher codeHasher,
+            java.util.List<com.jrobertgardzinski.security.domain.mfa.CodeChannel> channels,
+            com.jrobertgardzinski.security.domain.mfa.CodeHasher codeHasher,
             com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig challengeCodeConfig,
             Clock clock) {
         return channels.stream()
@@ -430,7 +430,7 @@ public class BeanFactory {
     @Singleton
     com.jrobertgardzinski.security.system.mfa.TotpFactor totpFactor(
             Clock clock, @io.micronaut.context.annotation.Value("${security.mfa.totp.issuer:security}") String issuer,
-            com.jrobertgardzinski.security.domain.port.SpentTotpSteps spentSteps) {
+            com.jrobertgardzinski.security.domain.mfa.SpentTotpSteps spentSteps) {
         return new com.jrobertgardzinski.security.system.mfa.TotpFactor(clock, issuer, spentSteps);
     }
 
@@ -491,8 +491,8 @@ public class BeanFactory {
     @Singleton
     com.jrobertgardzinski.security.system.mfa.EnrolFactor enrolFactor(
             com.jrobertgardzinski.security.system.mfa.FactorRegistry factorRegistry,
-            com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactorRepository,
-            com.jrobertgardzinski.security.domain.port.EnrolmentChallengeStore enrolmentChallengeStore) {
+            com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository enrolledFactorRepository,
+            com.jrobertgardzinski.security.domain.mfa.EnrolmentChallengeStore enrolmentChallengeStore) {
         return new com.jrobertgardzinski.security.system.mfa.EnrolFactor(
                 factorRegistry, enrolledFactorRepository, enrolmentChallengeStore);
     }
@@ -502,8 +502,8 @@ public class BeanFactory {
     com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain(
             com.jrobertgardzinski.security.system.mfa.FactorRegistry factorRegistry,
             com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig challengeCodeConfig,
-            com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository recoveryCodeRepository,
-            com.jrobertgardzinski.security.domain.port.RecoveryCodeHasher recoveryCodeHasher,
+            com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository recoveryCodeRepository,
+            com.jrobertgardzinski.security.domain.mfa.RecoveryCodeHasher recoveryCodeHasher,
             Clock clock,
             @io.micronaut.context.annotation.Value("${security.mfa.ticket-ttl-minutes:10}") int ticketTtlMinutes) {
         return new com.jrobertgardzinski.security.system.mfa.MfaChain(
@@ -520,8 +520,8 @@ public class BeanFactory {
 
     @Singleton
     com.jrobertgardzinski.security.system.mfa.GenerateRecoveryCodes generateRecoveryCodes(
-            com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository recoveryCodeRepository,
-            com.jrobertgardzinski.security.domain.port.RecoveryCodeHasher recoveryCodeHasher,
+            com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository recoveryCodeRepository,
+            com.jrobertgardzinski.security.domain.mfa.RecoveryCodeHasher recoveryCodeHasher,
             com.jrobertgardzinski.security.config.mfa.RecoveryCodeConfig recoveryCodeConfig) {
         return new com.jrobertgardzinski.security.system.mfa.GenerateRecoveryCodes(
                 recoveryCodeRepository, recoveryCodeHasher, recoveryCodeConfig);
@@ -541,9 +541,9 @@ public class BeanFactory {
             Clock clock,
             BlockDurationPolicy blockDurationPolicy,
             AccessTokenMint accessTokenMint,
-            com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactorRepository,
+            com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository enrolledFactorRepository,
             com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
-            com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore pendingAuthenticationStore) {
+            com.jrobertgardzinski.security.domain.mfa.PendingAuthenticationStore pendingAuthenticationStore) {
         return AuthenticationFactory.assemble(
                 userRepository, emailVerificationRepository, rejectedAuthenticationRepository,
                 authenticationBlockRepository, sessionRepository, hashAlgorithm,
@@ -629,7 +629,7 @@ public class BeanFactory {
     @Singleton
     RequestPasswordReset requestPasswordReset(
             PasswordResetRepository passwordResetRepository,
-            com.jrobertgardzinski.security.domain.repository.UserRepository users,
+            com.jrobertgardzinski.security.domain.core.UserRepository users,
             PasswordResetNotifier notifier) {
         return new RequestPasswordReset(passwordResetRepository, users, notifier);
     }
@@ -637,7 +637,7 @@ public class BeanFactory {
     @Singleton
     ResetPassword resetPassword(PasswordResetRepository passwordResetRepository, UserRepository userRepository,
                                 HashAlgorithmPort hashAlgorithm,
-                                com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,
+                                com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository passwordless,
                                 SessionRepository sessions,
                                 @io.micronaut.context.annotation.Value("${security.password-reset.ttl-minutes:60}")
                                 int resetTtlMinutes,
@@ -676,11 +676,11 @@ public class BeanFactory {
             com.jrobertgardzinski.security.config.mfa.StepUpPolicy stepUpPolicy,
             UserRepository userRepository,
             HashAlgorithmPort hashAlgorithm,
-            com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,
-            com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
+            com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository passwordless,
+            com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository enrolledFactors,
             com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
-            com.jrobertgardzinski.security.domain.port.StepUpStore stepUpStore,
-            com.jrobertgardzinski.security.domain.port.SessionElevation sessionElevation,
+            com.jrobertgardzinski.security.domain.mfa.StepUpStore stepUpStore,
+            com.jrobertgardzinski.security.domain.mfa.SessionElevation sessionElevation,
             Clock clock) {
         return new com.jrobertgardzinski.security.system.mfa.StepUp(
                 stepUpPolicy, userRepository, hashAlgorithm, passwordless, enrolledFactors,
@@ -689,8 +689,8 @@ public class BeanFactory {
 
     @Singleton
     com.jrobertgardzinski.security.system.mfa.MfaCompliance mfaCompliance(
-            com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
-            com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,
+            com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository enrolledFactors,
+            com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository passwordless,
             com.jrobertgardzinski.security.config.mfa.MfaPolicy mfaPolicy,
             @io.micronaut.context.annotation.Value("${security.bootstrap-admins:}") java.util.List<String> bootstrapAdmins) {
         return new com.jrobertgardzinski.security.system.mfa.MfaCompliance(
@@ -716,13 +716,13 @@ public class BeanFactory {
     @Singleton
     ConfirmEmailChange confirmEmailChange(EmailChangeRepository emailChangeRepository, UserRepository userRepository,
                                           EmailVerificationRepository emailVerificationRepository,
-                                          com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository
+                                          com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository
                                                   federatedIdentityRepository,
-                                          com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository
+                                          com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository
                                                   enrolledFactorRepository,
-                                          com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository
+                                          com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository
                                                   recoveryCodeRepository,
-                                          com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository
+                                          com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository
                                                   passwordlessAccountRepository,
                                           PasswordResetRepository passwordResetRepository,
                                           SessionRepository sessionRepository,
@@ -738,13 +738,13 @@ public class BeanFactory {
 
     @Singleton
     DeleteAccount deleteAccount(UserRepository userRepository, SessionRepository sessionRepository,
-                                com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactorRepository,
-                                com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository recoveryCodeRepository,
-                                com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository federatedIdentityRepository,
+                                com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository enrolledFactorRepository,
+                                com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository recoveryCodeRepository,
+                                com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository federatedIdentityRepository,
                                 EmailVerificationRepository emailVerificationRepository,
                                 PasswordResetRepository passwordResetRepository,
                                 EmailChangeRepository emailChangeRepository,
-                                com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordlessAccountRepository) {
+                                com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository passwordlessAccountRepository) {
         return new DeleteAccount(userRepository, sessionRepository,
                 enrolledFactorRepository, recoveryCodeRepository, federatedIdentityRepository,
                 emailVerificationRepository, passwordResetRepository, emailChangeRepository,
@@ -752,8 +752,8 @@ public class BeanFactory {
     }
 
     @Singleton
-    com.jrobertgardzinski.security.system.federation.FederatedSignIn federatedSignIn(
-            com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository federatedIdentities,
+    com.jrobertgardzinski.security.system.authentication.FederatedSignIn federatedSignIn(
+            com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository federatedIdentities,
             UserRepository userRepository,
             EmailVerificationRepository emailVerificationRepository,
             SessionRepository sessionRepository,
@@ -761,11 +761,11 @@ public class BeanFactory {
             SessionTokensConfig sessionTokensConfig,
             Clock clock,
             AccessTokenMint accessTokenMint,
-            com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository passwordless,
-            com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
+            com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository passwordless,
+            com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository enrolledFactors,
             com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
-            com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore pendingStore) {
-        return new com.jrobertgardzinski.security.system.federation.FederatedSignIn(
+            com.jrobertgardzinski.security.domain.mfa.PendingAuthenticationStore pendingStore) {
+        return new com.jrobertgardzinski.security.system.authentication.FederatedSignIn(
                 federatedIdentities, userRepository, emailVerificationRepository,
                 sessionRepository, hashAlgorithm, sessionTokensConfig, clock, accessTokenMint,
                 passwordless, enrolledFactors, mfaChain, pendingStore);
@@ -804,10 +804,10 @@ public class BeanFactory {
     /** The content purge, as a saga with the portal; it is also the {@link ContentPurge} the deletion starts. */
     @Singleton
     com.jrobertgardzinski.security.system.account.AccountDeletionSaga accountDeletionSaga(
-            com.jrobertgardzinski.security.domain.repository.AccountDeletionSagaStore sagas,
-            com.jrobertgardzinski.security.domain.port.ClosureAnnouncer announcer,
+            com.jrobertgardzinski.security.domain.account.AccountDeletionSagaStore sagas,
+            com.jrobertgardzinski.security.domain.account.ClosureAnnouncer announcer,
             DeleteAccount deleteAccount, UserRepository userRepository,
-            com.jrobertgardzinski.security.domain.port.AccountDeletionLog log, Clock clock,
+            com.jrobertgardzinski.security.domain.account.AccountDeletionLog log, Clock clock,
             com.jrobertgardzinski.security.config.account.AccountDeletionConfig config) {
         return new com.jrobertgardzinski.security.system.account.AccountDeletionSaga(
                 sagas, announcer, deleteAccount, userRepository, log, clock, config);
@@ -873,7 +873,7 @@ public class BeanFactory {
     IdentityService identityService(RequireRole requireRole,
                                     com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance,
                                     UserRepository users,
-                                    com.jrobertgardzinski.security.system.identity.DisplayNames displayNames,
+                                    com.jrobertgardzinski.security.system.core.DisplayNames displayNames,
                                     @Named("display-names") SourceThrottle throttle) {
         return new IdentityService(requireRole, compliance, users, displayNames, throttle);
     }
@@ -881,12 +881,12 @@ public class BeanFactory {
     @Singleton
     MfaService mfaService(com.jrobertgardzinski.security.system.authentication.ContinueAuthentication continueAuthentication,
                           com.jrobertgardzinski.security.system.mfa.EnrolFactor enrolFactor,
-                          com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors,
+                          com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository enrolledFactors,
                           com.jrobertgardzinski.security.system.mfa.FactorRegistry registry,
                           UserRepository users,
                           com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance,
                           com.jrobertgardzinski.security.system.mfa.GenerateRecoveryCodes generateRecoveryCodes,
-                          com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository recoveryCodes,
+                          com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository recoveryCodes,
                           @Named("authentication") SourceThrottle authenticationThrottle,
                           TransactionBoundary transactionBoundary) {
         return new MfaService(continueAuthentication, enrolFactor, enrolledFactors, registry, users, compliance,
@@ -900,7 +900,7 @@ public class BeanFactory {
     }
 
     @Singleton
-    AdminService adminService(com.jrobertgardzinski.security.system.roles.SetUserRoles setUserRoles, SetSetting setSetting,
+    AdminService adminService(com.jrobertgardzinski.security.system.core.SetUserRoles setUserRoles, SetSetting setSetting,
                               Configuration configuration, LadderedPasswordPolicy passwordPolicy) {
         return new AdminService(setUserRoles, setSetting, configuration, passwordPolicy::inForce);
     }
@@ -914,7 +914,7 @@ public class BeanFactory {
     }
 
     @Singleton
-    FederationService federationService(com.jrobertgardzinski.security.system.federation.FederatedSignIn federatedSignIn,
+    FederationService federationService(com.jrobertgardzinski.security.system.authentication.FederatedSignIn federatedSignIn,
                                         TransactionBoundary transactionBoundary) {
         return new FederationService(federatedSignIn, transactionBoundary);
     }

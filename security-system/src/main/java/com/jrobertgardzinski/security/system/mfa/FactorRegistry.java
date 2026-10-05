@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.system.mfa;
 
-import com.jrobertgardzinski.security.domain.vo.FactorType;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
 
 import java.util.Collection;
 import java.util.Map;

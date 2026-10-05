@@ -1,10 +1,10 @@
 package com.jrobertgardzinski.security.system.mfa;
 
-import com.jrobertgardzinski.security.domain.port.SpentTotpSteps;
-import com.jrobertgardzinski.security.domain.vo.Challenge;
+import com.jrobertgardzinski.security.domain.mfa.SpentTotpSteps;
+import com.jrobertgardzinski.security.domain.mfa.Challenge;
 
-import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;

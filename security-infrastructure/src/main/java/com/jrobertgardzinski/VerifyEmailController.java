@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.application.verification.VerificationService;
+import com.jrobertgardzinski.security.application.mailbox.VerificationService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * HTTP entry points for e-mail verification, through
- * {@link com.jrobertgardzinski.security.application.verification.VerificationService}. Public (pre-login): {@code POST /verify-email/request} mails a
+ * {@link com.jrobertgardzinski.security.application.mailbox.VerificationService}. Public (pre-login): {@code POST /verify-email/request} mails a
  * link, {@code POST /verify-email} confirms the token from that link. The request side is
  * throttled per source (429 + Retry-After) — it mints tokens and sends mails, so unthrottled it
  * is a mail-bomb aimed at any address the caller types in.

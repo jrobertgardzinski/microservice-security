@@ -1,15 +1,15 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.SessionFamily;
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
-import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
-import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.AccessTokenExpiration;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.session.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.SessionFamily;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.session.AccessToken;
+import com.jrobertgardzinski.security.domain.session.RefreshToken;
+import com.jrobertgardzinski.security.domain.session.AccessTokenExpiration;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenExpiration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -45,7 +45,7 @@ class InMemorySessionLineageTest {
     @DisplayName("a revoke cannot land between the rotation and its successor")
     void the_rotation_and_its_successor_are_one_step() throws Exception {
         SessionFamily family = SessionFamily.start();
-        SessionTokens original = SessionTokens.createFor(USER, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+        SessionTokens original = SessionTokens.createFor(USER, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
         repository.create(original, family);
 
         // The thief's thread: it has detected reuse of this lineage and is revoking the family.
@@ -79,7 +79,7 @@ class InMemorySessionLineageTest {
                         Thread.currentThread().interrupt();
                     }
                     shutOut.set(reuseDetected.isAlive());
-                    return SessionTokens.createFor(USER, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+                    return SessionTokens.createFor(USER, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
                 },
                 family);
         reuseDetected.join();
@@ -99,7 +99,7 @@ class InMemorySessionLineageTest {
     @DisplayName("a losing rotation writes nothing at all")
     void a_lost_rotation_creates_no_successor() {
         SessionFamily family = SessionFamily.start();
-        SessionTokens original = SessionTokens.createFor(USER, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+        SessionTokens original = SessionTokens.createFor(USER, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
         repository.create(original, family);
         repository.markRotated(original.refreshToken());   // somebody else got there first
 
@@ -108,7 +108,7 @@ class InMemorySessionLineageTest {
                 original.refreshToken(),
                 () -> {
                     minted.set(true);
-                    return SessionTokens.createFor(USER, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+                    return SessionTokens.createFor(USER, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
                 },
                 family);
 

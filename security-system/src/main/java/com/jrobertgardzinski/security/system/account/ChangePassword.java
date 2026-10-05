@@ -6,9 +6,9 @@ import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
-import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
+import com.jrobertgardzinski.security.domain.core.User;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
 
 import java.util.Optional;
 import com.jrobertgardzinski.password.policy.PasswordPolicyInForce;

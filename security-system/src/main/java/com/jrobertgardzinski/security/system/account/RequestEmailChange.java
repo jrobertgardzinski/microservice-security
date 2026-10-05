@@ -3,11 +3,11 @@ package com.jrobertgardzinski.security.system.account;
 import com.jrobertgardzinski.email.config.CanRegisterConfig;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
-import com.jrobertgardzinski.security.domain.port.EmailVerificationNotifier;
-import com.jrobertgardzinski.security.domain.repository.EmailChangeRepository;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.EmailChange;
-import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
+import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationNotifier;
+import com.jrobertgardzinski.security.domain.account.EmailChangeRepository;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.account.EmailChange;
+import com.jrobertgardzinski.security.domain.mailbox.VerificationToken;
 
 /**
  * Starts an email change for a signed-in user: refuses an address this deployment does not admit,

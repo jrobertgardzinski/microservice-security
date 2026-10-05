@@ -1,7 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.application.session.SessionService;
-import com.jrobertgardzinski.security.domain.vo.ActiveSession;
+import com.jrobertgardzinski.security.domain.session.ActiveSession;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;

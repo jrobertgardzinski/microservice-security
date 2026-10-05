@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.persistence;
 
-import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.authentication.AttemptedAccount;
 import io.micronaut.context.annotation.Value;
 import jakarta.inject.Singleton;
 

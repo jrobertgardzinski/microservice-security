@@ -1,10 +1,10 @@
 package com.jrobertgardzinski.security.system.mfa;
 
-import com.jrobertgardzinski.security.domain.port.RecoveryCodeHasher;
+import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeHasher;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.config.mfa.RecoveryCodeConfig;
-import com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository;
+import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;

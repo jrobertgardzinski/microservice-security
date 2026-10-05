@@ -1,9 +1,9 @@
 package com.jrobertgardzinski.security.system.mfa;
 
-import com.jrobertgardzinski.security.domain.vo.Challenge;
+import com.jrobertgardzinski.security.domain.mfa.Challenge;
 
-import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
 
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;

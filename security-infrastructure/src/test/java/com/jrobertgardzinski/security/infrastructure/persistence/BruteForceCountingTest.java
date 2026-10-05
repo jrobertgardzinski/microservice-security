@@ -4,15 +4,15 @@ import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
-import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
-import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
-import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
-import com.jrobertgardzinski.security.domain.vo.Source;
+import com.jrobertgardzinski.security.domain.core.User;
+import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationRequest;
+import com.jrobertgardzinski.security.domain.core.IpAddress;
+import com.jrobertgardzinski.security.domain.authentication.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
+import com.jrobertgardzinski.security.domain.authentication.Source;
 import com.jrobertgardzinski.security.system.authentication.Authentication;
 import com.jrobertgardzinski.security.system.authentication.ContinueAuthentication;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
@@ -152,9 +152,9 @@ class BruteForceCountingTest {
     void the_second_factor_is_not_a_free_guessing_ground() {
         Source source = new Source(new IpAddress("198.51.100.24"), "codes/1.0");
         Email victim = account("code-guessed@example.com");
-        context.getBean(com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository.class)
-                .enrol(new com.jrobertgardzinski.security.domain.entity.EnrolledFactor(
-                        victim, com.jrobertgardzinski.security.domain.vo.FactorType.EMAIL_CODE,
+        context.getBean(com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository.class)
+                .enrol(new com.jrobertgardzinski.security.domain.mfa.EnrolledFactor(
+                        victim, com.jrobertgardzinski.security.domain.mfa.FactorType.EMAIL_CODE,
                         "e-mail code", 0, victim.value()));
 
         // link #1 passes — the guesser HAS the password; what they are after is the code

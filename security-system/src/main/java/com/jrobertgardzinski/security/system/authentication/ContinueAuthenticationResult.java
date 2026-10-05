@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.authentication;
 
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
 
 /**
  * The outcome of presenting a factor proof against a sign-in in flight: the chain completed (here

@@ -1,29 +1,29 @@
 package com.jrobertgardzinski.security.application.feature.mfa;
 
-import com.jrobertgardzinski.security.domain.port.CapturingCodeChannel;
-import com.jrobertgardzinski.security.domain.repository.FakeAuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.repository.FakeEmailVerificationRepository;
-import com.jrobertgardzinski.security.domain.repository.FakeEnrolledFactorRepository;
-import com.jrobertgardzinski.security.domain.repository.FakeRejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.repository.FakeSessionRepository;
-import com.jrobertgardzinski.security.domain.repository.FakeUserRepository;
-import com.jrobertgardzinski.security.domain.port.FakeEnrolmentChallengeStore;
-import com.jrobertgardzinski.security.domain.port.FakePendingAuthenticationStore;
+import com.jrobertgardzinski.security.domain.mfa.CapturingCodeChannel;
+import com.jrobertgardzinski.security.domain.authentication.FakeAuthenticationBlockRepository;
+import com.jrobertgardzinski.security.domain.mailbox.FakeEmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.mfa.FakeEnrolledFactorRepository;
+import com.jrobertgardzinski.security.domain.authentication.FakeRejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.session.FakeSessionRepository;
+import com.jrobertgardzinski.security.domain.core.FakeUserRepository;
+import com.jrobertgardzinski.security.domain.mfa.FakeEnrolmentChallengeStore;
+import com.jrobertgardzinski.security.domain.mfa.FakePendingAuthenticationStore;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.application.feature.support.FakeHashAlgorithm;
-import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
+import com.jrobertgardzinski.security.config.authentication.BruteForceConfig;
 import com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig;
-import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
-import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
-import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
-import com.jrobertgardzinski.security.domain.vo.Source;
+import com.jrobertgardzinski.security.domain.core.User;
+import com.jrobertgardzinski.security.domain.session.AccessTokenMint;
+import com.jrobertgardzinski.security.domain.session.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationRequest;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.IpAddress;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.authentication.Source;
 import com.jrobertgardzinski.security.system.authentication.Authentication;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationFactory;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
@@ -68,8 +68,8 @@ public class MfaSteps {
     private final FakePendingAuthenticationStore pendingStore = new FakePendingAuthenticationStore();
     private final FakeEnrolmentChallengeStore enrolmentStore = new FakeEnrolmentChallengeStore();
     private final CapturingCodeChannel emailChannel = new CapturingCodeChannel(FactorType.EMAIL_CODE);
-    private final com.jrobertgardzinski.security.domain.repository.FakeRecoveryCodeRepository
-            recoveryCodes = new com.jrobertgardzinski.security.domain.repository.FakeRecoveryCodeRepository();
+    private final com.jrobertgardzinski.security.domain.mfa.FakeRecoveryCodeRepository
+            recoveryCodes = new com.jrobertgardzinski.security.domain.mfa.FakeRecoveryCodeRepository();
 
     private final FactorRegistry registry = new FactorRegistry(List.of(
             new CodeFactor(emailChannel, raw -> "hash:" + raw, ChallengeCodeConfig.withDefaults(), clock)));

@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.config.mfa;
 
-import com.jrobertgardzinski.security.domain.vo.StepUpAction;
-import com.jrobertgardzinski.security.domain.vo.StepUpRequirement;
+import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
+import com.jrobertgardzinski.security.domain.mfa.StepUpRequirement;
 
 import java.util.Collection;
 import java.util.EnumMap;

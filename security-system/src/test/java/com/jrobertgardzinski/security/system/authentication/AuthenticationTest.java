@@ -2,19 +2,19 @@ package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.event.AuthenticationEvent;
-import com.jrobertgardzinski.security.domain.event.BruteForceProtectionEvent;
-import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.AuthenticationRequest;
-import com.jrobertgardzinski.security.domain.vo.Credentials;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
-import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
-import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
-import com.jrobertgardzinski.security.domain.vo.Source;
-import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlock;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationEvent;
+import com.jrobertgardzinski.security.domain.authentication.BruteForceProtectionEvent;
+import com.jrobertgardzinski.security.domain.session.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationRequest;
+import com.jrobertgardzinski.security.domain.authentication.Credentials;
+import com.jrobertgardzinski.security.domain.core.IpAddress;
+import com.jrobertgardzinski.security.domain.authentication.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
+import com.jrobertgardzinski.security.domain.authentication.Source;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import net.jqwik.api.Example;
@@ -58,7 +58,7 @@ class AuthenticationTest {
     private _GenerateSession generateSession;
     private _CleanBruteForceRecords cleanBruteForceRecords;
     private _UpdateBruteForceRecords updateBruteForceRecords;
-    private com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository enrolledFactors;
+    private com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository enrolledFactors;
     private Authentication authentication;
 
     @BeforeTry
@@ -72,13 +72,13 @@ class AuthenticationTest {
         cleanBruteForceRecords = Mockito.mock(_CleanBruteForceRecords.class);
         updateBruteForceRecords = Mockito.mock(_UpdateBruteForceRecords.class);
         // no factors enrolled in these examples → the chain is empty and sign-in is single-factor
-        enrolledFactors = Mockito.mock(com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository.class);
+        enrolledFactors = Mockito.mock(com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository.class);
         Mockito.when(enrolledFactors.findByUser(Mockito.any())).thenReturn(java.util.List.of());
         var mfaChain = new com.jrobertgardzinski.security.system.mfa.MfaChain(
                 new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of()),
                 com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
                 noRecoveryCodes(), raw -> "hash:" + raw, CLOCK, 10);
-        var pendingStore = Mockito.mock(com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore.class);
+        var pendingStore = Mockito.mock(com.jrobertgardzinski.security.domain.mfa.PendingAuthenticationStore.class);
         authentication = new Authentication(
                 bruteForceGuard, verifyCredentials, requireVerifiedEmail, generateSession,
                 cleanBruteForceRecords, updateBruteForceRecords,
@@ -86,8 +86,8 @@ class AuthenticationTest {
     }
 
     /** No recovery codes exist in these examples — nothing consumes. */
-    private static com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository noRecoveryCodes() {
-        return new com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository() {
+    private static com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository noRecoveryCodes() {
+        return new com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository() {
             @Override
             public void replaceAll(com.jrobertgardzinski.email.domain.Email userEmail,
                                    java.util.List<String> codeHashes) {
@@ -136,7 +136,7 @@ class AuthenticationTest {
     @Example
     @Label("Authenticated when the guard allows and credentials are valid")
     void authenticated_when_guard_allows_and_credentials_valid() {
-        SessionTokens sessionTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+        SessionTokens sessionTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
         Mockito.when(bruteForceGuard.execute(Mockito.any()))
                 .thenReturn(new BruteForceProtectionEvent.Allowed());
         Mockito.when(verifyCredentials.execute(GIVEN.credentials))

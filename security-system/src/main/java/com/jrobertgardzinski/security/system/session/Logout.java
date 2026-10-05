@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.session;
 
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.session.RefreshToken;
 
 /**
  * Ends a session: the refresh token names the session, and removing it invalidates the whole

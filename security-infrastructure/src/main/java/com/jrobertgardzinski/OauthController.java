@@ -1,8 +1,8 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.application.federation.FederationService;
-import com.jrobertgardzinski.security.config.oauth.OauthProviderSettings;
-import com.jrobertgardzinski.security.domain.vo.ProviderIdentity;
+import com.jrobertgardzinski.security.application.authentication.FederationService;
+import com.jrobertgardzinski.security.config.authentication.OauthProviderSettings;
+import com.jrobertgardzinski.security.domain.core.ProviderIdentity;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;

@@ -181,9 +181,9 @@ public class HttpChangeEmailSteps {
                 "the federated link follows the account — the subject is the person, not the address");
     }
 
-    private com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository federatedIdentities() {
+    private com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository federatedIdentities() {
         return server.getApplicationContext()
-                .getBean(com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository.class);
+                .getBean(com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository.class);
     }
 
     @Then("the USER can AUTHENTICATE as {string}")

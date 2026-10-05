@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.core.IpAddress;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.http.HttpRequest;
 import jakarta.inject.Singleton;

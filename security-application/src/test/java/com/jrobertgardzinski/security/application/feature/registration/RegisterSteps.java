@@ -1,15 +1,15 @@
 package com.jrobertgardzinski.security.application.feature.registration;
 
-import com.jrobertgardzinski.security.domain.repository.FakeUserRepository;
+import com.jrobertgardzinski.security.domain.core.FakeUserRepository;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.config.CanRegisterConfig;
 import com.jrobertgardzinski.hash.algorithm.argon2.Argon2HashAlgorithm;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.password.domain.HashedPassword;
-import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.system.registration.Register;
-import com.jrobertgardzinski.security.system.registration.RegisterResult;
+import com.jrobertgardzinski.security.domain.core.User;
+import com.jrobertgardzinski.security.system.core.Register;
+import com.jrobertgardzinski.security.system.core.RegisterResult;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;

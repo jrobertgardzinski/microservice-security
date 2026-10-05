@@ -1,12 +1,12 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.Role;
-import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.AccessTokenExpiration;
+import com.jrobertgardzinski.security.domain.core.User;
+import com.jrobertgardzinski.security.domain.session.AccessTokenMint;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.core.Role;
+import com.jrobertgardzinski.security.domain.session.AccessToken;
+import com.jrobertgardzinski.security.domain.session.AccessTokenExpiration;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.json.JsonMapper;
 import jakarta.inject.Singleton;
@@ -63,7 +63,7 @@ class JwtAccessTokenMint implements AccessTokenMint {
     private final KeyPair keyPair;
     private final String keyId;
     private final List<PublicKey> previousPublicKeys;
-    private final com.jrobertgardzinski.security.system.roles.RequireRole roles;
+    private final com.jrobertgardzinski.security.system.core.RequireRole roles;
     private final com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance;
     private final UserRepository users;
     private final Clock clock;
@@ -72,7 +72,7 @@ class JwtAccessTokenMint implements AccessTokenMint {
     JwtAccessTokenMint(@Value("${security.jwt.private-key:}") String privateKeyBase64,
                        @Value("${security.jwt.public-key:}") String publicKeyBase64,
                        @Value("${security.jwt.previous-public-keys:}") String previousPublicKeysBase64,
-                       com.jrobertgardzinski.security.system.roles.RequireRole roles,
+                       com.jrobertgardzinski.security.system.core.RequireRole roles,
                        com.jrobertgardzinski.security.system.mfa.MfaCompliance compliance,
                        UserRepository users, Clock clock, JsonMapper json) {
         this.keyPair = load(privateKeyBase64, publicKeyBase64);

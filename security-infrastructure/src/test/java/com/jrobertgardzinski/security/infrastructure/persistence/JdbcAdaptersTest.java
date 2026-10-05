@@ -5,45 +5,45 @@ import com.jrobertgardzinski.config.source.live.SnapshotLiveConfigPort;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.password.domain.HashedPassword;
-import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
-import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException;
-import com.jrobertgardzinski.security.domain.repository.EmailChangeRepository;
-import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
-import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
-import com.jrobertgardzinski.security.domain.repository.PasswordResetRepository;
-import com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository;
-import com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository;
-import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.AccessGrant;
-import com.jrobertgardzinski.security.domain.vo.EmailChange;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
-import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
-import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
-import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
-import com.jrobertgardzinski.security.domain.vo.Source;
-import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.RejectedAuthenticationDetails;
-import com.jrobertgardzinski.security.domain.vo.SessionFamily;
-import com.jrobertgardzinski.security.domain.vo.SessionStatus;
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
-import com.jrobertgardzinski.security.domain.vo.StoredSession;
-import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
-import com.jrobertgardzinski.security.domain.vo.token.PasswordResetToken;
-import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
-import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlock;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.core.User;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlockRepository;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.core.EmailAlreadyTakenException;
+import com.jrobertgardzinski.security.domain.account.EmailChangeRepository;
+import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
+import com.jrobertgardzinski.security.domain.mailbox.PasswordResetRepository;
+import com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository;
+import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.session.AccessGrant;
+import com.jrobertgardzinski.security.domain.account.EmailChange;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.session.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.core.IpAddress;
+import com.jrobertgardzinski.security.domain.authentication.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
+import com.jrobertgardzinski.security.domain.authentication.Source;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationDetails;
+import com.jrobertgardzinski.security.domain.session.SessionFamily;
+import com.jrobertgardzinski.security.domain.session.SessionStatus;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.session.StoredSession;
+import com.jrobertgardzinski.security.domain.session.AccessToken;
+import com.jrobertgardzinski.security.domain.mailbox.PasswordResetToken;
+import com.jrobertgardzinski.security.domain.session.RefreshToken;
+import com.jrobertgardzinski.security.domain.mailbox.VerificationToken;
 import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import com.jrobertgardzinski.persistence.SecuritySettingsTable;
 import com.jrobertgardzinski.password.config.MinLength;
-import com.jrobertgardzinski.security.system.settings.SettingsRepository;
+import com.jrobertgardzinski.security.system.core.SettingsRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -186,7 +186,7 @@ class JdbcAdaptersTest {
         SessionFamily family = SessionFamily.start();
         SessionTokens session = SessionTokens.createFor(
                 Email.of("jdbc-session@example.com"), SESSION_CONFIG, Clock.systemUTC(),
-                com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+                com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
 
         sessions.create(session, family);
 
@@ -209,7 +209,7 @@ class JdbcAdaptersTest {
         SessionRepository sessions = context.getBean(SessionRepository.class);
         SessionTokens session = SessionTokens.createFor(
                 Email.of("jdbc-access@example.com"), SESSION_CONFIG, Clock.systemUTC(),
-                com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+                com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
 
         sessions.create(session, SessionFamily.start());
 
@@ -228,13 +228,13 @@ class JdbcAdaptersTest {
         SessionRepository sessions = context.getBean(SessionRepository.class);
         Email email = Email.of("jdbc-lineage@example.com");
         SessionFamily family = SessionFamily.start();
-        SessionTokens first = SessionTokens.createFor(email, SESSION_CONFIG, Clock.systemUTC(), com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+        SessionTokens first = SessionTokens.createFor(email, SESSION_CONFIG, Clock.systemUTC(), com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
 
         sessions.create(first, family);
         LocalDateTime started = sessions.findByRefreshToken(first.refreshToken()).orElseThrow().familyStartedAt();
 
         SessionTokens second = sessions.rotateAndCreate(first.refreshToken(),
-                () -> SessionTokens.createFor(email, SESSION_CONFIG, Clock.systemUTC(), com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM), family).orElseThrow();
+                () -> SessionTokens.createFor(email, SESSION_CONFIG, Clock.systemUTC(), com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM), family).orElseThrow();
 
         assertThat(sessions.findByRefreshToken(second.refreshToken()).orElseThrow().familyStartedAt())
                 .as("if each refresh started the clock again, an absolute session lifetime would be"

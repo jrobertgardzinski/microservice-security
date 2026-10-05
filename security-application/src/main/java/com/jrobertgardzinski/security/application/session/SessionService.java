@@ -2,10 +2,10 @@ package com.jrobertgardzinski.security.application.session;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.application.TransactionBoundary;
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.vo.ActiveSession;
-import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
-import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.session.ActiveSession;
+import com.jrobertgardzinski.security.domain.session.SessionRefreshRequest;
+import com.jrobertgardzinski.security.domain.session.RefreshToken;
 import com.jrobertgardzinski.security.system.session.ListActiveSessions;
 import com.jrobertgardzinski.security.system.session.Logout;
 import com.jrobertgardzinski.security.system.session.RefreshSession;

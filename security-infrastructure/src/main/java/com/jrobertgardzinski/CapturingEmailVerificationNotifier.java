@@ -1,8 +1,8 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.port.EmailVerificationNotifier;
-import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
+import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationNotifier;
+import com.jrobertgardzinski.security.domain.mailbox.VerificationToken;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 

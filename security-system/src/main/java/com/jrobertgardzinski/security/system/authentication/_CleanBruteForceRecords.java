@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.authentication;
 
-import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
 
 /**
  * The escape valve for the person who mistyped their own password and then got it right — narrowed

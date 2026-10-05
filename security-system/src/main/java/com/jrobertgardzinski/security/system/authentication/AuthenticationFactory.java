@@ -1,18 +1,18 @@
 package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
-import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
+import com.jrobertgardzinski.security.config.authentication.BruteForceConfig;
 import com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig;
-import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
-import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
-import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
-import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.session.AccessTokenMint;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlockRepository;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
 import com.jrobertgardzinski.security.system.mfa.FactorRegistry;
-import com.jrobertgardzinski.security.domain.port.PendingAuthenticationStore;
+import com.jrobertgardzinski.security.domain.mfa.PendingAuthenticationStore;
 
 import java.time.Clock;
 

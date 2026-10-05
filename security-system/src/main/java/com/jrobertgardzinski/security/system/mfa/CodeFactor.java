@@ -1,11 +1,11 @@
 package com.jrobertgardzinski.security.system.mfa;
 
-import com.jrobertgardzinski.security.domain.port.CodeHasher;
-import com.jrobertgardzinski.security.domain.vo.Challenge;
+import com.jrobertgardzinski.security.domain.mfa.CodeHasher;
+import com.jrobertgardzinski.security.domain.mfa.Challenge;
 
 import com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig;
-import com.jrobertgardzinski.security.domain.entity.EnrolledFactor;
-import com.jrobertgardzinski.security.domain.port.CodeChannel;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
+import com.jrobertgardzinski.security.domain.mfa.CodeChannel;
 
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -37,7 +37,7 @@ public class CodeFactor implements AuthenticationFactor {
     }
 
     @Override
-    public com.jrobertgardzinski.security.domain.vo.FactorType type() {
+    public com.jrobertgardzinski.security.domain.mfa.FactorType type() {
         return channel.servesFactor();
     }
 

@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.system.mfa;
 
-import com.jrobertgardzinski.security.domain.vo.Challenge;
+import com.jrobertgardzinski.security.domain.mfa.Challenge;
 
 /**
  * What beginning a factor's enrolment produces. {@code secretMaterial} is what gets stored for the

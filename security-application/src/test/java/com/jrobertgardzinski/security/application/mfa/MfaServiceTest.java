@@ -2,16 +2,16 @@ package com.jrobertgardzinski.security.application.mfa;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.application.TransactionBoundary;
-import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
-import com.jrobertgardzinski.security.domain.repository.FakeUserRepository;
-import com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
+import com.jrobertgardzinski.security.domain.core.FakeUserRepository;
+import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
 import com.jrobertgardzinski.security.system.authentication.ContinueAuthentication;
 import com.jrobertgardzinski.security.system.mfa.EnrolFactor;
 import com.jrobertgardzinski.security.system.mfa.FactorRegistry;
 import com.jrobertgardzinski.security.system.mfa.GenerateRecoveryCodes;
 import com.jrobertgardzinski.security.system.mfa.MfaCompliance;
-import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
+import com.jrobertgardzinski.security.system.core.SourceThrottle;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

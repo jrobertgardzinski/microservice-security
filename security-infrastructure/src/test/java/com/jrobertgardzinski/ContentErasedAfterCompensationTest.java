@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.domain.repository.AccountDeletionSagaStore;
+import com.jrobertgardzinski.security.domain.account.AccountDeletionSagaStore;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

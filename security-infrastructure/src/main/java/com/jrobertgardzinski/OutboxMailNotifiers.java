@@ -2,10 +2,10 @@ package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.persistence.OutboxAppender;
-import com.jrobertgardzinski.security.domain.port.EmailVerificationNotifier;
-import com.jrobertgardzinski.security.domain.port.PasswordResetNotifier;
-import com.jrobertgardzinski.security.domain.port.RegistrationNoticeNotifier;
-import com.jrobertgardzinski.security.domain.vo.token.AbstractToken;
+import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationNotifier;
+import com.jrobertgardzinski.security.domain.mailbox.PasswordResetNotifier;
+import com.jrobertgardzinski.security.domain.core.RegistrationNoticeNotifier;
+import com.jrobertgardzinski.security.domain.core.AbstractToken;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.context.annotation.Value;

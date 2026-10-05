@@ -3,9 +3,9 @@ package com.jrobertgardzinski;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import com.jrobertgardzinski.security.domain.repository.AccountDeletionSagaStore;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.PurgeChoices;
+import com.jrobertgardzinski.security.domain.account.AccountDeletionSagaStore;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.account.PurgeChoices;
 import com.jrobertgardzinski.security.config.account.AccountDeletionConfig;
 import com.jrobertgardzinski.security.system.account.AccountDeletionSaga;
 import com.jrobertgardzinski.security.system.account.DeleteAccount;
@@ -74,7 +74,7 @@ class AccountDeletionLoggingTest {
     @DisplayName("the identity-only immediate deletion line carries a masked address")
     void deletingImmediatelyDoesNotLogTheAddress() {
         saga(latchedStore(true), false)
-                .begin(com.jrobertgardzinski.security.domain.vo.AccountClosure.requestedByOwner(
+                .begin(com.jrobertgardzinski.security.domain.account.AccountClosure.requestedByOwner(
                         com.jrobertgardzinski.email.domain.Email.of(EMAIL)));
 
         assertMasked();

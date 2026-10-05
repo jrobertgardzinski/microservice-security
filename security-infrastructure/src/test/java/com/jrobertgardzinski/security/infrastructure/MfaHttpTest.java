@@ -101,7 +101,7 @@ class MfaHttpTest {
         // ...and while the person is fetching the code from their mailbox, the account asks to be
         // deleted. Link #1 answered "this account signs in"; that answer is now out of date.
         server.getApplicationContext()
-                .getBean(com.jrobertgardzinski.security.domain.repository.UserRepository.class)
+                .getBean(com.jrobertgardzinski.security.domain.core.UserRepository.class)
                 .markPendingDeletion(com.jrobertgardzinski.email.domain.Email.of(email));
 
         HttpResponse<Map> done = exchange(HttpRequest.POST("/authenticate/factor",

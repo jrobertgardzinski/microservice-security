@@ -2,7 +2,7 @@ package com.jrobertgardzinski.persistence;
 
 import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.config.retention.vo.UnverifiedAccountDays;
+import com.jrobertgardzinski.security.config.mailbox.vo.UnverifiedAccountDays;
 import com.jrobertgardzinski.security.system.account.DeleteAccount;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.scheduling.annotation.Scheduled;

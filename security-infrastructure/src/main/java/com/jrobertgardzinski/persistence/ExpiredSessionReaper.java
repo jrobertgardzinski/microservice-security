@@ -6,7 +6,7 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
 
 import javax.sql.DataSource;
 import java.time.Clock;

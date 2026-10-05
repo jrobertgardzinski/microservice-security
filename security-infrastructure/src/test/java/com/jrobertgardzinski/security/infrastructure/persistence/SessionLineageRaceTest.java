@@ -2,12 +2,12 @@ package com.jrobertgardzinski.security.infrastructure.persistence;
 
 import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.SessionFamily;
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.session.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.SessionFamily;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
 import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -80,7 +80,7 @@ class SessionLineageRaceTest {
         Clock clock = context.getBean(Clock.class);
 
         SessionFamily family = SessionFamily.start();
-        SessionTokens original = SessionTokens.createFor(USER, CONFIG, clock, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+        SessionTokens original = SessionTokens.createFor(USER, CONFIG, clock, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
         transactions.execute(() -> sessions.create(original, family));
 
         CountDownLatch rotationIsHalfDone = new CountDownLatch(1);
@@ -91,7 +91,7 @@ class SessionLineageRaceTest {
         // successor. It waits there, exactly where the window is.
         Thread refreshing = new Thread(() -> transactions.execute(() ->
                 sessions.rotateAndCreate(original.refreshToken(), () -> {
-                    SessionTokens next = SessionTokens.createFor(USER, CONFIG, clock, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+                    SessionTokens next = SessionTokens.createFor(USER, CONFIG, clock, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
                     successor.set(next);
                     rotationIsHalfDone.countDown();
                     try {
@@ -141,7 +141,7 @@ class SessionLineageRaceTest {
         // leaves rows for USER whichever order the two run in
         Email user = Email.of("race-everywhere@example.com");
         SessionFamily family = SessionFamily.start();
-        SessionTokens original = SessionTokens.createFor(user, CONFIG, clock, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+        SessionTokens original = SessionTokens.createFor(user, CONFIG, clock, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
         transactions.execute(() -> sessions.create(original, family));
 
         CountDownLatch rotationIsHalfDone = new CountDownLatch(1);
@@ -150,7 +150,7 @@ class SessionLineageRaceTest {
 
         Thread refreshing = new Thread(() -> transactions.execute(() ->
                 sessions.rotateAndCreate(original.refreshToken(), () -> {
-                    SessionTokens next = SessionTokens.createFor(user, CONFIG, clock, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+                    SessionTokens next = SessionTokens.createFor(user, CONFIG, clock, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
                     successor.set(next);
                     rotationIsHalfDone.countDown();
                     try {

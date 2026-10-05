@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.session;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
 
 /**
  * Logs a user out everywhere: revokes every session the user holds, across all lineages, so no

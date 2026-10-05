@@ -2,16 +2,16 @@ package com.jrobertgardzinski.persistence;
 
 import com.jrobertgardzinski.TokenHashing;
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.vo.AccessGrant;
-import com.jrobertgardzinski.security.domain.vo.SessionFamily;
-import com.jrobertgardzinski.security.domain.vo.SessionStatus;
-import com.jrobertgardzinski.security.domain.vo.StoredSession;
-import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
-import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.AccessTokenExpiration;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.session.AccessGrant;
+import com.jrobertgardzinski.security.domain.session.SessionFamily;
+import com.jrobertgardzinski.security.domain.session.SessionStatus;
+import com.jrobertgardzinski.security.domain.session.StoredSession;
+import com.jrobertgardzinski.security.domain.session.AccessToken;
+import com.jrobertgardzinski.security.domain.session.RefreshToken;
+import com.jrobertgardzinski.security.domain.session.AccessTokenExpiration;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenExpiration;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 
@@ -104,10 +104,10 @@ final class JdbcSessionRepository implements SessionRepository {
 
     /** Active by status AND unexpired by the clock — see the query's javadoc for why both. */
     @Override
-    public java.util.List<com.jrobertgardzinski.security.domain.vo.ActiveSession> listActiveSessions(Email email) {
+    public java.util.List<com.jrobertgardzinski.security.domain.session.ActiveSession> listActiveSessions(Email email) {
         return repository.findByEmailAndStatusAndRefreshTokenExpirationAfter(
                         email.value(), SessionStatus.ACTIVE.name(), java.time.LocalDateTime.now(clock)).stream()
-                .map(entity -> new com.jrobertgardzinski.security.domain.vo.ActiveSession(
+                .map(entity -> new com.jrobertgardzinski.security.domain.session.ActiveSession(
                         new SessionFamily(entity.familyId()),
                         new RefreshTokenExpiration(entity.refreshTokenExpiration())))
                 .toList();

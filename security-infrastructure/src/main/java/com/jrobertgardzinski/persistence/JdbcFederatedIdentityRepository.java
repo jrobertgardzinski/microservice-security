@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.persistence;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository;
+import com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 

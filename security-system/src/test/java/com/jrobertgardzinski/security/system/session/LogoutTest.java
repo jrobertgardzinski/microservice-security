@@ -1,12 +1,12 @@
 package com.jrobertgardzinski.security.system.session;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.vo.SessionFamily;
-import com.jrobertgardzinski.security.domain.vo.SessionStatus;
-import com.jrobertgardzinski.security.domain.vo.StoredSession;
-import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.session.SessionFamily;
+import com.jrobertgardzinski.security.domain.session.SessionStatus;
+import com.jrobertgardzinski.security.domain.session.StoredSession;
+import com.jrobertgardzinski.security.domain.session.RefreshToken;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenExpiration;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import net.jqwik.api.Example;

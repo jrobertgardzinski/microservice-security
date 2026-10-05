@@ -5,12 +5,12 @@ import com.jrobertgardzinski.security.application.account.AccountDeletionService
 import com.jrobertgardzinski.security.config.account.AccountDeletionConfig;
 import com.jrobertgardzinski.security.system.account.AccountDeletionSaga;
 import com.jrobertgardzinski.security.system.account.StartAccountDeletion;
-import com.jrobertgardzinski.security.system.roles.RequireRole;
+import com.jrobertgardzinski.security.system.core.RequireRole;
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.AccountDeletionSagaStore;
+import com.jrobertgardzinski.security.domain.account.AccountDeletionSagaStore;
 import com.jrobertgardzinski.persistence.InMemoryOutboxAppender;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.AccountClosure;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.account.AccountClosure;
 import com.jrobertgardzinski.security.system.account.DeleteAccount;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.json.JsonMapper;

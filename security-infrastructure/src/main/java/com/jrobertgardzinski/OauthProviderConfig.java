@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.config.oauth.OauthProviderSettings;
+import com.jrobertgardzinski.security.config.authentication.OauthProviderSettings;
 import io.micronaut.context.annotation.EachProperty;
 import io.micronaut.context.annotation.Parameter;
 

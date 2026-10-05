@@ -1,10 +1,10 @@
 package com.jrobertgardzinski.security.application.authentication;
 
 import com.jrobertgardzinski.security.application.TransactionBoundary;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
+import com.jrobertgardzinski.security.domain.core.IpAddress;
 import com.jrobertgardzinski.security.system.authentication.Authentication;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
-import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
+import com.jrobertgardzinski.security.system.core.SourceThrottle;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

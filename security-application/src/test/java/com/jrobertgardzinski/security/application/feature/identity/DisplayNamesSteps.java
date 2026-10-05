@@ -1,12 +1,12 @@
 package com.jrobertgardzinski.security.application.feature.identity;
 
-import com.jrobertgardzinski.security.domain.repository.FakeUserRepository;
+import com.jrobertgardzinski.security.domain.core.FakeUserRepository;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.identity.UserId;
 import com.jrobertgardzinski.password.domain.HashedPassword;
-import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.vo.DisplayName;
-import com.jrobertgardzinski.security.system.identity.DisplayNames;
+import com.jrobertgardzinski.security.domain.core.User;
+import com.jrobertgardzinski.security.domain.core.DisplayName;
+import com.jrobertgardzinski.security.system.core.DisplayNames;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;

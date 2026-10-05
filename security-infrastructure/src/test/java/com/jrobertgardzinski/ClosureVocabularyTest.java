@@ -1,7 +1,7 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.closure.ClosureInitiator;
-import com.jrobertgardzinski.security.domain.vo.DeletionInitiator;
+import com.jrobertgardzinski.security.domain.account.DeletionInitiator;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import org.junit.jupiter.api.DisplayName;

@@ -1,8 +1,8 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.config.oauth.OauthProviderSettings;
-import com.jrobertgardzinski.security.domain.vo.ProviderIdentity;
+import com.jrobertgardzinski.security.config.authentication.OauthProviderSettings;
+import com.jrobertgardzinski.security.domain.core.ProviderIdentity;
 import io.micronaut.json.JsonMapper;
 import jakarta.inject.Singleton;
 

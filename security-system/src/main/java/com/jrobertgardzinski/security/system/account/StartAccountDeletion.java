@@ -1,10 +1,10 @@
 package com.jrobertgardzinski.security.system.account;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.port.ContentPurge;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.AccountClosure;
+import com.jrobertgardzinski.security.domain.account.ContentPurge;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.account.AccountClosure;
 
 /**
  * Closes an account (GDPR right to be forgotten): the account locks at once — every session

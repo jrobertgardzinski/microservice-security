@@ -1,17 +1,17 @@
 package com.jrobertgardzinski.security.system.session;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.SessionFamily;
-import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
-import com.jrobertgardzinski.security.domain.vo.SessionStatus;
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
-import com.jrobertgardzinski.security.domain.vo.StoredSession;
-import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.session.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.SessionFamily;
+import com.jrobertgardzinski.security.domain.session.SessionRefreshRequest;
+import com.jrobertgardzinski.security.domain.session.SessionStatus;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.session.StoredSession;
+import com.jrobertgardzinski.security.domain.session.RefreshToken;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenExpiration;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import net.jqwik.api.Example;
@@ -69,7 +69,7 @@ class RefreshSessionTest {
         // which is all these cases actually need to steer.
         Mockito.when(sessionRepository.rotateAndCreate(Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenCallRealMethod();
-        refreshSession = new RefreshSession(sessionRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM, MAX_LIFETIME);
+        refreshSession = new RefreshSession(sessionRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM, MAX_LIFETIME);
     }
 
     @Example
@@ -102,7 +102,7 @@ class RefreshSessionTest {
     @Label("Refreshed: an active, unexpired token rotates to a new one in the same family")
     void refreshed_when_active_and_not_expired() {
         StoredSession session = storedSession(LocalDateTime.now(CLOCK).plusHours(1), SessionStatus.ACTIVE);
-        SessionTokens createdTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM);
+        SessionTokens createdTokens = SessionTokens.createFor(GIVEN.email, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
         Mockito.when(sessionRepository.findByRefreshToken(GIVEN.refreshToken))
                 .thenReturn(Optional.of(session));
         Mockito.when(sessionRepository.create(Mockito.any(), Mockito.eq(FAMILY)))

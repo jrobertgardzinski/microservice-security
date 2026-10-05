@@ -1,15 +1,15 @@
 package com.jrobertgardzinski.security.system.authentication;
 
-import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
-import com.jrobertgardzinski.security.domain.entity.AuthenticationBlock;
-import com.jrobertgardzinski.security.domain.event.BruteForceProtectionEvent;
-import com.jrobertgardzinski.security.domain.repository.AuthenticationBlockRepository;
-import com.jrobertgardzinski.security.domain.repository.RejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.vo.FailuresCount;
-import com.jrobertgardzinski.security.domain.vo.AttemptedAccount;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
-import com.jrobertgardzinski.security.domain.vo.LockoutSubject;
-import com.jrobertgardzinski.security.domain.vo.Source;
+import com.jrobertgardzinski.security.config.authentication.BruteForceConfig;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlock;
+import com.jrobertgardzinski.security.domain.authentication.BruteForceProtectionEvent;
+import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlockRepository;
+import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationRepository;
+import com.jrobertgardzinski.security.domain.authentication.FailuresCount;
+import com.jrobertgardzinski.security.domain.authentication.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.core.IpAddress;
+import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
+import com.jrobertgardzinski.security.domain.authentication.Source;
 import com.jrobertgardzinski.email.domain.Email;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -161,7 +161,7 @@ class _BruteForceGuardTest {
                 () -> Mockito.verify(rejectedAuthenticationRepository, Mockito.never())
                         .removeAllFor(Mockito.any(LockoutSubject.class)),
                 () -> Mockito.verify(rejectedAuthenticationRepository, Mockito.never())
-                        .removeAllFor(Mockito.any(com.jrobertgardzinski.security.domain.vo.Source.class))
+                        .removeAllFor(Mockito.any(com.jrobertgardzinski.security.domain.authentication.Source.class))
         );
     }
 }

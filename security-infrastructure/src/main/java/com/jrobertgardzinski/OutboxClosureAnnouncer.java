@@ -4,8 +4,8 @@ import com.jrobertgardzinski.closure.ClosureMessages;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.identity.UserId;
 import com.jrobertgardzinski.persistence.OutboxAppender;
-import com.jrobertgardzinski.security.domain.port.ClosureAnnouncer;
-import com.jrobertgardzinski.security.domain.vo.AccountClosure;
+import com.jrobertgardzinski.security.domain.account.ClosureAnnouncer;
+import com.jrobertgardzinski.security.domain.account.AccountClosure;
 import io.micronaut.json.JsonMapper;
 import jakarta.inject.Singleton;
 

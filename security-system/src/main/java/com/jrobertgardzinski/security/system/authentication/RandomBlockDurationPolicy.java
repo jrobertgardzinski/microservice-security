@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.system.authentication;
 
-import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
+import com.jrobertgardzinski.security.config.authentication.BruteForceConfig;
 
 import java.util.concurrent.ThreadLocalRandom;
 

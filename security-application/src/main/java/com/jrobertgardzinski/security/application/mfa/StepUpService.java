@@ -2,11 +2,11 @@ package com.jrobertgardzinski.security.application.mfa;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
-import com.jrobertgardzinski.security.domain.vo.IpAddress;
-import com.jrobertgardzinski.security.domain.vo.StepUpAction;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.IpAddress;
+import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
 import com.jrobertgardzinski.security.system.mfa.StepUp;
-import com.jrobertgardzinski.security.system.throttle.SourceThrottle;
+import com.jrobertgardzinski.security.system.core.SourceThrottle;
 
 /**
  * Step-up: re-proving yourself for a sensitive action. The per-action policy decides whether a

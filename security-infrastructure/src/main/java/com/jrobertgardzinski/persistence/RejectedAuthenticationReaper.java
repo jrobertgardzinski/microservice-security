@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.persistence;
 
-import com.jrobertgardzinski.security.config.bruteforce.BruteForceConfig;
+import com.jrobertgardzinski.security.config.authentication.BruteForceConfig;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;

@@ -1,16 +1,16 @@
 package com.jrobertgardzinski.security.application.feature.session;
 
-import com.jrobertgardzinski.security.domain.repository.FakeSessionRepository;
+import com.jrobertgardzinski.security.domain.session.FakeSessionRepository;
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
-import com.jrobertgardzinski.security.domain.vo.token.AccessToken;
-import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.AccessTokenExpiration;
-import com.jrobertgardzinski.security.domain.vo.token.expiration.RefreshTokenExpiration;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.session.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.SessionRefreshRequest;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.session.AccessToken;
+import com.jrobertgardzinski.security.domain.session.RefreshToken;
+import com.jrobertgardzinski.security.domain.session.AccessTokenExpiration;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenExpiration;
 import com.jrobertgardzinski.security.system.session.RefreshSession;
 import com.jrobertgardzinski.security.system.session.RefreshSessionResult;
 import io.cucumber.java.en.Given;
@@ -32,7 +32,7 @@ public class SessionSteps {
 
     private final Clock clock = Clock.fixed(Instant.parse("2026-06-15T10:00:00Z"), ZoneOffset.UTC);
     private final FakeSessionRepository authorizationData = new FakeSessionRepository(clock);
-    private final RefreshSession refreshSession = new RefreshSession(authorizationData, clock, CONFIG, com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM,
+    private final RefreshSession refreshSession = new RefreshSession(authorizationData, clock, CONFIG, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM,
             java.time.Duration.ofDays(30));
 
     private Email email;

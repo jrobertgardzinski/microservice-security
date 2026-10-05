@@ -1,7 +1,7 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.domain.port.CodeChannel;
-import com.jrobertgardzinski.security.domain.vo.FactorType;
+import com.jrobertgardzinski.security.domain.mfa.CodeChannel;
+import com.jrobertgardzinski.security.domain.mfa.FactorType;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 

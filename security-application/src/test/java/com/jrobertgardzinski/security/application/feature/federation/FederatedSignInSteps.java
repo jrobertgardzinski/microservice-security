@@ -1,23 +1,23 @@
 package com.jrobertgardzinski.security.application.feature.federation;
 
-import com.jrobertgardzinski.security.domain.repository.FakeEmailVerificationRepository;
-import com.jrobertgardzinski.security.domain.repository.FakeSessionRepository;
-import com.jrobertgardzinski.security.domain.repository.FakeUserRepository;
+import com.jrobertgardzinski.security.domain.mailbox.FakeEmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.session.FakeSessionRepository;
+import com.jrobertgardzinski.security.domain.core.FakeUserRepository;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.application.feature.support.FakeHashAlgorithm;
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.entity.User;
-import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
-import com.jrobertgardzinski.security.domain.repository.FakeFederatedIdentityRepository;
-import com.jrobertgardzinski.security.domain.vo.AccessTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.ProviderIdentity;
-import com.jrobertgardzinski.security.domain.vo.RefreshTokenValidityInHours;
-import com.jrobertgardzinski.security.domain.vo.SessionFamily;
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
-import com.jrobertgardzinski.security.system.federation.FederatedSignIn;
-import com.jrobertgardzinski.security.system.federation.FederatedSignInResult;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.core.User;
+import com.jrobertgardzinski.security.domain.session.AccessTokenMint;
+import com.jrobertgardzinski.security.domain.core.FakeFederatedIdentityRepository;
+import com.jrobertgardzinski.security.domain.session.AccessTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.core.ProviderIdentity;
+import com.jrobertgardzinski.security.domain.session.RefreshTokenValidityInHours;
+import com.jrobertgardzinski.security.domain.session.SessionFamily;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
+import com.jrobertgardzinski.security.system.authentication.FederatedSignIn;
+import com.jrobertgardzinski.security.system.authentication.FederatedSignInResult;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -43,38 +43,38 @@ public class FederatedSignInSteps {
     private final FakeSessionRepository sessions = new FakeSessionRepository(Clock.systemUTC());
     private final FakeHashAlgorithm hashAlgorithm = new FakeHashAlgorithm();
     private final FakeFederatedIdentityRepository identities = new FakeFederatedIdentityRepository();
-    private final com.jrobertgardzinski.security.domain.repository.FakePasswordlessAccountRepository passwordless =
-            new com.jrobertgardzinski.security.domain.repository.FakePasswordlessAccountRepository();
+    private final com.jrobertgardzinski.security.domain.core.FakePasswordlessAccountRepository passwordless =
+            new com.jrobertgardzinski.security.domain.core.FakePasswordlessAccountRepository();
     // a real e-mail factor over a capturing channel, so a scenario can enrol one and prove the
     // federated sign-in then owes it
-    private final com.jrobertgardzinski.security.domain.repository.FakeEnrolledFactorRepository enrolledFactors =
-            new com.jrobertgardzinski.security.domain.repository.FakeEnrolledFactorRepository();
-    private final com.jrobertgardzinski.security.domain.port.CapturingCodeChannel emailChannel =
-            new com.jrobertgardzinski.security.domain.port.CapturingCodeChannel(
-                    com.jrobertgardzinski.security.domain.vo.FactorType.EMAIL_CODE);
+    private final com.jrobertgardzinski.security.domain.mfa.FakeEnrolledFactorRepository enrolledFactors =
+            new com.jrobertgardzinski.security.domain.mfa.FakeEnrolledFactorRepository();
+    private final com.jrobertgardzinski.security.domain.mfa.CapturingCodeChannel emailChannel =
+            new com.jrobertgardzinski.security.domain.mfa.CapturingCodeChannel(
+                    com.jrobertgardzinski.security.domain.mfa.FactorType.EMAIL_CODE);
     private final com.jrobertgardzinski.security.system.mfa.FactorRegistry registry =
             new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of(
                     new com.jrobertgardzinski.security.system.mfa.CodeFactor(emailChannel, raw -> "h:" + raw,
                             com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(), Clock.systemUTC())));
     private final com.jrobertgardzinski.security.system.mfa.EnrolFactor enrolFactor =
             new com.jrobertgardzinski.security.system.mfa.EnrolFactor(registry, enrolledFactors,
-                    new com.jrobertgardzinski.security.domain.port.FakeEnrolmentChallengeStore());
+                    new com.jrobertgardzinski.security.domain.mfa.FakeEnrolmentChallengeStore());
     private final FederatedSignIn federatedSignIn = new FederatedSignIn(
             identities, users, verifications, sessions, hashAlgorithm,
             new SessionTokensConfig(new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1)),
             Clock.systemUTC(), AccessTokenMint.RANDOM, passwordless, enrolledFactors,
             new com.jrobertgardzinski.security.system.mfa.MfaChain(registry,
                     com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
-                    new com.jrobertgardzinski.security.domain.repository.FakeRecoveryCodeRepository(),
+                    new com.jrobertgardzinski.security.domain.mfa.FakeRecoveryCodeRepository(),
                     raw -> "hash:" + raw, Clock.systemUTC(), 10),
-            new com.jrobertgardzinski.security.domain.port.FakePendingAuthenticationStore());
+            new com.jrobertgardzinski.security.domain.mfa.FakePendingAuthenticationStore());
 
     private FederatedSignInResult result;
 
     @io.cucumber.java.en.Given("the ACCOUNT {string} has enrolled an e-mail FACTOR")
     public void hasEnrolledFactor(String email) {
-        enrolFactor.start(Email.of(email), com.jrobertgardzinski.security.domain.vo.FactorType.EMAIL_CODE, email);
-        enrolFactor.confirm(Email.of(email), com.jrobertgardzinski.security.domain.vo.FactorType.EMAIL_CODE,
+        enrolFactor.start(Email.of(email), com.jrobertgardzinski.security.domain.mfa.FactorType.EMAIL_CODE, email);
+        enrolFactor.confirm(Email.of(email), com.jrobertgardzinski.security.domain.mfa.FactorType.EMAIL_CODE,
                 emailChannel.lastCodeFor(email));
     }
 
@@ -118,7 +118,7 @@ public class FederatedSignInSteps {
     public void anActiveSession(String email) {
         sessions.create(SessionTokens.createFor(Email.of(email),
                 new SessionTokensConfig(new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1)),
-                Clock.systemUTC(), com.jrobertgardzinski.security.domain.port.AccessTokenMint.RANDOM),
+                Clock.systemUTC(), com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM),
                 SessionFamily.start());
         assertFalse(sessions.listActiveSessions(Email.of(email)).isEmpty(), "failed to seed a session");
     }

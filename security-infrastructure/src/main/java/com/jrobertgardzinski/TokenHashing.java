@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.domain.vo.token.AbstractToken;
+import com.jrobertgardzinski.security.domain.core.AbstractToken;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

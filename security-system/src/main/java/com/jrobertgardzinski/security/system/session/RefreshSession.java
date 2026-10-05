@@ -1,12 +1,12 @@
 package com.jrobertgardzinski.security.system.session;
 
-import com.jrobertgardzinski.security.domain.entity.SessionTokens;
-import com.jrobertgardzinski.security.domain.port.AccessTokenMint;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.vo.SessionRefreshRequest;
-import com.jrobertgardzinski.security.domain.vo.SessionStatus;
-import com.jrobertgardzinski.security.domain.vo.SessionTokensConfig;
-import com.jrobertgardzinski.security.domain.vo.token.RefreshToken;
+import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.session.AccessTokenMint;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.session.SessionRefreshRequest;
+import com.jrobertgardzinski.security.domain.session.SessionStatus;
+import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
+import com.jrobertgardzinski.security.domain.session.RefreshToken;
 
 import java.time.Clock;
 
@@ -87,7 +87,7 @@ public class RefreshSession {
                 .orElseGet(RefreshSessionResult.NotFound::new);
     }
 
-    private boolean isPastItsWholeLife(com.jrobertgardzinski.security.domain.vo.StoredSession session) {
+    private boolean isPastItsWholeLife(com.jrobertgardzinski.security.domain.session.StoredSession session) {
         return session.familyStartedAt().plus(maxSessionLifetime)
                 .isBefore(java.time.LocalDateTime.now(clock));
     }

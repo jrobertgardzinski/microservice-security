@@ -1,12 +1,12 @@
 package com.jrobertgardzinski.security.system.account;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.port.ContentPurge;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.AccountClosure;
-import com.jrobertgardzinski.security.domain.vo.DeletionInitiator;
-import com.jrobertgardzinski.security.domain.vo.PurgeChoices;
+import com.jrobertgardzinski.security.domain.account.ContentPurge;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.account.AccountClosure;
+import com.jrobertgardzinski.security.domain.account.DeletionInitiator;
+import com.jrobertgardzinski.security.domain.account.PurgeChoices;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import org.junit.jupiter.api.BeforeEach;

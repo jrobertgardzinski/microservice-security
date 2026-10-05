@@ -1,16 +1,16 @@
 package com.jrobertgardzinski.security.system.account;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.repository.SessionRepository;
-import com.jrobertgardzinski.security.domain.repository.EmailChangeRepository;
-import com.jrobertgardzinski.security.domain.repository.EmailVerificationRepository;
-import com.jrobertgardzinski.security.domain.repository.EnrolledFactorRepository;
-import com.jrobertgardzinski.security.domain.repository.PasswordResetRepository;
-import com.jrobertgardzinski.security.domain.repository.PasswordlessAccountRepository;
-import com.jrobertgardzinski.security.domain.repository.RecoveryCodeRepository;
-import com.jrobertgardzinski.security.domain.repository.UserRepository;
-import com.jrobertgardzinski.security.domain.vo.EmailChange;
-import com.jrobertgardzinski.security.domain.vo.token.VerificationToken;
+import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.account.EmailChangeRepository;
+import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
+import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
+import com.jrobertgardzinski.security.domain.mailbox.PasswordResetRepository;
+import com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository;
+import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.account.EmailChange;
+import com.jrobertgardzinski.security.domain.mailbox.VerificationToken;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import net.jqwik.api.Example;
@@ -34,7 +34,7 @@ class ConfirmEmailChangeTest {
     private EmailChangeRepository emailChangeRepository;
     private UserRepository userRepository;
     private EmailVerificationRepository emailVerificationRepository;
-    private com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository federatedIdentityRepository;
+    private com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository federatedIdentityRepository;
     private EnrolledFactorRepository enrolledFactorRepository;
     private RecoveryCodeRepository recoveryCodeRepository;
     private PasswordlessAccountRepository passwordlessAccountRepository;
@@ -54,7 +54,7 @@ class ConfirmEmailChangeTest {
         userRepository = Mockito.mock(UserRepository.class);
         emailVerificationRepository = Mockito.mock(EmailVerificationRepository.class);
         federatedIdentityRepository = Mockito.mock(
-                com.jrobertgardzinski.security.domain.repository.FederatedIdentityRepository.class);
+                com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository.class);
         enrolledFactorRepository = Mockito.mock(EnrolledFactorRepository.class);
         recoveryCodeRepository = Mockito.mock(RecoveryCodeRepository.class);
         passwordlessAccountRepository = Mockito.mock(PasswordlessAccountRepository.class);
@@ -94,7 +94,7 @@ class ConfirmEmailChangeTest {
     @Label("A registration that wins the race is still answered honestly, not as a broken database")
     void refuses_when_the_repository_loses_the_race() {
         Mockito.when(emailChangeRepository.confirmChange(TOKEN)).thenReturn(Optional.of(fresh(new EmailChange(OLD, NEW))));
-        Mockito.doThrow(new com.jrobertgardzinski.security.domain.repository.EmailAlreadyTakenException())
+        Mockito.doThrow(new com.jrobertgardzinski.security.domain.core.EmailAlreadyTakenException())
                 .when(userRepository).updateEmail(OLD, NEW);
 
         assertInstanceOf(ConfirmEmailChangeResult.EmailTaken.class, confirmEmailChange.execute(TOKEN));
