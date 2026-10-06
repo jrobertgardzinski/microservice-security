@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.system.mailbox;
 
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.core.Sessions;
 import com.jrobertgardzinski.security.domain.mailbox.EmailChangeRepository;
 import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
@@ -40,7 +40,7 @@ class ConfirmEmailChangeTest {
     private RecoveryCodeRepository recoveryCodeRepository;
     private PasswordlessAccountRepository passwordlessAccountRepository;
     private PasswordResetRepository passwordResetRepository;
-    private SessionRepository sessionRepository;
+    private Sessions sessionRepository;
     private ConfirmEmailChange confirmEmailChange;
 
     private static final int TOKEN_TTL_MINUTES = 1440;
@@ -60,10 +60,14 @@ class ConfirmEmailChangeTest {
         recoveryCodeRepository = Mockito.mock(RecoveryCodeRepository.class);
         passwordlessAccountRepository = Mockito.mock(PasswordlessAccountRepository.class);
         passwordResetRepository = Mockito.mock(PasswordResetRepository.class);
-        sessionRepository = Mockito.mock(SessionRepository.class);
+        sessionRepository = Mockito.mock(Sessions.class);
+        // the real areas' PersonalData over the mocked stores: the examples still see each store moved
         confirmEmailChange = new ConfirmEmailChange(emailChangeRepository, userRepository,
-                emailVerificationRepository, federatedIdentityRepository, enrolledFactorRepository,
-                recoveryCodeRepository, passwordlessAccountRepository, passwordResetRepository,
+                emailVerificationRepository, federatedIdentityRepository, passwordlessAccountRepository,
+                java.util.List.of(
+                        new com.jrobertgardzinski.security.system.mfa.FactorData(
+                                enrolledFactorRepository, recoveryCodeRepository),
+                        new MailboxData(passwordResetRepository, emailChangeRepository, emailVerificationRepository)),
                 sessionRepository, java.time.Duration.ofMinutes(TOKEN_TTL_MINUTES), clock);
     }
 
@@ -109,7 +113,7 @@ class ConfirmEmailChangeTest {
         assertInstanceOf(ConfirmEmailChangeResult.EmailChanged.class, confirmEmailChange.execute(TOKEN));
         // a session remembers only the address, so one left alive keeps authorizing as OLD — and
         // starts resolving to whoever registers OLD next
-        Mockito.verify(sessionRepository).revokeAllSessions(OLD);
+        Mockito.verify(sessionRepository).endAll(OLD);
     }
 
     @Example

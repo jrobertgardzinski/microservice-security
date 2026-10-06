@@ -104,11 +104,21 @@ class AddressKeyedStoresTest {
         final InMemoryPasswordResetRepository resets = new InMemoryPasswordResetRepository(Clock.systemUTC());
         final InMemoryEmailChangeRepository changes = new InMemoryEmailChangeRepository(Clock.systemUTC());
 
+        // each area's PersonalData, as the production wiring hands them to both use cases
+        final java.util.List<com.jrobertgardzinski.security.domain.core.PersonalData> personalData = java.util.List.of(
+                new com.jrobertgardzinski.security.system.mfa.FactorData(factors, codes),
+                new com.jrobertgardzinski.security.system.mailbox.MailboxData(resets, changes, verifications));
+        final com.jrobertgardzinski.security.domain.core.Sessions keeper =
+                new com.jrobertgardzinski.security.system.session.SessionKeeper(sessions, Clock.systemUTC(),
+                        new com.jrobertgardzinski.security.domain.session.SessionTokensConfig(
+                                new com.jrobertgardzinski.security.domain.session.RefreshTokenValidityInHours(24),
+                                new com.jrobertgardzinski.security.domain.session.AccessTokenValidityInHours(1)),
+                        com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
+
         final ConfirmEmailChange confirmEmailChange = new ConfirmEmailChange(changes, users, verifications,
-                federated, factors, codes, passwordless, resets, sessions,
+                federated, passwordless, personalData, keeper,
                 java.time.Duration.ofMinutes(1440), Clock.systemUTC());
-        final DeleteAccount deleteAccount = new DeleteAccount(users, sessions, factors, codes, federated,
-                verifications, resets, changes, passwordless);
+        final DeleteAccount deleteAccount = new DeleteAccount(users, keeper, federated, passwordless, personalData);
 
         Fixture() {
             users.save(new User(OLD, new HashedPassword("hash")));   // the account every store belongs to

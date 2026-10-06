@@ -1,5 +1,6 @@
-package com.jrobertgardzinski.security.system.authentication;
+package com.jrobertgardzinski.security.system.session;
 
+import com.jrobertgardzinski.security.domain.core.IssuedSession;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.session.SessionTokens;
 import com.jrobertgardzinski.security.domain.session.SessionRepository;
@@ -24,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Epic("Use case")
 @Feature("Authentication")
 @Story("Generate session")
-class _GenerateSessionTest {
+class SessionKeeperTest {
 
     private static final Email EMAIL = Email.of("user@example.com");
     private static final SessionTokensConfig CONFIG = new SessionTokensConfig(
@@ -33,25 +34,33 @@ class _GenerateSessionTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
 
     private SessionRepository sessionRepository;
-    private _GenerateSession generateSession;
+    private SessionKeeper sessionKeeper;
 
     @BeforeTry
     void init() {
         sessionRepository = Mockito.mock(SessionRepository.class);
-        generateSession = new _GenerateSession(sessionRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
+        sessionKeeper = new SessionKeeper(sessionRepository, CLOCK, CONFIG, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
     }
 
     @Example
-    @Label("Creates session tokens for the email and returns the persisted result")
-    void creates_session_tokens_for_email() {
+    @Label("Opens a session for the email and hands back the persisted tokens in plain form")
+    void opens_a_session_for_email() {
         SessionTokens persisted = SessionTokens.createFor(EMAIL, CONFIG, CLOCK, com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM);
         Mockito.when(sessionRepository.create(Mockito.any(), Mockito.any())).thenReturn(persisted);
 
-        SessionTokens result = generateSession.create(EMAIL);
+        IssuedSession result = sessionKeeper.open(EMAIL);
 
         assertAll(
-                () -> assertEquals(persisted, result),
+                () -> assertEquals(new IssuedSession(persisted.plainAccessToken(), persisted.plainRefreshToken()), result),
                 () -> Mockito.verify(sessionRepository).create(Mockito.any(), Mockito.any())
         );
+    }
+
+    @Example
+    @Label("Ends every session of the email")
+    void ends_all_sessions() {
+        sessionKeeper.endAll(EMAIL);
+
+        Mockito.verify(sessionRepository).revokeAllSessions(EMAIL);
     }
 }

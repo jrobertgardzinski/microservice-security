@@ -1,15 +1,14 @@
 package com.jrobertgardzinski.security.system.account;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.session.SessionRepository;
-import com.jrobertgardzinski.security.domain.mailbox.EmailChangeRepository;
-import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
-import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository;
-import com.jrobertgardzinski.security.domain.mailbox.PasswordResetRepository;
 import com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository;
-import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository;
+import com.jrobertgardzinski.security.domain.core.PersonalData;
+import com.jrobertgardzinski.security.domain.core.Sessions;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
+
+import java.util.List;
+
 
 /**
  * Closes a user's account (GDPR right to be forgotten): revokes every session, drops the MFA
@@ -19,8 +18,9 @@ import com.jrobertgardzinski.security.domain.core.UserRepository;
  * account can authenticate and no trace of its secrets remains. Idempotent.
  *
  * <p>Every one of those tables is keyed by the e-mail ADDRESS and not one of them has a foreign key,
- * so nothing cascades: whatever this use case does not name by hand outlives the account, and the
- * freed address can be registered by a stranger. Hence the pending-token tables are purged too — a
+ * so nothing cascades: whatever is not erased by hand outlives the account, and the freed address
+ * can be registered by a stranger. The other areas erase their own through {@link PersonalData};
+ * this use case keeps to core's tables. Hence the pending-token tables are purged too — a
  * reset link e-mailed before the account closed would otherwise still be redeemable and, matched by
  * address alone, would set the password of the address's NEXT owner. So is the passwordless mark: it
  * would tell a step-up that the successor's account has no password to check.
@@ -28,42 +28,30 @@ import com.jrobertgardzinski.security.domain.core.UserRepository;
 public class DeleteAccount {
 
     private final UserRepository userRepository;
-    private final SessionRepository sessionRepository;
-    private final EnrolledFactorRepository enrolledFactorRepository;
-    private final RecoveryCodeRepository recoveryCodeRepository;
+    private final Sessions sessions;
     private final FederatedIdentityRepository federatedIdentityRepository;
-    private final EmailVerificationRepository emailVerificationRepository;
-    private final PasswordResetRepository passwordResetRepository;
-    private final EmailChangeRepository emailChangeRepository;
     private final PasswordlessAccountRepository passwordlessAccountRepository;
+    private final List<PersonalData> personalData;
 
-    public DeleteAccount(UserRepository userRepository, SessionRepository sessionRepository,
-                         EnrolledFactorRepository enrolledFactorRepository,
-                         RecoveryCodeRepository recoveryCodeRepository,
+    /**
+     * @param personalData what every area keeps about a person; this use case names none of them,
+     *                     so an area that starts keeping something adds itself here, not a line below
+     */
+    public DeleteAccount(UserRepository userRepository, Sessions sessions,
                          FederatedIdentityRepository federatedIdentityRepository,
-                         EmailVerificationRepository emailVerificationRepository,
-                         PasswordResetRepository passwordResetRepository,
-                         EmailChangeRepository emailChangeRepository,
-                         PasswordlessAccountRepository passwordlessAccountRepository) {
+                         PasswordlessAccountRepository passwordlessAccountRepository,
+                         List<PersonalData> personalData) {
         this.userRepository = userRepository;
-        this.sessionRepository = sessionRepository;
-        this.enrolledFactorRepository = enrolledFactorRepository;
-        this.recoveryCodeRepository = recoveryCodeRepository;
+        this.sessions = sessions;
         this.federatedIdentityRepository = federatedIdentityRepository;
-        this.emailVerificationRepository = emailVerificationRepository;
-        this.passwordResetRepository = passwordResetRepository;
-        this.emailChangeRepository = emailChangeRepository;
         this.passwordlessAccountRepository = passwordlessAccountRepository;
+        this.personalData = List.copyOf(personalData);
     }
 
     public void execute(Email email) {
-        sessionRepository.revokeAllSessions(email);
-        enrolledFactorRepository.removeAll(email);
-        recoveryCodeRepository.removeAll(email);
+        sessions.endAll(email);
+        personalData.forEach(area -> area.erase(email));
         federatedIdentityRepository.unlinkAll(email);
-        passwordResetRepository.purge(email);
-        emailChangeRepository.purge(email);
-        emailVerificationRepository.purge(email);
         passwordlessAccountRepository.purge(email);
         userRepository.deleteByEmail(email);
     }

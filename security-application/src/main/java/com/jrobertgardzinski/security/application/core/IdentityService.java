@@ -7,7 +7,7 @@ import com.jrobertgardzinski.security.domain.core.DisplayName;
 import com.jrobertgardzinski.security.domain.core.IpAddress;
 import com.jrobertgardzinski.security.domain.core.Role;
 import com.jrobertgardzinski.security.system.core.DisplayNames;
-import com.jrobertgardzinski.security.system.mfa.MfaCompliance;
+import com.jrobertgardzinski.security.domain.core.FactorCompliance;
 import com.jrobertgardzinski.security.system.core.RequireRole;
 import com.jrobertgardzinski.security.system.core.SourceThrottle;
 
@@ -23,12 +23,12 @@ public final class IdentityService {
     public static final int MAX_IDS = 100;
 
     private final RequireRole roles;
-    private final MfaCompliance compliance;
+    private final FactorCompliance compliance;
     private final UserRepository users;
     private final DisplayNames displayNames;
     private final SourceThrottle displayNamesThrottle;
 
-    public IdentityService(RequireRole roles, MfaCompliance compliance, UserRepository users,
+    public IdentityService(RequireRole roles, FactorCompliance compliance, UserRepository users,
                            DisplayNames displayNames, SourceThrottle displayNamesThrottle) {
         this.roles = roles;
         this.compliance = compliance;

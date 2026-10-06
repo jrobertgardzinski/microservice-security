@@ -60,14 +60,17 @@ public class FederatedSignInSteps {
             new com.jrobertgardzinski.security.system.mfa.EnrolFactor(registry, enrolledFactors,
                     new com.jrobertgardzinski.security.domain.mfa.FakeEnrolmentChallengeStore());
     private final FederatedSignIn federatedSignIn = new FederatedSignIn(
-            identities, users, verifications, sessions, hashAlgorithm,
-            new SessionTokensConfig(new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1)),
-            Clock.systemUTC(), AccessTokenMint.RANDOM, passwordless, enrolledFactors,
-            new com.jrobertgardzinski.security.system.mfa.MfaChain(registry,
-                    com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
-                    new com.jrobertgardzinski.security.domain.mfa.FakeRecoveryCodeRepository(),
-                    raw -> "hash:" + raw, Clock.systemUTC(), 10),
-            new com.jrobertgardzinski.security.domain.mfa.FakePendingAuthenticationStore());
+            identities, users, verifications,
+            new com.jrobertgardzinski.security.system.session.SessionKeeper(sessions, Clock.systemUTC(),
+                    new SessionTokensConfig(new RefreshTokenValidityInHours(24), new AccessTokenValidityInHours(1)),
+                    AccessTokenMint.RANDOM),
+            hashAlgorithm, passwordless,
+            new com.jrobertgardzinski.security.system.mfa.BeginFactorChain(enrolledFactors,
+                    new com.jrobertgardzinski.security.system.mfa.MfaChain(registry,
+                            com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
+                            new com.jrobertgardzinski.security.domain.mfa.FakeRecoveryCodeRepository(),
+                            raw -> "hash:" + raw, Clock.systemUTC(), 10),
+                    new com.jrobertgardzinski.security.domain.mfa.FakePendingAuthenticationStore()));
 
     private FederatedSignInResult result;
 

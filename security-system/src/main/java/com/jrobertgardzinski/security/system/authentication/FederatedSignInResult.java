@@ -1,11 +1,11 @@
 package com.jrobertgardzinski.security.system.authentication;
 
-import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.core.IssuedSession;
 import com.jrobertgardzinski.security.domain.core.FactorType;
 
 public sealed interface FederatedSignInResult {
 
-    record SignedIn(SessionTokens session) implements FederatedSignInResult {}
+    record SignedIn(IssuedSession session) implements FederatedSignInResult {}
 
     /**
      * The provider login proved link #1, but the account has enrolled factors: no session yet. The

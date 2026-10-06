@@ -1,6 +1,7 @@
 package com.jrobertgardzinski.security.domain.mailbox;
 
 import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.security.domain.core.VerifiedAddresses;
 
 import java.util.Optional;
 
@@ -9,7 +10,7 @@ import java.util.Optional;
  * (hashed) token last e-mailed to an address; completing it with the matching token marks the
  * address verified and consumes the token. Raw tokens are never stored.
  */
-public interface EmailVerificationRepository {
+public interface EmailVerificationRepository extends VerifiedAddresses {
 
     /** Remember (or reset) the pending token e-mailed to this address; the address is not yet verified. */
     void startVerification(Email email, VerificationToken token);

@@ -1,11 +1,11 @@
 package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlock;
-import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.core.IssuedSession;
 import com.jrobertgardzinski.security.domain.core.FactorType;
 
 public sealed interface AuthenticationResult {
-    record Authenticated(SessionTokens session) implements AuthenticationResult {}
+    record Authenticated(IssuedSession session) implements AuthenticationResult {}
     record Rejected() implements AuthenticationResult {}
     record Blocked(AuthenticationBlock authenticationBlock) implements AuthenticationResult {}
     /** Credentials were correct, but the e-mail address has not been verified yet. */

@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.system.account;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.account.ContentPurge;
-import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.core.Sessions;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
 import com.jrobertgardzinski.security.domain.account.AccountClosure;
 import com.jrobertgardzinski.security.domain.account.DeletionInitiator;
@@ -37,14 +37,14 @@ class StartAccountDeletionTest {
     private static final Email LEAVER = Email.of("leaver@example.com");
 
     private UserRepository users;
-    private SessionRepository sessions;
+    private Sessions sessions;
     private ContentPurge purge;
     private StartAccountDeletion startAccountDeletion;
 
     @BeforeEach
     void init() {
         users = Mockito.mock(UserRepository.class);
-        sessions = Mockito.mock(SessionRepository.class);
+        sessions = Mockito.mock(Sessions.class);
         purge = Mockito.mock(ContentPurge.class);
         startAccountDeletion = new StartAccountDeletion(users, sessions, purge);
     }
@@ -55,7 +55,7 @@ class StartAccountDeletionTest {
         startAccountDeletion.execute(AccountClosure.requestedByOwner(LEAVER));
 
         InOrder inOrder = Mockito.inOrder(sessions, users, purge);
-        inOrder.verify(sessions).revokeAllSessions(LEAVER);
+        inOrder.verify(sessions).endAll(LEAVER);
         inOrder.verify(users).markPendingDeletion(LEAVER);
         inOrder.verify(purge).begin(Mockito.any());
         inOrder.verifyNoMoreInteractions();
@@ -69,8 +69,7 @@ class StartAccountDeletionTest {
         // revokeAllSessions is the whole claim here: the scenario that watches the caller's own
         // token would pass just as happily if this revoked that one session and left the phone
         // signed in to an account that is being deleted
-        Mockito.verify(sessions).revokeAllSessions(LEAVER);
-        Mockito.verify(sessions, Mockito.never()).revokeFamily(Mockito.any());
+        Mockito.verify(sessions).endAll(LEAVER);
     }
 
     @Test

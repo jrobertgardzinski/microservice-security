@@ -27,8 +27,8 @@ import com.jrobertgardzinski.security.domain.core.Source;
 import com.jrobertgardzinski.security.system.authentication.Authentication;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationFactory;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
-import com.jrobertgardzinski.security.system.authentication.ContinueAuthentication;
-import com.jrobertgardzinski.security.system.authentication.ContinueAuthenticationResult;
+import com.jrobertgardzinski.security.system.mfa.ContinueAuthentication;
+import com.jrobertgardzinski.security.system.mfa.ContinueAuthenticationResult;
 import com.jrobertgardzinski.security.system.mfa.CodeFactor;
 import com.jrobertgardzinski.security.system.mfa.EnrolFactor;
 import com.jrobertgardzinski.security.system.mfa.FactorRegistry;
@@ -79,16 +79,17 @@ public class MfaSteps {
                     recoveryCodes, raw -> "hash:" + raw,
                     com.jrobertgardzinski.security.config.mfa.RecoveryCodeConfig.withDefaults());
 
-    private final AuthenticationFactory.AuthenticationUseCases useCases = AuthenticationFactory.assemble(
-            users, verifications, rejections, blocks, sessions, hashAlgorithm,
-            BruteForceConfig.builder().build(), SESSION_TOKENS_CONFIG, clock,
-            () -> 5, AccessTokenMint.RANDOM,
-            enrolledFactors,
+    private final com.jrobertgardzinski.security.system.session.SessionKeeper sessionKeeper =
+            new com.jrobertgardzinski.security.system.session.SessionKeeper(sessions, clock, SESSION_TOKENS_CONFIG, AccessTokenMint.RANDOM);
+    private final com.jrobertgardzinski.security.system.mfa.MfaChain chain =
             new com.jrobertgardzinski.security.system.mfa.MfaChain(registry, ChallengeCodeConfig.withDefaults(),
-                    recoveryCodes, raw -> "hash:" + raw, clock, 10),
-            pendingStore);
-    private final Authentication authentication = useCases.authentication();
-    private final ContinueAuthentication continueAuthentication = useCases.continueAuthentication();
+                    recoveryCodes, raw -> "hash:" + raw, clock, 10);
+    private final com.jrobertgardzinski.security.system.authentication.RecordFailedSignIn failedSignIns = new com.jrobertgardzinski.security.system.authentication.RecordFailedSignIn(rejections, clock);
+    private final Authentication authentication = AuthenticationFactory.assemble(
+            users, verifications, rejections, blocks, hashAlgorithm, BruteForceConfig.builder().build(), clock,
+            () -> 5, sessionKeeper, failedSignIns, new com.jrobertgardzinski.security.system.mfa.BeginFactorChain(enrolledFactors, chain, pendingStore));
+    private final ContinueAuthentication continueAuthentication = new ContinueAuthentication(
+            pendingStore, chain, sessionKeeper, users, verifications, failedSignIns, clock);
 
     private String email;
     private AuthenticationResult authResult;

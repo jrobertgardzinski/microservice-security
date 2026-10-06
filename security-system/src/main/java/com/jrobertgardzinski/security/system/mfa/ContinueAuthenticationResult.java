@@ -1,6 +1,6 @@
-package com.jrobertgardzinski.security.system.authentication;
+package com.jrobertgardzinski.security.system.mfa;
 
-import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.core.IssuedSession;
 import com.jrobertgardzinski.security.domain.core.FactorType;
 
 /**
@@ -10,7 +10,7 @@ import com.jrobertgardzinski.security.domain.core.FactorType;
  */
 public sealed interface ContinueAuthenticationResult {
 
-    record Completed(SessionTokens session) implements ContinueAuthenticationResult {}
+    record Completed(IssuedSession session) implements ContinueAuthenticationResult {}
 
     record NextFactor(FactorType type, String challengeData) implements ContinueAuthenticationResult {}
 

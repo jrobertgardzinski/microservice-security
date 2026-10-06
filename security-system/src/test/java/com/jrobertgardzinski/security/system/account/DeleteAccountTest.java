@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.account;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.core.Sessions;
 import com.jrobertgardzinski.security.domain.mailbox.EmailChangeRepository;
 import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
@@ -25,7 +25,7 @@ class DeleteAccountTest {
     private static final Email EMAIL = Email.of("user@example.com");
 
     private UserRepository userRepository;
-    private SessionRepository sessionRepository;
+    private Sessions sessionRepository;
     private EnrolledFactorRepository enrolledFactorRepository;
     private RecoveryCodeRepository recoveryCodeRepository;
     private FederatedIdentityRepository federatedIdentityRepository;
@@ -38,7 +38,7 @@ class DeleteAccountTest {
     @BeforeTry
     void init() {
         userRepository = Mockito.mock(UserRepository.class);
-        sessionRepository = Mockito.mock(SessionRepository.class);
+        sessionRepository = Mockito.mock(Sessions.class);
         enrolledFactorRepository = Mockito.mock(EnrolledFactorRepository.class);
         recoveryCodeRepository = Mockito.mock(RecoveryCodeRepository.class);
         federatedIdentityRepository = Mockito.mock(FederatedIdentityRepository.class);
@@ -46,10 +46,13 @@ class DeleteAccountTest {
         passwordResetRepository = Mockito.mock(PasswordResetRepository.class);
         emailChangeRepository = Mockito.mock(EmailChangeRepository.class);
         passwordlessAccountRepository = Mockito.mock(PasswordlessAccountRepository.class);
-        deleteAccount = new DeleteAccount(userRepository, sessionRepository,
-                enrolledFactorRepository, recoveryCodeRepository, federatedIdentityRepository,
-                emailVerificationRepository, passwordResetRepository, emailChangeRepository,
-                passwordlessAccountRepository);
+        // the real areas' PersonalData over the mocked stores: the examples still see each store wiped
+        deleteAccount = new DeleteAccount(userRepository, sessionRepository, federatedIdentityRepository,
+                passwordlessAccountRepository, java.util.List.of(
+                        new com.jrobertgardzinski.security.system.mfa.FactorData(
+                                enrolledFactorRepository, recoveryCodeRepository),
+                        new com.jrobertgardzinski.security.system.mailbox.MailboxData(
+                                passwordResetRepository, emailChangeRepository, emailVerificationRepository)));
     }
 
     @Example
@@ -60,7 +63,7 @@ class DeleteAccountTest {
         // the secrets (factor material, recovery-code hashes) must be gone BEFORE the user row is
         InOrder inOrder = Mockito.inOrder(sessionRepository, enrolledFactorRepository,
                 recoveryCodeRepository, federatedIdentityRepository, userRepository);
-        inOrder.verify(sessionRepository).revokeAllSessions(EMAIL);
+        inOrder.verify(sessionRepository).endAll(EMAIL);
         inOrder.verify(enrolledFactorRepository).removeAll(EMAIL);
         inOrder.verify(recoveryCodeRepository).removeAll(EMAIL);
         inOrder.verify(federatedIdentityRepository).unlinkAll(EMAIL);

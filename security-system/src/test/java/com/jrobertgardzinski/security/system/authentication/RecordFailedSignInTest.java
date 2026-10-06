@@ -23,18 +23,18 @@ import java.time.ZoneOffset;
 @Epic("Use case")
 @Feature("Authentication")
 @Story("Update brute-force records")
-class _UpdateBruteForceRecordsTest {
+class RecordFailedSignInTest {
 
     private static final Source IP = Source.of(new IpAddress("192.168.0.1"));
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
 
     private RejectedAuthenticationRepository rejectedAuthenticationRepository;
-    private _UpdateBruteForceRecords updateBruteForceRecords;
+    private RecordFailedSignIn recordFailedSignIn;
 
     @BeforeTry
     void init() {
         rejectedAuthenticationRepository = Mockito.mock(RejectedAuthenticationRepository.class);
-        updateBruteForceRecords = new _UpdateBruteForceRecords(rejectedAuthenticationRepository, CLOCK);
+        recordFailedSignIn = new RecordFailedSignIn(rejectedAuthenticationRepository, CLOCK);
     }
 
     @Example
@@ -42,7 +42,7 @@ class _UpdateBruteForceRecordsTest {
     void records_failed_authentication() {
         LockoutSubject subject = new LockoutSubject(IP, AttemptedAccount.of(Email.of("victim@example.com")));
 
-        updateBruteForceRecords.execute(subject);
+        recordFailedSignIn.record(subject);
 
         Mockito.verify(rejectedAuthenticationRepository)
                 .create(new RejectedAuthenticationDetails(subject, LocalDateTime.now(CLOCK)));

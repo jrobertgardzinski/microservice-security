@@ -3,7 +3,7 @@ package com.jrobertgardzinski.security.application.authentication;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.application.TransactionBoundary;
-import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.core.IssuedSession;
 import com.jrobertgardzinski.security.domain.authentication.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.core.FactorType;
 import com.jrobertgardzinski.security.domain.core.IpAddress;
@@ -64,7 +64,7 @@ public final class AuthenticationService {
 
     public sealed interface Outcome {
 
-        record Authenticated(SessionTokens session) implements Outcome {}
+        record Authenticated(IssuedSession session) implements Outcome {}
 
         /** Wrong credentials, or no such account — the caller is not told which. */
         record Rejected() implements Outcome {}

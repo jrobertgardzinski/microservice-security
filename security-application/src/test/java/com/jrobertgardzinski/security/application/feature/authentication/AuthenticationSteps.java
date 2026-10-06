@@ -185,17 +185,18 @@ public class AuthenticationSteps {
         if (authentication == null) {
             // these scenarios enrol no factors, so the chain is empty and sign-in is single-factor
             authentication = AuthenticationFactory.assemble(
-                    users, verifications, rejections, blocks, sessions, hashAlgorithm,
-                    config, SESSION_TOKENS_CONFIG, clock, blockDuration,
-                    com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM,
-                    new com.jrobertgardzinski.security.domain.mfa.FakeEnrolledFactorRepository(),
-                    new com.jrobertgardzinski.security.system.mfa.MfaChain(
-                            new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of()),
-                            com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
-                            new com.jrobertgardzinski.security.domain.mfa.FakeRecoveryCodeRepository(),
-                            raw -> "hash:" + raw, clock, 10),
-                    new com.jrobertgardzinski.security.domain.mfa.FakePendingAuthenticationStore()
-                    ).authentication();
+                    users, verifications, rejections, blocks, hashAlgorithm, config, clock, blockDuration,
+                    new com.jrobertgardzinski.security.system.session.SessionKeeper(sessions, clock, SESSION_TOKENS_CONFIG,
+                            com.jrobertgardzinski.security.domain.session.AccessTokenMint.RANDOM),
+                    new com.jrobertgardzinski.security.system.authentication.RecordFailedSignIn(rejections, clock),
+                    new com.jrobertgardzinski.security.system.mfa.BeginFactorChain(
+                            new com.jrobertgardzinski.security.domain.mfa.FakeEnrolledFactorRepository(),
+                            new com.jrobertgardzinski.security.system.mfa.MfaChain(
+                                    new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of()),
+                                    com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig.withDefaults(),
+                                    new com.jrobertgardzinski.security.domain.mfa.FakeRecoveryCodeRepository(),
+                                    raw -> "hash:" + raw, clock, 10),
+                            new com.jrobertgardzinski.security.domain.mfa.FakePendingAuthenticationStore()));
         }
         return authentication;
     }

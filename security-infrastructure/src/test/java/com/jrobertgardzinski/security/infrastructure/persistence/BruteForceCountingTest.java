@@ -14,7 +14,7 @@ import com.jrobertgardzinski.security.domain.core.AttemptedAccount;
 import com.jrobertgardzinski.security.domain.core.LockoutSubject;
 import com.jrobertgardzinski.security.domain.core.Source;
 import com.jrobertgardzinski.security.system.authentication.Authentication;
-import com.jrobertgardzinski.security.system.authentication.ContinueAuthentication;
+import com.jrobertgardzinski.security.system.mfa.ContinueAuthentication;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
 import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.AfterAll;

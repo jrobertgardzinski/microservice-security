@@ -40,29 +40,7 @@ class AreaIsolationTest {
     private static final String SHARED = "core";
 
     /** Reaches from one area into another, as {@code "layer.area -> layer.area"}. */
-    private static final Set<String> ALLOWED_CROSSINGS = Set.of(
-            // signing in: password, provider and factors end in a session; a sign-in needs a verified address
-            "application.authentication -> domain.mfa",
-            "application.authentication -> domain.session",
-            "application.mfa -> domain.session",
-            "application.mfa -> system.authentication",
-            "domain.mfa -> domain.authentication",
-            "system.authentication -> domain.mailbox",
-            "system.authentication -> domain.mfa",
-            "system.authentication -> domain.session",
-            "system.authentication -> system.mfa",
-            // closing or changing an account reaches every store that holds the person
-            "application.account -> domain.mailbox",
-            "application.account -> domain.mfa",
-            "domain.account -> domain.mailbox",
-            "system.account -> domain.mailbox",
-            "system.account -> domain.mfa",
-            "system.account -> domain.session",
-            // a password reset ends the sessions; registration starts the verification; /me reports the factors
-            "application.core -> domain.mailbox",
-            "application.core -> system.mailbox",
-            "application.core -> system.mfa",
-            "system.mailbox -> domain.session");
+    private static final Set<String> ALLOWED_CROSSINGS = Set.of();
 
     @ArchTest
     static final ArchRule an_area_sees_only_itself_and_the_shared_area = classes()

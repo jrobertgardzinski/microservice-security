@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.system.account;
 
+import com.jrobertgardzinski.security.domain.core.Sessions;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.HashedPassword;
@@ -7,7 +9,6 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.domain.core.User;
-import com.jrobertgardzinski.security.domain.session.SessionRepository;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
 
 import java.util.Optional;
@@ -33,10 +34,10 @@ public class ChangePassword {
     private final UserRepository userRepository;
     private final HashAlgorithmPort hashAlgorithm;
     private final PasswordPolicyInForce passwordPolicy;
-    private final SessionRepository sessions;
+    private final Sessions sessions;
 
     public ChangePassword(UserRepository userRepository, HashAlgorithmPort hashAlgorithm,
-                          PasswordPolicyInForce passwordPolicy, SessionRepository sessions) {
+                          PasswordPolicyInForce passwordPolicy, Sessions sessions) {
         this.userRepository = userRepository;
         this.hashAlgorithm = hashAlgorithm;
         this.passwordPolicy = passwordPolicy;
@@ -55,7 +56,7 @@ public class ChangePassword {
             return new ChangePasswordResult.WeakPassword();
         }
         userRepository.updatePassword(email, newHash.get());
-        sessions.revokeAllSessions(email);   // the old password's sessions do not survive it
+        sessions.endAll(email);   // the old password's sessions do not survive it
         return new ChangePasswordResult.Changed();
     }
 }

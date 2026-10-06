@@ -1,48 +1,42 @@
 package com.jrobertgardzinski.security.system.authentication;
 
-import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
+import com.jrobertgardzinski.security.domain.core.FailedSignIns;
+import com.jrobertgardzinski.security.domain.core.SecondFactors;
+import com.jrobertgardzinski.security.domain.core.Sessions;
+import com.jrobertgardzinski.security.domain.core.VerifiedAddresses;
+import java.util.Optional;
 import com.jrobertgardzinski.security.domain.authentication.AuthenticationEvent;
 import com.jrobertgardzinski.security.domain.authentication.BruteForceProtectionEvent;
-import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.authentication.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.authentication.Credentials;
 import com.jrobertgardzinski.security.domain.core.AttemptedAccount;
 import com.jrobertgardzinski.security.domain.core.LockoutSubject;
 import com.jrobertgardzinski.security.domain.core.Source;
-import com.jrobertgardzinski.security.domain.mfa.PendingAuthentication;
-import com.jrobertgardzinski.security.domain.mfa.PendingAuthenticationStore;
 
-import java.util.List;
 
 public class Authentication {
     private final _BruteForceGuard bruteForceGuard;
     private final _VerifyCredentials verifyCredentials;
-    private final _RequireVerifiedEmail requireVerifiedEmail;
-    private final _GenerateSession generateSession;
+    private final VerifiedAddresses verifiedAddresses;
+    private final Sessions sessions;
     private final _CleanBruteForceRecords cleanBruteForceRecords;
-    private final _UpdateBruteForceRecords updateBruteForceRecords;
-    private final EnrolledFactorRepository enrolledFactorRepository;
-    private final com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain;
-    private final PendingAuthenticationStore pendingStore;
+    private final FailedSignIns failedSignIns;
+    private final SecondFactors secondFactors;
 
     Authentication(_BruteForceGuard bruteForceGuard,
                    _VerifyCredentials verifyCredentials,
-                   _RequireVerifiedEmail requireVerifiedEmail,
-                   _GenerateSession generateSession,
+                   VerifiedAddresses verifiedAddresses,
+                   Sessions sessions,
                    _CleanBruteForceRecords cleanBruteForceRecords,
-                   _UpdateBruteForceRecords updateBruteForceRecords,
-                   EnrolledFactorRepository enrolledFactorRepository,
-                   com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
-                   PendingAuthenticationStore pendingStore) {
+                   FailedSignIns failedSignIns,
+                   SecondFactors secondFactors) {
         this.bruteForceGuard = bruteForceGuard;
         this.verifyCredentials = verifyCredentials;
-        this.requireVerifiedEmail = requireVerifiedEmail;
-        this.generateSession = generateSession;
+        this.verifiedAddresses = verifiedAddresses;
+        this.sessions = sessions;
         this.cleanBruteForceRecords = cleanBruteForceRecords;
-        this.updateBruteForceRecords = updateBruteForceRecords;
-        this.enrolledFactorRepository = enrolledFactorRepository;
-        this.mfaChain = mfaChain;
-        this.pendingStore = pendingStore;
+        this.failedSignIns = failedSignIns;
+        this.secondFactors = secondFactors;
     }
 
     public AuthenticationResult execute(AuthenticationRequest request) {
@@ -58,7 +52,7 @@ public class Authentication {
             case BruteForceProtectionEvent.Allowed _ -> switch (verifyCredentials.execute(credentials)) {
                 case AuthenticationEvent.Valid valid -> {
                     // correct credentials are not a guessing signal, so no brute-force update here
-                    if (!requireVerifiedEmail.isVerified(valid.email())) {
+                    if (!verifiedAddresses.isVerified(valid.email())) {
                         yield new AuthenticationResult.EmailNotVerified();
                     }
                     // The person got their own password right, so THEIR earlier misses stop counting
@@ -70,18 +64,13 @@ public class Authentication {
                     cleanBruteForceRecords.execute(subject);
                     // link #1 passed. With enrolled factors the session waits until the chain
                     // completes; with none it is minted now (unchanged single-factor sign-in).
-                    List<EnrolledFactor> factors = enrolledFactorRepository.findByUser(valid.email());
-                    if (factors.isEmpty()) {
-                        yield new AuthenticationResult.Authenticated(generateSession.create(valid.email()));
-                    }
-                    // the chain remembers where it began, so a wrong proof is charged to the same
-                    // pair a wrong password is — see PendingAuthentication
-                    PendingAuthentication pending = mfaChain.begin(valid.email(), factors).startedFrom(source);
-                    String ticket = pendingStore.open(pending);
-                    yield new AuthenticationResult.MfaRequired(ticket, factors.get(0).type(), pending.challengeData());
+                    yield secondFactors.challenge(valid.email(), Optional.of(source))
+                            .<AuthenticationResult>map(chain -> new AuthenticationResult.MfaRequired(
+                                    chain.ticket(), chain.factor(), chain.challengeData()))
+                            .orElseGet(() -> new AuthenticationResult.Authenticated(sessions.open(valid.email())));
                 }
                 case AuthenticationEvent.Invalid _ -> {
-                    updateBruteForceRecords.execute(subject);
+                    failedSignIns.record(subject);
                     yield new AuthenticationResult.Rejected();
                 }
             };

@@ -69,9 +69,11 @@ UI  →  Infrastructure  →  Application  →  System  →  Config  →  Domain
 Inside every layer the classes sit in one package per area — core, session, authentication,
 mailbox, mfa, account — so work on one area reads one directory per layer. An area sees only
 itself and **core**, the shared one, and the layers point down; `AreaIsolationTest` (ArchUnit)
-checks both on the compiled classes. Nineteen reaches between areas are real flows nobody has cut
-yet — signing in ends in a session and needs a verified address, closing an account empties every
-store that holds the person — and are listed there by name; the list can only shrink.
+checks both on the compiled classes, with no exception. Where a flow spans areas — a sign-in
+opens a session, demands a verified address and begins a factor chain; closing an account empties
+every store that holds the person — core declares the port (`Sessions`, `VerifiedAddresses`,
+`SecondFactors`, `FailedSignIns`, `PersonalData`, `FactorCompliance`) and the area that owns the
+data answers it.
 
 ### The three entry points — one behaviour, many doors
 

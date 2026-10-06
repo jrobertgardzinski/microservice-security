@@ -7,7 +7,7 @@ import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
 import com.jrobertgardzinski.security.domain.core.User;
-import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.core.Sessions;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -43,13 +43,13 @@ class ChangePasswordTest {
     };
 
     private UserRepository userRepository;
-    private SessionRepository sessions;
+    private Sessions sessions;
     private ChangePassword changePassword;
 
     @BeforeTry
     void init() {
         userRepository = Mockito.mock(UserRepository.class);
-        sessions = Mockito.mock(SessionRepository.class);
+        sessions = Mockito.mock(Sessions.class);
         Mockito.when(userRepository.findBy(EMAIL)).thenReturn(Optional.of(
                 new User(EMAIL, new HashedPassword("hash:OldPassword1!"))));
         changePassword = new ChangePassword(userRepository, FAKE_ALGORITHM,
@@ -73,7 +73,7 @@ class ChangePasswordTest {
         // whole refresh window.
         assertInstanceOf(ChangePasswordResult.Changed.class, changePassword.execute(EMAIL, CURRENT, NEW_STRONG));
 
-        Mockito.verify(sessions).revokeAllSessions(EMAIL);
+        Mockito.verify(sessions).endAll(EMAIL);
     }
 
     @Example
@@ -85,7 +85,7 @@ class ChangePasswordTest {
                 changePassword.execute(EMAIL, wrong, NEW_STRONG));
 
         Mockito.verify(userRepository, Mockito.never()).updatePassword(Mockito.any(), Mockito.any());
-        Mockito.verify(sessions, Mockito.never()).revokeAllSessions(Mockito.any());
+        Mockito.verify(sessions, Mockito.never()).endAll(Mockito.any());
     }
 
     @Example

@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.application.mfa;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.application.TransactionBoundary;
-import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.core.IssuedSession;
 import com.jrobertgardzinski.security.domain.core.User;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository;
@@ -10,8 +10,8 @@ import com.jrobertgardzinski.security.domain.core.UserRepository;
 import com.jrobertgardzinski.security.domain.core.FactorType;
 import com.jrobertgardzinski.security.domain.core.IpAddress;
 import com.jrobertgardzinski.security.domain.core.Role;
-import com.jrobertgardzinski.security.system.authentication.ContinueAuthentication;
-import com.jrobertgardzinski.security.system.authentication.ContinueAuthenticationResult;
+import com.jrobertgardzinski.security.system.mfa.ContinueAuthentication;
+import com.jrobertgardzinski.security.system.mfa.ContinueAuthenticationResult;
 import com.jrobertgardzinski.security.system.mfa.EnrolFactor;
 import com.jrobertgardzinski.security.system.mfa.FactorRegistry;
 import com.jrobertgardzinski.security.system.mfa.GenerateRecoveryCodes;
@@ -211,7 +211,7 @@ public final class MfaService {
 
     public sealed interface SignIn {
 
-        record Completed(SessionTokens session) implements SignIn {}
+        record Completed(IssuedSession session) implements SignIn {}
 
         record NextFactor(String ticket, FactorType type, String challengeData) implements SignIn {}
 

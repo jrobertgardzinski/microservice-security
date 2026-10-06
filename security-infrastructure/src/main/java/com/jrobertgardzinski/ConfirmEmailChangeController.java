@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.application.account.AccountService;
+import com.jrobertgardzinski.security.application.mailbox.EmailChangeService;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
@@ -22,23 +22,23 @@ import java.util.Map;
 @Controller("/confirm-email-change")
 final class ConfirmEmailChangeController {
 
-    private final AccountService account;
+    private final EmailChangeService emailChange;
 
-    ConfirmEmailChangeController(AccountService account) {
-        this.account = account;
+    ConfirmEmailChangeController(EmailChangeService emailChange) {
+        this.emailChange = emailChange;
     }
 
     @Post(consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> confirm(@Body Map<String, Object> body) {
-        return switch (account.confirmEmailChange(JsonBody.text(body, "token"))) {
-            case AccountService.EmailConfirmation.EmailChanged changed ->
+        return switch (emailChange.confirmEmailChange(JsonBody.text(body, "token"))) {
+            case EmailChangeService.EmailConfirmation.EmailChanged changed ->
                     HttpResponse.ok(Map.of("status", "EMAIL_CHANGED", "email", changed.newEmail().value()));
             // 409: the request was well formed and the token was good — the world moved. Its own
             // status, because "invalid token" would send the owner to fetch another one that fails
             // exactly the same way.
-            case AccountService.EmailConfirmation.EmailTaken taken ->
+            case EmailChangeService.EmailConfirmation.EmailTaken taken ->
                     HttpResponse.status(HttpStatus.CONFLICT).body(Map.of("status", "EMAIL_TAKEN"));
-            case AccountService.EmailConfirmation.InvalidToken invalid ->
+            case EmailChangeService.EmailConfirmation.InvalidToken invalid ->
                     HttpResponse.badRequest().body(Map.of("status", "INVALID_TOKEN"));
         };
     }

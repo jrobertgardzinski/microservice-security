@@ -1,14 +1,14 @@
 package com.jrobertgardzinski.security.system.mailbox;
 
-import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.core.PersonalData;
+import com.jrobertgardzinski.security.domain.core.Sessions;
+import java.util.List;
+
 import com.jrobertgardzinski.security.domain.core.EmailAlreadyTakenException;
 import com.jrobertgardzinski.security.domain.mailbox.EmailChangeRepository;
 import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
-import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository;
-import com.jrobertgardzinski.security.domain.mailbox.PasswordResetRepository;
 import com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository;
-import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
 import com.jrobertgardzinski.security.domain.mailbox.VerificationToken;
 
@@ -61,32 +61,25 @@ public class ConfirmEmailChange {
     private final UserRepository userRepository;
     private final EmailVerificationRepository emailVerificationRepository;
     private final FederatedIdentityRepository federatedIdentityRepository;
-    private final EnrolledFactorRepository enrolledFactorRepository;
-    private final RecoveryCodeRepository recoveryCodeRepository;
     private final PasswordlessAccountRepository passwordlessAccountRepository;
-    private final PasswordResetRepository passwordResetRepository;
-    private final SessionRepository sessionRepository;
+    private final List<PersonalData> personalData;
+    private final Sessions sessions;
     private final java.time.Duration tokenTtl;
     private final java.time.Clock clock;
 
     public ConfirmEmailChange(EmailChangeRepository emailChangeRepository, UserRepository userRepository,
                               EmailVerificationRepository emailVerificationRepository,
                               FederatedIdentityRepository federatedIdentityRepository,
-                              EnrolledFactorRepository enrolledFactorRepository,
-                              RecoveryCodeRepository recoveryCodeRepository,
                               PasswordlessAccountRepository passwordlessAccountRepository,
-                              PasswordResetRepository passwordResetRepository,
-                              SessionRepository sessionRepository,
+                              List<PersonalData> personalData, Sessions sessions,
                               java.time.Duration tokenTtl, java.time.Clock clock) {
         this.emailChangeRepository = emailChangeRepository;
         this.userRepository = userRepository;
         this.emailVerificationRepository = emailVerificationRepository;
         this.federatedIdentityRepository = federatedIdentityRepository;
-        this.enrolledFactorRepository = enrolledFactorRepository;
-        this.recoveryCodeRepository = recoveryCodeRepository;
         this.passwordlessAccountRepository = passwordlessAccountRepository;
-        this.passwordResetRepository = passwordResetRepository;
-        this.sessionRepository = sessionRepository;
+        this.personalData = List.copyOf(personalData);
+        this.sessions = sessions;
         this.tokenTtl = tokenTtl;
         this.clock = clock;
     }
@@ -102,12 +95,9 @@ public class ConfirmEmailChange {
                         return new ConfirmEmailChangeResult.EmailTaken();
                     }
                     federatedIdentityRepository.relinkAll(change.currentEmail(), change.newEmail());
-                    enrolledFactorRepository.reassign(change.currentEmail(), change.newEmail());
-                    recoveryCodeRepository.reassign(change.currentEmail(), change.newEmail());
                     passwordlessAccountRepository.reassign(change.currentEmail(), change.newEmail());
-                    passwordResetRepository.purge(change.currentEmail());
-                    emailChangeRepository.purge(change.currentEmail());
-                    emailVerificationRepository.purge(change.currentEmail());
+                    // every other area moves what it keeps about the person, or drops what must not follow
+                    personalData.forEach(area -> area.move(change.currentEmail(), change.newEmail()));
                     try {
                         userRepository.updateEmail(change.currentEmail(), change.newEmail());
                     } catch (EmailAlreadyTakenException takenSinceWeLooked) {
@@ -115,7 +105,7 @@ public class ConfirmEmailChange {
                         // what settles it, and the same answer is owed either way
                         return new ConfirmEmailChangeResult.EmailTaken();
                     }
-                    sessionRepository.revokeAllSessions(change.currentEmail());
+                    sessions.endAll(change.currentEmail());
                     emailVerificationRepository.markVerified(change.newEmail());
                     return new ConfirmEmailChangeResult.EmailChanged(change.currentEmail(), change.newEmail());
                 })

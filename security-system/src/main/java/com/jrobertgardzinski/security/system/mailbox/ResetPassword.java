@@ -1,12 +1,13 @@
 package com.jrobertgardzinski.security.system.mailbox;
 
+import com.jrobertgardzinski.security.domain.core.Sessions;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
-import com.jrobertgardzinski.security.domain.session.SessionRepository;
 import com.jrobertgardzinski.security.domain.mailbox.PasswordResetRepository;
 import com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
@@ -48,14 +49,14 @@ public class ResetPassword {
     private final HashAlgorithmPort hashAlgorithm;
     private final PasswordPolicyInForce passwordPolicy;
     private final PasswordlessAccountRepository passwordlessAccounts;
-    private final SessionRepository sessions;
+    private final Sessions sessions;
     private final Duration tokenTtl;
     private final Clock clock;
 
     public ResetPassword(PasswordResetRepository passwordResetRepository, UserRepository userRepository,
                          HashAlgorithmPort hashAlgorithm, PasswordPolicyInForce passwordPolicy,
                          PasswordlessAccountRepository passwordlessAccounts,
-                         SessionRepository sessions, Duration tokenTtl, Clock clock) {
+                         Sessions sessions, Duration tokenTtl, Clock clock) {
         this.passwordResetRepository = passwordResetRepository;
         this.userRepository = userRepository;
         this.hashAlgorithm = hashAlgorithm;
@@ -89,7 +90,7 @@ public class ResetPassword {
         }
         userRepository.updatePassword(email, hashed.get());
         passwordlessAccounts.setPasswordless(email, false);   // the account now has a password
-        sessions.revokeAllSessions(email);   // the old password's sessions do not survive it
+        sessions.endAll(email);   // the old password's sessions do not survive it
         return new ResetPasswordResult.PasswordReset(email);
     }
 }

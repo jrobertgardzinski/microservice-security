@@ -1,8 +1,9 @@
 package com.jrobertgardzinski.security.system.account;
 
+import com.jrobertgardzinski.security.domain.core.Sessions;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.account.ContentPurge;
-import com.jrobertgardzinski.security.domain.session.SessionRepository;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
 import com.jrobertgardzinski.security.domain.account.AccountClosure;
 
@@ -19,11 +20,11 @@ import com.jrobertgardzinski.security.domain.account.AccountClosure;
 public class StartAccountDeletion {
 
     private final UserRepository userRepository;
-    private final SessionRepository sessionRepository;
+    private final Sessions sessionRepository;
     private final ContentPurge contentPurge;
 
     public StartAccountDeletion(UserRepository userRepository,
-                                SessionRepository sessionRepository,
+                                Sessions sessionRepository,
                                 ContentPurge contentPurge) {
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
@@ -32,7 +33,7 @@ public class StartAccountDeletion {
 
     public void execute(AccountClosure closure) {
         Email email = closure.target();
-        sessionRepository.revokeAllSessions(email);
+        sessionRepository.endAll(email);
         userRepository.markPendingDeletion(email);
         contentPurge.begin(closure);
     }

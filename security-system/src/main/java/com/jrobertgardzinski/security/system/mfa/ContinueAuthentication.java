@@ -1,5 +1,10 @@
-package com.jrobertgardzinski.security.system.authentication;
+package com.jrobertgardzinski.security.system.mfa;
 
+import com.jrobertgardzinski.email.domain.Email;
+import com.jrobertgardzinski.security.domain.core.FailedSignIns;
+import com.jrobertgardzinski.security.domain.core.Sessions;
+import com.jrobertgardzinski.security.domain.core.UserRepository;
+import com.jrobertgardzinski.security.domain.core.VerifiedAddresses;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
 import com.jrobertgardzinski.security.domain.mfa.PendingAuthentication;
 import com.jrobertgardzinski.security.domain.mfa.PendingAuthenticationStore;
@@ -19,20 +24,22 @@ import java.util.Optional;
 public class ContinueAuthentication {
 
     private final PendingAuthenticationStore store;
-    private final com.jrobertgardzinski.security.system.mfa.MfaChain chain;
-    private final _GenerateSession generateSession;
-    private final _AccountStillSignsIn accountStillSignsIn;
-    private final _UpdateBruteForceRecords updateBruteForceRecords;
+    private final MfaChain chain;
+    private final Sessions sessions;
+    private final UserRepository users;
+    private final VerifiedAddresses verifiedAddresses;
+    private final FailedSignIns failedSignIns;
     private final Clock clock;
 
-    ContinueAuthentication(PendingAuthenticationStore store, com.jrobertgardzinski.security.system.mfa.MfaChain chain,
-                           _GenerateSession generateSession, _AccountStillSignsIn accountStillSignsIn,
-                           _UpdateBruteForceRecords updateBruteForceRecords, Clock clock) {
+    public ContinueAuthentication(PendingAuthenticationStore store, MfaChain chain, Sessions sessions,
+                                  UserRepository users, VerifiedAddresses verifiedAddresses,
+                                  FailedSignIns failedSignIns, Clock clock) {
         this.store = store;
         this.chain = chain;
-        this.generateSession = generateSession;
-        this.accountStillSignsIn = accountStillSignsIn;
-        this.updateBruteForceRecords = updateBruteForceRecords;
+        this.sessions = sessions;
+        this.users = users;
+        this.verifiedAddresses = verifiedAddresses;
+        this.failedSignIns = failedSignIns;
         this.clock = clock;
     }
 
@@ -49,7 +56,7 @@ public class ContinueAuthentication {
             // down like a wrong password. Five-per-ticket was never a limit on the person: link #1
             // is a password they already hold, so a new ticket costs one request and the codes
             // could be walked at whatever rate tickets could be minted.
-            pending.lockoutSubject().ifPresent(updateBruteForceRecords::execute);
+            pending.lockoutSubject().ifPresent(failedSignIns::record);
             // spend the attempt as one step and decide on what is NOW stored: reading the count,
             // subtracting one and writing it back as three calls let concurrent proofs share the
             // same attempt, so a ticket worth five guesses answered as many as were sent at once
@@ -67,13 +74,24 @@ public class ContinueAuthentication {
             // the chain proved the PERSON; whether the ACCOUNT still signs in is a separate question,
             // and link #1's answer to it is as old as the chain took to walk. A deletion requested
             // after the password step used to be answered with a brand-new session.
-            if (!accountStillSignsIn.isTrueOf(pending.email())) {
+            if (!stillSignsIn(pending.email())) {
                 return new ContinueAuthenticationResult.InvalidTicket();
             }
-            return new ContinueAuthenticationResult.Completed(generateSession.create(pending.email()));
+            return new ContinueAuthenticationResult.Completed(sessions.open(pending.email()));
         }
         PendingAuthentication advanced = chain.advanceTo(pending, tail);
         store.replace(ticket, advanced);
         return new ContinueAuthenticationResult.NextFactor(tail.get(0).type(), advanced.challengeData());
+    }
+
+    /**
+     * The account may have changed while the chain was in flight: deleted, closing, or its address
+     * no longer verified. A completed chain for an account that would not be let in by password
+     * must not be let in either.
+     */
+    private boolean stillSignsIn(Email email) {
+        return users.findBy(email).isPresent()
+                && !users.isPendingDeletion(email)
+                && verifiedAddresses.isVerified(email);
     }
 }

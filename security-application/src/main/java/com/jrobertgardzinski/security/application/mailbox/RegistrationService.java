@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.application.core;
+package com.jrobertgardzinski.security.application.mailbox;
 
 import com.jrobertgardzinski.email.config.CanRegisterConfig;
 import com.jrobertgardzinski.email.domain.Email;

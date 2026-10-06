@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.application.account.AccountService;
+import com.jrobertgardzinski.security.application.mailbox.EmailChangeService;
 import com.jrobertgardzinski.security.domain.core.StepUpAction;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -27,11 +27,11 @@ import java.util.Map;
 @Controller("/account/email")
 final class EmailChangeController {
 
-    private final AccountService account;
+    private final EmailChangeService emailChange;
     private final StepUpGuard stepUpGuard;
 
-    EmailChangeController(AccountService account, StepUpGuard stepUpGuard) {
-        this.account = account;
+    EmailChangeController(EmailChangeService emailChange, StepUpGuard stepUpGuard) {
+        this.emailChange = emailChange;
         this.stepUpGuard = stepUpGuard;
     }
 
@@ -41,19 +41,19 @@ final class EmailChangeController {
         // a thief with a live session could walk off with the whole account and the owner would
         // learn about it from a notice. Guarded where the change STARTS; the confirmation itself
         // still needs the token mailed to that new address.
-        AccountService.EmailChange outcome = account.requestEmailChange(Caller.of(request),
+        EmailChangeService.EmailChange outcome = emailChange.requestEmailChange(Caller.of(request),
                 JsonBody.text(body, "newEmail"),
                 () -> stepUpGuard.requireElevation(request, StepUpAction.CHANGE_EMAIL).isEmpty());
         return switch (outcome) {
-            case AccountService.EmailChange.LinkSent sent ->
+            case EmailChangeService.EmailChange.LinkSent sent ->
                     HttpResponse.accepted().body(Map.of("status", "EMAIL_CHANGE_LINK_SENT"));
-            case AccountService.EmailChange.Rejected rejected ->
+            case EmailChangeService.EmailChange.Rejected rejected ->
                     HttpResponse.unprocessableEntity().body(Map.of(
                             "emailErrors",
                             SecurityController.emailErrors(rejected.emailErrors(), rejected.emailPolicy())));
-            case AccountService.EmailChange.InvalidEmail invalid ->
+            case EmailChangeService.EmailChange.InvalidEmail invalid ->
                     HttpResponse.badRequest().body(Map.of("status", "INVALID_EMAIL"));
-            case AccountService.EmailChange.StepUpRequired stepUp -> StepUpGuard.refusal(StepUpAction.CHANGE_EMAIL);
+            case EmailChangeService.EmailChange.StepUpRequired stepUp -> StepUpGuard.refusal(StepUpAction.CHANGE_EMAIL);
         };
     }
 }

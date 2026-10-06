@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.application.authentication;
 
 import com.jrobertgardzinski.security.application.TransactionBoundary;
-import com.jrobertgardzinski.security.domain.session.SessionTokens;
+import com.jrobertgardzinski.security.domain.core.IssuedSession;
 import com.jrobertgardzinski.security.domain.core.FactorType;
 import com.jrobertgardzinski.security.domain.core.ProviderIdentity;
 import com.jrobertgardzinski.security.system.authentication.FederatedSignIn;
@@ -33,7 +33,7 @@ public final class FederationService {
 
     public sealed interface Outcome {
 
-        record SignedIn(SessionTokens session) implements Outcome {}
+        record SignedIn(IssuedSession session) implements Outcome {}
 
         /** The account has enrolled factors: the chain is finished like a password sign-in's. */
         record MfaRequired(String ticket, FactorType nextFactor, String challengeData) implements Outcome {}

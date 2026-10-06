@@ -1,22 +1,18 @@
 package com.jrobertgardzinski.security.system.authentication;
 
+import com.jrobertgardzinski.security.domain.core.SecondFactors;
+import com.jrobertgardzinski.security.domain.core.Sessions;
+import com.jrobertgardzinski.security.domain.core.VerifiedAddresses;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.security.domain.session.SessionTokens;
 import com.jrobertgardzinski.security.domain.core.User;
-import com.jrobertgardzinski.security.domain.session.AccessTokenMint;
-import com.jrobertgardzinski.security.domain.session.SessionRepository;
-import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
 import com.jrobertgardzinski.security.domain.core.ProviderIdentity;
-import com.jrobertgardzinski.security.domain.session.SessionFamily;
-import com.jrobertgardzinski.security.domain.session.SessionTokensConfig;
 
 import java.security.SecureRandom;
-import java.time.Clock;
 import java.util.Base64;
 import java.util.Optional;
 
@@ -44,37 +40,23 @@ public class FederatedSignIn {
 
     private final FederatedIdentityRepository identities;
     private final UserRepository users;
-    private final EmailVerificationRepository verifications;
-    private final SessionRepository sessions;
+    private final VerifiedAddresses verifications;
+    private final Sessions sessions;
     private final HashAlgorithmPort hashAlgorithm;
-    private final SessionTokensConfig config;
-    private final Clock clock;
-    private final AccessTokenMint accessTokenMint;
     private final com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository passwordless;
-    private final com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository enrolledFactors;
-    private final com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain;
-    private final com.jrobertgardzinski.security.domain.mfa.PendingAuthenticationStore pendingStore;
+    private final SecondFactors secondFactors;
 
     public FederatedSignIn(FederatedIdentityRepository identities, UserRepository users,
-                           EmailVerificationRepository verifications, SessionRepository sessions,
-                           HashAlgorithmPort hashAlgorithm, SessionTokensConfig config, Clock clock,
-                           AccessTokenMint accessTokenMint,
+                           VerifiedAddresses verifications, Sessions sessions, HashAlgorithmPort hashAlgorithm,
                            com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository passwordless,
-                           com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository enrolledFactors,
-                           com.jrobertgardzinski.security.system.mfa.MfaChain mfaChain,
-                           com.jrobertgardzinski.security.domain.mfa.PendingAuthenticationStore pendingStore) {
+                           SecondFactors secondFactors) {
         this.identities = identities;
         this.users = users;
         this.verifications = verifications;
         this.sessions = sessions;
         this.hashAlgorithm = hashAlgorithm;
-        this.config = config;
-        this.clock = clock;
-        this.accessTokenMint = accessTokenMint;
         this.passwordless = passwordless;
-        this.enrolledFactors = enrolledFactors;
-        this.mfaChain = mfaChain;
-        this.pendingStore = pendingStore;
+        this.secondFactors = secondFactors;
     }
 
     public FederatedSignInResult execute(ProviderIdentity identity) {
@@ -101,22 +83,13 @@ public class FederatedSignIn {
         }
         // the provider login is link #1; if the account has enrolled factors, they must be passed
         // too before a session — the same chain the password sign-in walks
-        java.util.List<com.jrobertgardzinski.security.domain.mfa.EnrolledFactor> factors =
-                enrolledFactors.findByUser(account);
-        if (factors.isEmpty()) {
-            return new FederatedSignInResult.SignedIn(sessions.create(
-                    SessionTokens.createFor(account, config, clock, accessTokenMint), SessionFamily.start()));
-        }
-        com.jrobertgardzinski.security.domain.mfa.PendingAuthentication pending =
-                mfaChain.begin(account, factors);
-        String ticket = pendingStore.open(pending);
-        return new FederatedSignInResult.MfaRequired(ticket, factors.get(0).type(), pending.challengeData());
+        // a provider's sign-in guessed at nothing, so a wrong proof later is charged to no source
+        return secondFactors.challenge(account, Optional.empty())
+                .<FederatedSignInResult>map(chain -> new FederatedSignInResult.MfaRequired(
+                        chain.ticket(), chain.factor(), chain.challengeData()))
+                .orElseGet(() -> new FederatedSignInResult.SignedIn(sessions.open(account)));
     }
 
-    /**
-     * Applies the e-mail rules to the vouched address and links the provider identity to it. Writes
-     * only; the address it acts on is {@code identity.email()}, which the caller already holds.
-     */
     private void claimByEmail(ProviderIdentity identity) {
         Email email = identity.email();
         Optional<User> existing = users.findBy(email);
@@ -127,7 +100,7 @@ public class FederatedSignIn {
         } else if (!verifications.isVerified(email)) {
             // the squatter case: the provider's proof of the inbox beats the unproven password
             users.updatePassword(email, unusablePassword());
-            sessions.revokeAllSessions(email);
+            sessions.endAll(email);
             verifications.markVerified(email);
             passwordless.setPasswordless(email, true);   // the wiped password no longer counts
         }

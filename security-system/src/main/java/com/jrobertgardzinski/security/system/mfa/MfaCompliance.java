@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.system.mfa;
 
+import com.jrobertgardzinski.security.domain.core.FactorCompliance;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.config.mfa.MfaPolicy;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
@@ -17,7 +19,7 @@ import java.util.stream.Collectors;
  * very first admin could never sign in to configure anything — and held to the floor the moment
  * they enrol their first.
  */
-public class MfaCompliance {
+public class MfaCompliance implements FactorCompliance {
 
     private final EnrolledFactorRepository factors;
     private final PasswordlessAccountRepository passwordless;
@@ -33,16 +35,19 @@ public class MfaCompliance {
                 .map(s -> s.toLowerCase(Locale.ROOT)).collect(Collectors.toUnmodifiableSet());
     }
 
+    @Override
     public int requiredFactors(Set<Role> roles) {
         return policy.requiredFactorCount(roles.stream().map(Role::name).collect(Collectors.toUnmodifiableSet()));
     }
 
     /** Factors that count toward the floor: the enrolled ones, plus the password if the account has one. */
+    @Override
     public int effectiveFactorCount(Email email) {
         int enrolled = factors.findByUser(email).size();
         return passwordless.isPasswordless(email) ? enrolled : enrolled + 1;
     }
 
+    @Override
     public boolean isCompliant(Email email, Set<Role> roles) {
         if (bootstrapAdmins.contains(email.value().toLowerCase(Locale.ROOT)) && factors.findByUser(email).isEmpty()) {
             return true;   // grace: the first admin bootstraps before enrolling anything

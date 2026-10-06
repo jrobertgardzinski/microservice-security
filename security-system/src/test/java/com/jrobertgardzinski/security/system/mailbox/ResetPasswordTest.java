@@ -6,7 +6,7 @@ import com.jrobertgardzinski.password.domain.HashedPassword;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.password.policy.CreatePasswordHash;
 import com.jrobertgardzinski.password.policy.PasswordPolicy;
-import com.jrobertgardzinski.security.domain.session.SessionRepository;
+import com.jrobertgardzinski.security.domain.core.Sessions;
 import com.jrobertgardzinski.security.domain.mailbox.PasswordResetRepository;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
 import com.jrobertgardzinski.security.domain.mailbox.PasswordResetToken;
@@ -56,7 +56,7 @@ class ResetPasswordTest {
 
     private PasswordResetRepository passwordResetRepository;
     private UserRepository userRepository;
-    private SessionRepository sessions;
+    private Sessions sessions;
     private ResetPassword resetPassword;
 
     @BeforeTry
@@ -67,7 +67,7 @@ class ResetPasswordTest {
         // clicked after the account it was issued for is gone
         Mockito.when(userRepository.findBy(EMAIL)).thenReturn(Optional.of(
                 new com.jrobertgardzinski.security.domain.core.User(EMAIL, new HashedPassword("hash:old"))));
-        sessions = Mockito.mock(SessionRepository.class);
+        sessions = Mockito.mock(Sessions.class);
         resetPassword = new ResetPassword(passwordResetRepository, userRepository,
                 FAKE_ALGORITHM, PasswordPolicy::withDefaults,
                 new com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository() {
@@ -102,7 +102,7 @@ class ResetPasswordTest {
 
         assertInstanceOf(ResetPasswordResult.PasswordReset.class, resetPassword.execute(TOKEN, STRONG));
 
-        Mockito.verify(sessions).revokeAllSessions(EMAIL);
+        Mockito.verify(sessions).endAll(EMAIL);
     }
 
     @Example
@@ -117,7 +117,7 @@ class ResetPasswordTest {
         assertInstanceOf(ResetPasswordResult.InvalidToken.class, resetPassword.execute(TOKEN, STRONG));
 
         Mockito.verify(userRepository, Mockito.never()).updatePassword(Mockito.any(), Mockito.any());
-        Mockito.verify(sessions, Mockito.never()).revokeAllSessions(Mockito.any());
+        Mockito.verify(sessions, Mockito.never()).endAll(Mockito.any());
     }
 
     @Example
@@ -127,7 +127,7 @@ class ResetPasswordTest {
 
         assertInstanceOf(ResetPasswordResult.InvalidToken.class, resetPassword.execute(TOKEN, STRONG));
 
-        Mockito.verify(sessions, Mockito.never()).revokeAllSessions(Mockito.any());
+        Mockito.verify(sessions, Mockito.never()).endAll(Mockito.any());
     }
 
     @Example
