@@ -96,10 +96,13 @@
                                 <ignoredUsedUndeclaredDependency>net.jqwik:*</ignoredUsedUndeclaredDependency>
                                 <ignoredUsedUndeclaredDependency>io.qameta.allure:*</ignoredUsedUndeclaredDependency>
                                 <ignoredUsedUndeclaredDependency>io.cucumber:*</ignoredUsedUndeclaredDependency>
+                                <!-- archunit-junit5 is the one declared artifact; its API and engine come with it -->
+                                <ignoredUsedUndeclaredDependency>com.tngtech.archunit:*</ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
                             <ignoredUnusedDeclaredDependencies>
                                 <ignoredUnusedDeclaredDependency>com.jrobertgardzinski:unit-test-starter</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>com.jrobertgardzinski:bdd-test-starter</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>com.tngtech.archunit:archunit-junit5</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
                         </configuration>
                     </execution>

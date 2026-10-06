@@ -67,9 +67,11 @@ UI  →  Infrastructure  →  Application  →  System  →  Config  →  Domain
   need live in the domain.
 
 Inside every layer the classes sit in one package per area — core, session, authentication,
-mailbox, mfa, account — so work on one area reads one directory per layer. The compiler does not
-guard packages, so a law does: `AreaBoundariesTest` holds the graph of which area may import which,
-and fails the build on any edge nobody wrote down, on an upward reach between layers, and on a cycle.
+mailbox, mfa, account — so work on one area reads one directory per layer. An area sees only
+itself and **core**, the shared one, and the layers point down; `AreaIsolationTest` (ArchUnit)
+checks both on the compiled classes. Nineteen reaches between areas are real flows nobody has cut
+yet — signing in ends in a session and needs a verified address, closing an account empties every
+store that holds the person — and are listed there by name; the list can only shrink.
 
 ### The three entry points — one behaviour, many doors
 
