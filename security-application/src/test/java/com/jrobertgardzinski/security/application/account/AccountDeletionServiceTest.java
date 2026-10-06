@@ -6,7 +6,7 @@ import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.security.domain.core.User;
 import com.jrobertgardzinski.security.domain.core.FakeUserRepository;
 import com.jrobertgardzinski.security.domain.core.Role;
-import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
+import com.jrobertgardzinski.security.domain.core.StepUpAction;
 import com.jrobertgardzinski.security.system.account.AccountDeletionSaga;
 import com.jrobertgardzinski.security.system.account.StartAccountDeletion;
 import com.jrobertgardzinski.security.system.core.BootstrapAdmins;

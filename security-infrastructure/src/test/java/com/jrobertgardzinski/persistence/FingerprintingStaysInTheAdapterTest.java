@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.persistence;
 
-import com.jrobertgardzinski.security.domain.authentication.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.core.AttemptedAccount;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

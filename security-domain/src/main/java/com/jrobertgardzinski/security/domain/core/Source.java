@@ -1,6 +1,5 @@
-package com.jrobertgardzinski.security.domain.authentication;
+package com.jrobertgardzinski.security.domain.core;
 
-import com.jrobertgardzinski.security.domain.core.IpAddress;
 
 /**
  * The subject of brute-force accounting: who is knocking, as the boundary saw them.

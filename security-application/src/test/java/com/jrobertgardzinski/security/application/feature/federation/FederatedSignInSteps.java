@@ -51,7 +51,7 @@ public class FederatedSignInSteps {
             new com.jrobertgardzinski.security.domain.mfa.FakeEnrolledFactorRepository();
     private final com.jrobertgardzinski.security.domain.mfa.CapturingCodeChannel emailChannel =
             new com.jrobertgardzinski.security.domain.mfa.CapturingCodeChannel(
-                    com.jrobertgardzinski.security.domain.mfa.FactorType.EMAIL_CODE);
+                    com.jrobertgardzinski.security.domain.core.FactorType.EMAIL_CODE);
     private final com.jrobertgardzinski.security.system.mfa.FactorRegistry registry =
             new com.jrobertgardzinski.security.system.mfa.FactorRegistry(java.util.List.of(
                     new com.jrobertgardzinski.security.system.mfa.CodeFactor(emailChannel, raw -> "h:" + raw,
@@ -73,8 +73,8 @@ public class FederatedSignInSteps {
 
     @io.cucumber.java.en.Given("the ACCOUNT {string} has enrolled an e-mail FACTOR")
     public void hasEnrolledFactor(String email) {
-        enrolFactor.start(Email.of(email), com.jrobertgardzinski.security.domain.mfa.FactorType.EMAIL_CODE, email);
-        enrolFactor.confirm(Email.of(email), com.jrobertgardzinski.security.domain.mfa.FactorType.EMAIL_CODE,
+        enrolFactor.start(Email.of(email), com.jrobertgardzinski.security.domain.core.FactorType.EMAIL_CODE, email);
+        enrolFactor.confirm(Email.of(email), com.jrobertgardzinski.security.domain.core.FactorType.EMAIL_CODE,
                 emailChannel.lastCodeFor(email));
     }
 

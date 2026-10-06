@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.domain.authentication;
+package com.jrobertgardzinski.security.domain.core;
 
 /**
  * What a lockout is counted against: a {@link Source} knocking on an {@link AttemptedAccount}.

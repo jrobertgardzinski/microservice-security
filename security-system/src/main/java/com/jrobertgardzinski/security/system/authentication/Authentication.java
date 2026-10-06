@@ -6,9 +6,9 @@ import com.jrobertgardzinski.security.domain.authentication.BruteForceProtection
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.authentication.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.authentication.Credentials;
-import com.jrobertgardzinski.security.domain.authentication.AttemptedAccount;
-import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
-import com.jrobertgardzinski.security.domain.authentication.Source;
+import com.jrobertgardzinski.security.domain.core.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.core.LockoutSubject;
+import com.jrobertgardzinski.security.domain.core.Source;
 import com.jrobertgardzinski.security.domain.mfa.PendingAuthentication;
 import com.jrobertgardzinski.security.domain.mfa.PendingAuthenticationStore;
 

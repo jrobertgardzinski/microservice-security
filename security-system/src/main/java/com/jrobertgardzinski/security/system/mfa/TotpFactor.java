@@ -4,7 +4,7 @@ import com.jrobertgardzinski.security.domain.mfa.SpentTotpSteps;
 import com.jrobertgardzinski.security.domain.mfa.Challenge;
 
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
-import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.FactorType;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;

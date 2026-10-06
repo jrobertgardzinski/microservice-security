@@ -1,5 +1,8 @@
 package com.jrobertgardzinski.security.domain.authentication;
 
+import com.jrobertgardzinski.security.domain.core.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.core.LockoutSubject;
+import com.jrobertgardzinski.security.domain.core.Source;
 
 import java.time.LocalDateTime;
 

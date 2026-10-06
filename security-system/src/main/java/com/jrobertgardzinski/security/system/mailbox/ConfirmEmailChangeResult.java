@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.system.account;
+package com.jrobertgardzinski.security.system.mailbox;
 
 import com.jrobertgardzinski.email.domain.Email;
 

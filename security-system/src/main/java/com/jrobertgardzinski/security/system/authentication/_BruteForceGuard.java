@@ -5,8 +5,8 @@ import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.authentication.BruteForceProtectionEvent;
 import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
-import com.jrobertgardzinski.security.domain.authentication.Source;
+import com.jrobertgardzinski.security.domain.core.LockoutSubject;
+import com.jrobertgardzinski.security.domain.core.Source;
 
 import java.time.Clock;
 import java.time.LocalDateTime;

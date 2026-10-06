@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.security.domain.session.SessionTokens;
-import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.FactorType;
 
 public sealed interface FederatedSignInResult {
 

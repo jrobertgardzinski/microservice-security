@@ -9,10 +9,10 @@ import com.jrobertgardzinski.security.domain.core.IpAddress;
 import com.jrobertgardzinski.security.domain.mailbox.VerificationToken;
 import com.jrobertgardzinski.security.system.account.ChangePassword;
 import com.jrobertgardzinski.security.system.account.ChangePasswordResult;
-import com.jrobertgardzinski.security.system.account.ConfirmEmailChange;
-import com.jrobertgardzinski.security.system.account.ConfirmEmailChangeResult;
-import com.jrobertgardzinski.security.system.account.RequestEmailChange;
-import com.jrobertgardzinski.security.system.account.RequestEmailChangeResult;
+import com.jrobertgardzinski.security.system.mailbox.ConfirmEmailChange;
+import com.jrobertgardzinski.security.system.mailbox.ConfirmEmailChangeResult;
+import com.jrobertgardzinski.security.system.mailbox.RequestEmailChange;
+import com.jrobertgardzinski.security.system.mailbox.RequestEmailChangeResult;
 import com.jrobertgardzinski.security.system.core.SourceThrottle;
 
 import java.util.List;

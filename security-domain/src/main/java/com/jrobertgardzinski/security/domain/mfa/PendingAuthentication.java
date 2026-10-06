@@ -1,9 +1,11 @@
 package com.jrobertgardzinski.security.domain.mfa;
 
+import com.jrobertgardzinski.security.domain.core.FactorType;
+
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.authentication.AttemptedAccount;
-import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
-import com.jrobertgardzinski.security.domain.authentication.Source;
+import com.jrobertgardzinski.security.domain.core.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.core.LockoutSubject;
+import com.jrobertgardzinski.security.domain.core.Source;
 
 import java.time.Clock;
 import java.time.LocalDateTime;

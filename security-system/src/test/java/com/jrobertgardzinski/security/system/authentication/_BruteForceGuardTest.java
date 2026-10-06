@@ -6,10 +6,10 @@ import com.jrobertgardzinski.security.domain.authentication.BruteForceProtection
 import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.authentication.FailuresCount;
-import com.jrobertgardzinski.security.domain.authentication.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.core.AttemptedAccount;
 import com.jrobertgardzinski.security.domain.core.IpAddress;
-import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
-import com.jrobertgardzinski.security.domain.authentication.Source;
+import com.jrobertgardzinski.security.domain.core.LockoutSubject;
+import com.jrobertgardzinski.security.domain.core.Source;
 import com.jrobertgardzinski.email.domain.Email;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -161,7 +161,7 @@ class _BruteForceGuardTest {
                 () -> Mockito.verify(rejectedAuthenticationRepository, Mockito.never())
                         .removeAllFor(Mockito.any(LockoutSubject.class)),
                 () -> Mockito.verify(rejectedAuthenticationRepository, Mockito.never())
-                        .removeAllFor(Mockito.any(com.jrobertgardzinski.security.domain.authentication.Source.class))
+                        .removeAllFor(Mockito.any(com.jrobertgardzinski.security.domain.core.Source.class))
         );
     }
 }

@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.domain.mfa;
+package com.jrobertgardzinski.security.domain.core;
 
 /**
  * What a caller must re-prove before a sensitive action: nothing beyond the live session, the

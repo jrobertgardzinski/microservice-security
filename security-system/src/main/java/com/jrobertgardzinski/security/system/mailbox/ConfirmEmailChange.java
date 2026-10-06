@@ -1,8 +1,8 @@
-package com.jrobertgardzinski.security.system.account;
+package com.jrobertgardzinski.security.system.mailbox;
 
 import com.jrobertgardzinski.security.domain.session.SessionRepository;
 import com.jrobertgardzinski.security.domain.core.EmailAlreadyTakenException;
-import com.jrobertgardzinski.security.domain.account.EmailChangeRepository;
+import com.jrobertgardzinski.security.domain.mailbox.EmailChangeRepository;
 import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository;

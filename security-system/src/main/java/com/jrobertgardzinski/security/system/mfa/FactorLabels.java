@@ -1,6 +1,6 @@
 package com.jrobertgardzinski.security.system.mfa;
 
-import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.FactorType;
 
 /**
  * A human-readable label for a factor type, for the enrolment list and the sign-in prompt. Unknown

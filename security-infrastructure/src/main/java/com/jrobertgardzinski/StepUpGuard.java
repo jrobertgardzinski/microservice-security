@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
+import com.jrobertgardzinski.security.domain.core.StepUpAction;
 import com.jrobertgardzinski.security.domain.mfa.SessionElevation;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;

@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.domain.mfa;
+package com.jrobertgardzinski.security.domain.core;
 
 /**
  * Which kind of authentication factor — a stable string id, not a domain enum, on purpose: adding

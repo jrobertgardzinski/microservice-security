@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.domain.mfa;
 
+import com.jrobertgardzinski.security.domain.core.FactorType;
+
 import com.jrobertgardzinski.email.domain.Email;
 
 import java.util.ArrayList;

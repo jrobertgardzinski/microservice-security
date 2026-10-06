@@ -1,5 +1,6 @@
 package com.jrobertgardzinski.security.domain.mfa;
 
+import com.jrobertgardzinski.security.domain.core.FactorType;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

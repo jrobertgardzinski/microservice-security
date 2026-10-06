@@ -2,9 +2,9 @@ package com.jrobertgardzinski.security.application.mfa;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
-import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.FactorType;
 import com.jrobertgardzinski.security.domain.core.IpAddress;
-import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
+import com.jrobertgardzinski.security.domain.core.StepUpAction;
 import com.jrobertgardzinski.security.system.mfa.StepUp;
 import com.jrobertgardzinski.security.system.core.SourceThrottle;
 

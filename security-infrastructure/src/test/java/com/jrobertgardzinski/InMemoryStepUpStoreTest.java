@@ -1,6 +1,6 @@
 package com.jrobertgardzinski;
 
-import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
+import com.jrobertgardzinski.security.domain.core.StepUpAction;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.mfa.PendingAuthentication;
 import com.jrobertgardzinski.security.domain.mfa.StepUpStore;

@@ -37,7 +37,7 @@ public class CodeFactor implements AuthenticationFactor {
     }
 
     @Override
-    public com.jrobertgardzinski.security.domain.mfa.FactorType type() {
+    public com.jrobertgardzinski.security.domain.core.FactorType type() {
         return channel.servesFactor();
     }
 

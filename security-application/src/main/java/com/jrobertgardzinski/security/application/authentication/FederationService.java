@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.application.authentication;
 
 import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.security.domain.session.SessionTokens;
-import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.FactorType;
 import com.jrobertgardzinski.security.domain.core.ProviderIdentity;
 import com.jrobertgardzinski.security.system.authentication.FederatedSignIn;
 import com.jrobertgardzinski.security.system.authentication.FederatedSignInResult;

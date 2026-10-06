@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.domain.mfa;
 
+import com.jrobertgardzinski.security.domain.core.StepUpAction;
+
 /**
  * A short-lived, one-shot "recently re-proven" mark for step-up authentication, keyed by the
  * caller's access token AND the action it was proven for. A sensitive action mints it after the

@@ -1,8 +1,8 @@
 package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.security.application.mfa.MfaService;
-import com.jrobertgardzinski.security.domain.mfa.FactorType;
-import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
+import com.jrobertgardzinski.security.domain.core.FactorType;
+import com.jrobertgardzinski.security.domain.core.StepUpAction;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;

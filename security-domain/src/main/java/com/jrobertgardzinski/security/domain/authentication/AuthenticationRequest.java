@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.domain.authentication;
 
+import com.jrobertgardzinski.security.domain.core.Source;
+
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 

@@ -10,9 +10,9 @@ import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticati
 import com.jrobertgardzinski.security.domain.core.UserRepository;
 import com.jrobertgardzinski.security.domain.authentication.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.core.IpAddress;
-import com.jrobertgardzinski.security.domain.authentication.AttemptedAccount;
-import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
-import com.jrobertgardzinski.security.domain.authentication.Source;
+import com.jrobertgardzinski.security.domain.core.AttemptedAccount;
+import com.jrobertgardzinski.security.domain.core.LockoutSubject;
+import com.jrobertgardzinski.security.domain.core.Source;
 import com.jrobertgardzinski.security.system.authentication.Authentication;
 import com.jrobertgardzinski.security.system.authentication.ContinueAuthentication;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
@@ -154,7 +154,7 @@ class BruteForceCountingTest {
         Email victim = account("code-guessed@example.com");
         context.getBean(com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository.class)
                 .enrol(new com.jrobertgardzinski.security.domain.mfa.EnrolledFactor(
-                        victim, com.jrobertgardzinski.security.domain.mfa.FactorType.EMAIL_CODE,
+                        victim, com.jrobertgardzinski.security.domain.core.FactorType.EMAIL_CODE,
                         "e-mail code", 0, victim.value()));
 
         // link #1 passes — the guesser HAS the password; what they are after is the code

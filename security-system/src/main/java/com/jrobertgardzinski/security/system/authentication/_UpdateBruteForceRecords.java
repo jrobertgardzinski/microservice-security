@@ -1,7 +1,7 @@
 package com.jrobertgardzinski.security.system.authentication;
 
 import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationRepository;
-import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
+import com.jrobertgardzinski.security.domain.core.LockoutSubject;
 import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationDetails;
 
 import java.time.Clock;

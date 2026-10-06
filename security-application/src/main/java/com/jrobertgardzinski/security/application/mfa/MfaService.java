@@ -7,7 +7,7 @@ import com.jrobertgardzinski.security.domain.core.User;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
-import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.FactorType;
 import com.jrobertgardzinski.security.domain.core.IpAddress;
 import com.jrobertgardzinski.security.domain.core.Role;
 import com.jrobertgardzinski.security.system.authentication.ContinueAuthentication;

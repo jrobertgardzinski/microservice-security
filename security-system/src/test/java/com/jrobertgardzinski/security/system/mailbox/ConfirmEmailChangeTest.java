@@ -1,15 +1,16 @@
-package com.jrobertgardzinski.security.system.account;
+package com.jrobertgardzinski.security.system.mailbox;
+
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.session.SessionRepository;
-import com.jrobertgardzinski.security.domain.account.EmailChangeRepository;
+import com.jrobertgardzinski.security.domain.mailbox.EmailChangeRepository;
 import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.mailbox.PasswordResetRepository;
 import com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository;
 import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
-import com.jrobertgardzinski.security.domain.account.EmailChange;
+import com.jrobertgardzinski.security.domain.mailbox.EmailChange;
 import com.jrobertgardzinski.security.domain.mailbox.VerificationToken;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;

@@ -4,8 +4,8 @@ import com.jrobertgardzinski.security.domain.mfa.SessionElevation;
 import com.jrobertgardzinski.security.domain.mfa.StepUpStore;
 import com.jrobertgardzinski.security.domain.mfa.PendingAuthentication;
 
-import com.jrobertgardzinski.security.domain.mfa.StepUpRequirement;
-import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
+import com.jrobertgardzinski.security.domain.core.StepUpRequirement;
+import com.jrobertgardzinski.security.domain.core.StepUpAction;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.HashAlgorithmPort;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
@@ -14,7 +14,7 @@ import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.core.PasswordlessAccountRepository;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
-import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.FactorType;
 
 import java.time.Clock;
 import java.util.List;

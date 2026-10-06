@@ -2,7 +2,7 @@ package com.jrobertgardzinski.security.system.account;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.session.SessionRepository;
-import com.jrobertgardzinski.security.domain.account.EmailChangeRepository;
+import com.jrobertgardzinski.security.domain.mailbox.EmailChangeRepository;
 import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationRepository;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.core.FederatedIdentityRepository;

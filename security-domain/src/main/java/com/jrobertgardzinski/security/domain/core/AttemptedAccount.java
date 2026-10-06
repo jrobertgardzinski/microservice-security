@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.domain.authentication;
+package com.jrobertgardzinski.security.domain.core;
 
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 

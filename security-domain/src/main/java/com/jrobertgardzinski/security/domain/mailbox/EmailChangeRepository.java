@@ -1,7 +1,6 @@
-package com.jrobertgardzinski.security.domain.account;
+package com.jrobertgardzinski.security.domain.mailbox;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.mailbox.VerificationToken;
 
 import java.util.Optional;
 

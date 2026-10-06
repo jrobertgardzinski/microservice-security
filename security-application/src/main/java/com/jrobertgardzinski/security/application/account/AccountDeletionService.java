@@ -8,7 +8,7 @@ import com.jrobertgardzinski.security.domain.core.UserRepository;
 import com.jrobertgardzinski.security.domain.account.AccountClosure;
 import com.jrobertgardzinski.security.domain.account.PurgeChoices;
 import com.jrobertgardzinski.security.domain.core.Role;
-import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
+import com.jrobertgardzinski.security.domain.core.StepUpAction;
 import com.jrobertgardzinski.security.system.account.AccountDeletionSaga;
 import com.jrobertgardzinski.security.system.account.StartAccountDeletion;
 import com.jrobertgardzinski.security.system.core.RequireRole;

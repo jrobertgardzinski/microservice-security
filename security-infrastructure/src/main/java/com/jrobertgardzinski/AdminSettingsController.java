@@ -4,7 +4,7 @@ import com.jrobertgardzinski.config.ConfigValue;
 import com.jrobertgardzinski.config.ladder.Resolution;
 import com.jrobertgardzinski.security.application.core.AdminService;
 import com.jrobertgardzinski.security.domain.core.Role;
-import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
+import com.jrobertgardzinski.security.domain.core.StepUpAction;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;

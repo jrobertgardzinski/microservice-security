@@ -3,7 +3,7 @@ package com.jrobertgardzinski.persistence;
 import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlock;
 import com.jrobertgardzinski.security.domain.authentication.AuthenticationBlockRepository;
 import com.jrobertgardzinski.security.domain.core.IpAddress;
-import com.jrobertgardzinski.security.domain.authentication.Source;
+import com.jrobertgardzinski.security.domain.core.Source;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 

@@ -5,8 +5,8 @@ import java.time.Clock;
 import com.jrobertgardzinski.security.domain.authentication.RejectedAuthentication;
 import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationRepository;
 import com.jrobertgardzinski.security.domain.authentication.FailuresCount;
-import com.jrobertgardzinski.security.domain.authentication.LockoutSubject;
-import com.jrobertgardzinski.security.domain.authentication.Source;
+import com.jrobertgardzinski.security.domain.core.LockoutSubject;
+import com.jrobertgardzinski.security.domain.core.Source;
 import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationDetails;
 import com.jrobertgardzinski.security.domain.authentication.RejectedAuthenticationId;
 import io.micronaut.context.annotation.Requires;
@@ -49,7 +49,7 @@ public final class InMemoryRejectedAuthenticationRepository implements RejectedA
     /**
      * The tight count — this source against THIS account.
      *
-     * <p>Matching on the whole {@link com.jrobertgardzinski.security.domain.authentication.LockoutSubject} on
+     * <p>Matching on the whole {@link com.jrobertgardzinski.security.domain.core.LockoutSubject} on
      * purpose: equality of "the same subject" is defined once, in the domain, so this twin cannot
      * quietly disagree with the JDBC adapter about what it means. Two implementations of one port
      * drifting on exactly that question is how a green test came to prove the wrong thing before.

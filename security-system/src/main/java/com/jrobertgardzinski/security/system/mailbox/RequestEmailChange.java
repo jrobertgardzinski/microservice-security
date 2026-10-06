@@ -1,12 +1,12 @@
-package com.jrobertgardzinski.security.system.account;
+package com.jrobertgardzinski.security.system.mailbox;
 
 import com.jrobertgardzinski.email.config.CanRegisterConfig;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationNotifier;
-import com.jrobertgardzinski.security.domain.account.EmailChangeRepository;
+import com.jrobertgardzinski.security.domain.mailbox.EmailChangeRepository;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
-import com.jrobertgardzinski.security.domain.account.EmailChange;
+import com.jrobertgardzinski.security.domain.mailbox.EmailChange;
 import com.jrobertgardzinski.security.domain.mailbox.VerificationToken;
 
 /**

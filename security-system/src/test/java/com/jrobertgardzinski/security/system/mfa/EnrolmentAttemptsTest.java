@@ -8,7 +8,7 @@ import com.jrobertgardzinski.security.config.mfa.ChallengeCodeConfig;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
 import com.jrobertgardzinski.security.domain.mfa.CodeChannel;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
-import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.FactorType;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import org.junit.jupiter.api.DisplayName;

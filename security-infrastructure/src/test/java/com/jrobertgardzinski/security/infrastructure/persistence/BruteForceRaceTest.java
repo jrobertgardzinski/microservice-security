@@ -5,7 +5,7 @@ import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.password.domain.PlaintextPassword;
 import com.jrobertgardzinski.security.domain.authentication.AuthenticationRequest;
 import com.jrobertgardzinski.security.domain.core.IpAddress;
-import com.jrobertgardzinski.security.domain.authentication.Source;
+import com.jrobertgardzinski.security.domain.core.Source;
 import com.jrobertgardzinski.security.system.authentication.Authentication;
 import com.jrobertgardzinski.security.system.authentication.AuthenticationResult;
 import io.micronaut.context.ApplicationContext;

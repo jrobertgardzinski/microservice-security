@@ -1,4 +1,4 @@
-package com.jrobertgardzinski.security.domain.mfa;
+package com.jrobertgardzinski.security.domain.core;
 
 import java.util.Optional;
 

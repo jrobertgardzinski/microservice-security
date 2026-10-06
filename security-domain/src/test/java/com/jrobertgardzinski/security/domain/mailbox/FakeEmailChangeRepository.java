@@ -1,9 +1,7 @@
-package com.jrobertgardzinski.security.domain.account;
+package com.jrobertgardzinski.security.domain.mailbox;
 
-import com.jrobertgardzinski.security.domain.mailbox.FakePasswordResetRepository;
 
 import com.jrobertgardzinski.email.domain.Email;
-import com.jrobertgardzinski.security.domain.mailbox.VerificationToken;
 
 import java.time.Clock;
 import java.time.LocalDateTime;

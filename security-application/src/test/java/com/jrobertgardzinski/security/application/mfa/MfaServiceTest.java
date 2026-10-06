@@ -5,7 +5,7 @@ import com.jrobertgardzinski.security.application.TransactionBoundary;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
 import com.jrobertgardzinski.security.domain.core.FakeUserRepository;
 import com.jrobertgardzinski.security.domain.mfa.RecoveryCodeRepository;
-import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.FactorType;
 import com.jrobertgardzinski.security.system.authentication.ContinueAuthentication;
 import com.jrobertgardzinski.security.system.mfa.EnrolFactor;
 import com.jrobertgardzinski.security.system.mfa.FactorRegistry;

@@ -1,8 +1,8 @@
 package com.jrobertgardzinski.security.config.mfa;
 
 import com.jrobertgardzinski.config.ConfigValue;
-import com.jrobertgardzinski.security.domain.mfa.StepUpAction;
-import com.jrobertgardzinski.security.domain.mfa.StepUpRequirement;
+import com.jrobertgardzinski.security.domain.core.StepUpAction;
+import com.jrobertgardzinski.security.domain.core.StepUpRequirement;
 
 /**
  * The requirement in force for one action. The action is the catalogue entry that carries the

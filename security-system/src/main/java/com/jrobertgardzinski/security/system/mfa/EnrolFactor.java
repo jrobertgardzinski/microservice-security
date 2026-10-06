@@ -5,7 +5,7 @@ import com.jrobertgardzinski.security.domain.mfa.EnrolmentChallengeStore;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
-import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.FactorType;
 
 import java.util.Optional;
 

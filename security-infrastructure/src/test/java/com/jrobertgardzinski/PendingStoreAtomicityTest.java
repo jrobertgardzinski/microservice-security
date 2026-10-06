@@ -2,7 +2,7 @@ package com.jrobertgardzinski;
 
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
-import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.FactorType;
 import com.jrobertgardzinski.security.domain.mfa.PendingAuthentication;
 import com.jrobertgardzinski.security.domain.mfa.PendingAuthenticationStore;
 import io.qameta.allure.Epic;

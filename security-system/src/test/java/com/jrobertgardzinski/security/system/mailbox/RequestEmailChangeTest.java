@@ -1,4 +1,5 @@
-package com.jrobertgardzinski.security.system.account;
+package com.jrobertgardzinski.security.system.mailbox;
+
 
 import com.jrobertgardzinski.email.config.BlockedDomains;
 import com.jrobertgardzinski.email.config.CanRegisterConfig;
@@ -6,7 +7,7 @@ import com.jrobertgardzinski.email.domain.DomainPart;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.email.domain.NormalizedEmail;
 import com.jrobertgardzinski.security.domain.mailbox.EmailVerificationNotifier;
-import com.jrobertgardzinski.security.domain.account.EmailChangeRepository;
+import com.jrobertgardzinski.security.domain.mailbox.EmailChangeRepository;
 import com.jrobertgardzinski.security.domain.core.UserRepository;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;

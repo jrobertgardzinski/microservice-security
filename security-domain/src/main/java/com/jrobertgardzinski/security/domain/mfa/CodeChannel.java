@@ -1,5 +1,7 @@
 package com.jrobertgardzinski.security.domain.mfa;
 
+import com.jrobertgardzinski.security.domain.core.FactorType;
+
 
 /**
  * Outbound port that delivers a short one-time code to a target (an e-mail address, a phone

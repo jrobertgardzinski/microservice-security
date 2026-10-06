@@ -4,7 +4,7 @@ import com.jrobertgardzinski.TotpSecretCipher;
 import com.jrobertgardzinski.email.domain.Email;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactor;
 import com.jrobertgardzinski.security.domain.mfa.EnrolledFactorRepository;
-import com.jrobertgardzinski.security.domain.mfa.FactorType;
+import com.jrobertgardzinski.security.domain.core.FactorType;
 import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
