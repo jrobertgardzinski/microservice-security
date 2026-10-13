@@ -11,6 +11,8 @@
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
         <micronaut.version>5.1.0</micronaut.version>
+        <!-- the Maven plugin is versioned apart from the platform; 5.1.0 of it does not exist -->
+        <micronaut-maven-plugin.version>5.0.2</micronaut-maven-plugin.version>
         <!-- Micronaut 5's platform BOM stopped managing testcontainers, the same change Spring Boot 4
              made on the other side of the estate the same day. Pinned to 1.21.4 like the portal's
              services: testcontainers reorganised in 2.x and several modules have no 2.x release. -->
