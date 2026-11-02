@@ -18,7 +18,7 @@
         <!-- ONE pact version for the five artifacts: they were pinned separately and had already
              drifted (provider 4.7.3 beside junit5 4.7.5), which is how a consumer and a provider
              end up disagreeing about the format of the thing they exist to agree on. -->
-        <pact.version>4.7.5</pact.version>
+        <pact.version>4.7.6</pact.version>
     </properties>
 
     <modules>
